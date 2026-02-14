@@ -1,26 +1,26 @@
 {
 	"schemaVersion": 1,
-	"id": "examplemod",
+	"id": "telekinesis",
 	"version": "${version}",
-	"name": "ExampleMod",
+	"name": "Telekinesis",
 	"description": "brainage04's mod template for server-side Fabric mods.",
 	"authors": [
 		"brainage04"
 	],
 	"contact": {
-		"homepage": "https://github.com/brainage04/ExampleMod",
-		"sources": "https://github.com/brainage04/ExampleMod"
+		"homepage": "https://github.com/brainage04/Telekinesis",
+		"sources": "https://github.com/brainage04/Telekinesis"
 	},
 	"license": "MIT",
-	"icon": "assets/examplemod/icon.png",
+	"icon": "assets/telekinesis/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.ExampleMod"
+			"com.github.brainage04.telekinesis.Telekinesis"
 		]
 	},
 	"mixins": [
-		"examplemod.mixins.json"
+		"telekinesis.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.18.2",
@@ -28,5 +28,5 @@
 		"java": ">=21",
 		"fabric-api": "*"
 	},
-    "accessWidener": "examplemod.accesswidener"
+    "accessWidener": "telekinesis.accesswidener"
 }

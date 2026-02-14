@@ -1,14 +1,14 @@
-package com.example;
+package com.github.brainage04.telekinesis;
 
-import com.example.command.core.ModCommands;
+import com.github.brainage04.telekinesis.command.core.ModCommands;
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExampleMod implements ModInitializer {
-    public static final String MOD_ID = "examplemod";
-    public static final String MOD_NAME = "ExampleMod";
+public class Telekinesis implements ModInitializer {
+    public static final String MOD_ID = "telekinesis";
+    public static final String MOD_NAME = "Telekinesis";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
 
 	@Override
