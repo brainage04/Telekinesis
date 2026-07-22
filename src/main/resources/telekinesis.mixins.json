@@ -1,9 +1,10 @@
 {
 	"required": true,
-	"package": "io.github.brainage04.fabricmoddingtemplate.mixin.client",
+	"package": "io.github.brainage04.telekinesis.mixin",
 	"compatibilityLevel": "JAVA_25",
-	"client": [
-		"ExampleClientMixin"
+	"mixins": [
+		"ServerLevelMixin",
+		"ServerPlayerGameModeMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

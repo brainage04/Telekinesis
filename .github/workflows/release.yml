@@ -38,6 +38,7 @@ jobs:
       project_id: ${{ vars.MODRINTH_PROJECT_ID }}
     secrets:
       modrinth_token: ${{ secrets.MODRINTH_TOKEN }}
+
   curseforge:
     needs: prepare
     permissions:
@@ -47,6 +48,6 @@ jobs:
       artifact_file: ${{ needs.prepare.outputs.artifact_file }}
       release_body: ${{ needs.prepare.outputs.release_body }}
       project_id: ${{ vars.CURSEFORGE_PROJECT_ID }}
-      project_slug: fabricmoddingtemplate
+      project_slug: telekinesis
     secrets:
       curseforge_token: ${{ secrets.CURSEFORGE_TOKEN }}

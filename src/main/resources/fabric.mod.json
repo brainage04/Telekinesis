@@ -3,38 +3,29 @@
 	"id": "${mod_id}",
 	"version": "${mod_version}",
 	"name": "${mod_name}",
-	"description": "My Minecraft Fabric modding template.",
+	"description": "Automatically places player-mined block drops into the player's inventory.",
 	"authors": [
 		"brainage04"
 	],
 	"contact": {
-		"homepage": "https://github.com/brainage04/FabricModdingTemplate",
-		"sources": "https://github.com/brainage04/FabricModdingTemplate"
+		"homepage": "https://github.com/brainage04/Telekinesis",
+		"sources": "https://github.com/brainage04/Telekinesis"
 	},
 	"license": "MIT",
-	"icon": "assets/fabricmoddingtemplate/icon.png",
+	"icon": "assets/telekinesis/icon.png",
 	"environment": "*",
 	"entrypoints": {
-		"client": [
-			"io.github.brainage04.fabricmoddingtemplate.FabricModdingTemplateClient"
-		],
 		"main": [
-			"io.github.brainage04.fabricmoddingtemplate.FabricModdingTemplate"
+			"io.github.brainage04.telekinesis.Telekinesis"
 		]
 	},
 	"mixins": [
-		"fabricmoddingtemplate.mixins.json",
-		{
-			"config": "fabricmoddingtemplate.client.mixins.json",
-			"environment": "client"
-		}
+		"telekinesis.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=${loader_version}",
 		"minecraft": "~${minecraft_version}",
 		"java": ">=${java_version}",
-		"fabric-api": "*",
-		"fzzy_config": ">=0.7.6"
-	},
-    "accessWidener": "fabricmoddingtemplate.accesswidener"
+		"fabric-api": "*"
+	}
 }

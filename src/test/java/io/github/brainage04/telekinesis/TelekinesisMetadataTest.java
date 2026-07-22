@@ -1,4 +1,4 @@
-package io.github.brainage04.fabricmoddingtemplate;
+package io.github.brainage04.telekinesis;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
@@ -10,22 +10,22 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FabricModdingTemplateMetadataTest {
+class TelekinesisMetadataTest {
     @Test
     void fabricLoaderBootsInServerModeForTests() {
         assertEquals(EnvType.SERVER, FabricLoader.getInstance().getEnvironmentType());
     }
 
     @Test
-    void fabricLoaderCanResolveTheTemplateModMetadata() {
+    void fabricLoaderCanResolveModMetadata() {
         ModContainer mod = FabricLoader.getInstance()
-                .getModContainer(FabricModdingTemplate.MOD_ID)
-                .orElseThrow(() -> new AssertionError("Expected the template mod to be loaded for tests."));
+                .getModContainer(Telekinesis.MOD_ID)
+                .orElseThrow(() -> new AssertionError("Expected Telekinesis to be loaded for tests."));
         ModMetadata metadata = mod.getMetadata();
 
         assertAll(
-                () -> assertEquals(FabricModdingTemplate.MOD_ID, metadata.getId()),
-                () -> assertEquals(FabricModdingTemplate.MOD_NAME, metadata.getName()),
+                () -> assertEquals(Telekinesis.MOD_ID, metadata.getId()),
+                () -> assertEquals(Telekinesis.MOD_NAME, metadata.getName()),
                 () -> assertTrue(metadata.getLicense().contains("MIT")),
                 () -> assertTrue(mod.findPath("fabric.mod.json").isPresent())
         );

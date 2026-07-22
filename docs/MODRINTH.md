@@ -1,6 +1,6 @@
 # Modrinth publishing
 
-This template includes optional Modrinth publishing as part of `.github/workflows/release.yml`.
+This repository includes optional Modrinth publishing as part of `.github/workflows/release.yml`.
 
 After the GitHub release is created, a second job in the same workflow does two things:
 
@@ -50,7 +50,7 @@ Defaults:
 - The workflow syncs the project summary, long description, `issues_url`, `source_url`, `wiki_url`, and `license_url` on every release so existing Modrinth projects stay aligned with the repository
 - Existing Modrinth project icons are only replaced when the current Modrinth icon URL does not already contain the SHA-1 of the local icon file
 
-In practice, `.modrinth/project.json` can be kept very small. The template only needs it when you want to override defaults such as:
+In practice, `.modrinth/project.json` can be kept very small. It is only needed when you want to override defaults such as:
 
 - `slug`
 - `categories`
@@ -103,8 +103,8 @@ If a dependency uses a different Modrinth slug, add an override in `.modrinth/pr
 ```json
 {
   "dependency_overrides": {
-    "fzzy_config": {
-      "project_slug": "fzzy-config"
+    "some_mod": {
+      "project_slug": "some-mod"
     }
   }
 }
@@ -151,4 +151,3 @@ The release workflow fetches the remote tag object before reading notes so annot
 - If the Modrinth project already exists, it is reused instead of recreated. When a project is newly created, the separate icon sync step is skipped for that release because the create request already uploads the icon.
 - If an existing Modrinth project icon must change and Modrinth rejects the icon replacement, the workflow still publishes the Modrinth version, then fails the job at the end so the stale icon remains visible.
 - If the Modrinth version already exists for the current `mod_version`, publishing is skipped.
-- The Modrinth scripts can also be run locally for validation. When they run outside GitHub Actions, `GITHUB_ENV` is optional and no step output file is written.
