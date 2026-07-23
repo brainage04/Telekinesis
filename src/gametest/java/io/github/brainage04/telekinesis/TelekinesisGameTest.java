@@ -1,29 +1,38 @@
 package io.github.brainage04.telekinesis;
 
 import io.github.brainage04.telekinesis.command.TelekinesisCommand;
-import io.github.brainage04.telekinesis.gamerule.core.ModGameRules;
+import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
+import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
-import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 public class TelekinesisGameTest {
     private static final BlockPos DROP_POS = new BlockPos(1, 1, 1);
 
     @GameTest
     public void commandIsRegistered(GameTestHelper context) {
-        if (context.getLevel().getServer().getCommands().getDispatcher().getRoot()
-                .getChild(TelekinesisCommand.COMMAND_NAME) == null) {
+        var command = context.getLevel().getServer().getCommands().getDispatcher().getRoot()
+                .getChild(TelekinesisCommand.COMMAND_NAME);
+        if (command == null) {
             throw new AssertionError("Expected the telekinesis command to be registered.");
+        }
+        if (command.getChild("help") == null
+                || command.getChild("toggle") == null
+                || command.getChild("config") == null) {
+            throw new AssertionError("Expected player help/toggle and operator config command branches.");
         }
 
         context.succeed();
@@ -31,7 +40,7 @@ public class TelekinesisGameTest {
 
     @GameTest
     public void minedBlockDropGoesDirectlyToInventory(GameTestHelper context) {
-        ServerPlayer player = makeSurvivalPlayer(context);
+        ServerPlayer player = makeEnabledSurvivalPlayer(context);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
         context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
 
@@ -42,8 +51,23 @@ public class TelekinesisGameTest {
     }
 
     @GameTest
+    public void blockExperienceGoesDirectlyToPlayer(GameTestHelper context) {
+        ServerPlayer player = makeEnabledSurvivalPlayer(context);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+        context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
+        int experienceBefore = player.totalExperience;
+
+        assertDestroyed(player, context.absolutePos(DROP_POS));
+        if (player.totalExperience <= experienceBefore) {
+            throw new AssertionError("Expected diamond ore experience to be awarded directly to the player.");
+        }
+        context.assertEntityNotPresent(EntityTypes.EXPERIENCE_ORB);
+        context.succeed();
+    }
+
+    @GameTest
     public void randomLootResultGoesDirectlyToInventory(GameTestHelper context) {
-        ServerPlayer player = makeSurvivalPlayer(context);
+        ServerPlayer player = makeEnabledSurvivalPlayer(context);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SHOVEL));
         context.setBlock(DROP_POS, Blocks.GRAVEL);
 
@@ -59,7 +83,7 @@ public class TelekinesisGameTest {
 
     @GameTest
     public void multipleUniqueContainerDropsGoDirectlyToInventory(GameTestHelper context) {
-        ServerPlayer player = makeSurvivalPlayer(context);
+        ServerPlayer player = makeEnabledSurvivalPlayer(context);
         context.setBlock(DROP_POS, Blocks.CHEST);
         ChestBlockEntity chest = context.getBlockEntity(DROP_POS, ChestBlockEntity.class);
         chest.setItem(0, new ItemStack(Items.DIAMOND, 3));
@@ -74,27 +98,40 @@ public class TelekinesisGameTest {
     }
 
     @GameTest
-    public void fullInventoryLeavesDropInWorld(GameTestHelper context) {
-        ServerPlayer player = makeSurvivalPlayer(context);
+    public void fullInventoryDropsRemainderAtPlayerFeet(GameTestHelper context) {
+        ServerPlayer player = makeEnabledSurvivalPlayer(context);
         for (int slot = 0; slot < player.getInventory().getNonEquipmentItems().size(); slot++) {
             player.getInventory().setItem(slot, new ItemStack(Items.STONE, 64));
         }
+        Vec3 playerPosition = Vec3.atBottomCenterOf(context.absolutePos(new BlockPos(4, 1, 1)));
+        player.setPos(playerPosition.x(), playerPosition.y(), playerPosition.z());
         context.setBlock(DROP_POS, Blocks.CHEST);
 
         assertDestroyed(player, context.absolutePos(DROP_POS));
         assertItemCount(player, Items.CHEST, 0);
-        context.assertItemEntityPresent(Items.CHEST);
+        ItemEntity remainder = context.getLevel().getEntitiesOfClass(
+                        ItemEntity.class,
+                        new AABB(playerPosition, playerPosition).inflate(1.0D)
+                ).stream()
+                .filter(itemEntity -> itemEntity.getItem().is(Items.CHEST))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Expected the chest remainder at the player's feet."));
+        if (remainder.position().distanceToSqr(player.position()) > 0.01D) {
+            throw new AssertionError("Expected overflow at the player's exact position, found " + remainder.position() + ".");
+        }
         context.succeed();
     }
 
     @GameTest
-    public void disabledGameRuleLeavesDropInWorld(GameTestHelper context) {
-        GameRules rules = context.getLevel().getGameRules();
-        boolean previousValue = rules.get(ModGameRules.ENABLE_TELEKINESIS);
-        rules.set(ModGameRules.ENABLE_TELEKINESIS, false, context.getLevel().getServer());
+    public void disabledServerConfigLeavesDropInWorld(GameTestHelper context) {
+        boolean previousValue = TelekinesisConfigManager.config().enabled();
+        if (!TelekinesisConfigManager.setEnabled(false)) {
+            throw new AssertionError("Expected the test to persist the disabled server setting.");
+        }
 
         try {
             ServerPlayer player = makeSurvivalPlayer(context);
+            TelekinesisPlayerSettings.setEnabled(player, true);
             player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
             context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
 
@@ -102,10 +139,36 @@ public class TelekinesisGameTest {
             assertItemCount(player, Items.DIAMOND, 0);
             context.assertItemEntityPresent(Items.DIAMOND);
         } finally {
-            rules.set(ModGameRules.ENABLE_TELEKINESIS, previousValue, context.getLevel().getServer());
+            TelekinesisConfigManager.setEnabled(previousValue);
         }
 
         context.succeed();
+    }
+
+    @GameTest
+    public void disabledPlayerPreferenceLeavesDropInWorld(GameTestHelper context) {
+        ServerPlayer player = makeSurvivalPlayer(context);
+        TelekinesisConfigManager.setEnabled(true);
+        TelekinesisPlayerSettings.setEnabled(player, false);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+        context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
+
+        try {
+            assertDestroyed(player, context.absolutePos(DROP_POS));
+            assertItemCount(player, Items.DIAMOND, 0);
+            context.assertItemEntityPresent(Items.DIAMOND);
+        } finally {
+            TelekinesisPlayerSettings.setEnabled(player, true);
+        }
+
+        context.succeed();
+    }
+
+    private static ServerPlayer makeEnabledSurvivalPlayer(GameTestHelper context) {
+        TelekinesisConfigManager.setEnabled(true);
+        ServerPlayer player = makeSurvivalPlayer(context);
+        TelekinesisPlayerSettings.setEnabled(player, true);
+        return player;
     }
 
     private static ServerPlayer makeSurvivalPlayer(GameTestHelper context) {
