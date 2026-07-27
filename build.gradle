@@ -1,66 +1,42 @@
 plugins {
-	id 'io.github.brainage04.client-gametest-recorder' version "${fabricmoddingconventions_version}"
-	id 'io.github.brainage04.production-gametests' version "${fabricmoddingconventions_version}"
-	id 'io.github.brainage04.workspace-dependencies' version "${fabricmoddingconventions_version}"
-	id 'io.github.brainage04.mod-publishing' version "${fabricmoddingconventions_version}"
+    id 'dev.architectury.loom-no-remap' version "${architectury_loom_version}" apply false
+    id 'dev.architectury.loom' version "${architectury_loom_version}" apply false
 }
 
-repositories {
-	mavenLocal()
-	mavenCentral()
-	ivy {
-		name = "BrainageLibGitHubReleases"
-		url = uri("https://github.com/brainage04/BrainageLib/releases/download")
-		patternLayout {
-			artifact "v[revision]/[artifact]-[revision].[ext]"
-		}
-		metadataSources {
-			artifact()
-		}
-		content {
-			includeModule "io.github.brainage04", "brainagelib"
-		}
-	}
+allprojects {
+    group = rootProject.maven_group
+    version = rootProject.mod_version
 }
 
-workspaceDependencies {
-	siblingMaven("FabricModdingConventions") {
-		coordinate.set("io.github.brainage04:fabricmoddingconventions:${project.fabricmoddingconventions_version}")
-	}
-	siblingMaven("BrainageLib") {
-		coordinate.set("io.github.brainage04:brainagelib:${project.brainagelib_version}")
-		siblingDirectory.set(rootProject.layout.projectDirectory.dir("../BrainageLib"))
-	}
+subprojects {
+    apply plugin: 'java'
+    base { archivesName = "${rootProject.archives_base_name}-${project.name}" }
+    repositories {
+        mavenLocal()
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.neoforged.net/releases/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        mavenCentral()
+        ivy {
+            name = 'BrainageLibGitHubReleases'
+            url = uri('https://github.com/brainage04/BrainageLib/releases/download')
+            patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeModule 'io.github.brainage04', 'brainagelib'; includeModule 'io.github.brainage04', 'brainagelib-neoforge' }
+        }
+    }
+    java { toolchain.languageVersion = JavaLanguageVersion.of(rootProject.java_version as int); withSourcesJar() }
+    tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = rootProject.java_version as int }
+    tasks.withType(ProcessResources).configureEach {
+        def properties = [version: rootProject.mod_version, minecraft_version: rootProject.minecraft_version, neoforge_version: rootProject.neoforge_version, brainagelib_version: rootProject.brainagelib_version]
+        inputs.properties(properties)
+        filesMatching('META-INF/neoforge.mods.toml') { expand(properties) }
+    }
 }
 
-fabricModConventions {
-	additionalFabricModJsonProperties.add("brainagelib_version")
-}
-
-dependencies {
-	implementation "io.github.brainage04:brainagelib:${project.brainagelib_version}"
-	productionRuntimeMods "io.github.brainage04:brainagelib:${project.brainagelib_version}"
-}
-productionGameTests {
-	includeClient.set(true)
-	clientUseXvfb.set(providers.environmentVariable("GTR_RECORDING_MANAGED_XVFB")
-			.map { value -> !value.toBoolean() }
-			.orElse(true))
-}
-
-clientGameTestRecorder {
-	runDir.set(layout.buildDirectory.dir("run/productionClientGameTest"))
-	guiScale.set("2")
-}
-
-tasks.named("recordClientGameTest") {
-	runTaskName.set("runProductionClientGameTest")
-}
-
-tasks.named("prepareClientGameTestRun") {
-	mustRunAfter("prepareProductionGameTestRuns")
-}
-
-tasks.matching { it.name == "runProductionClientGameTest" }.configureEach {
-	dependsOn("prepareClientGameTestRun")
-}
+tasks.register('runNeoForgeGameTests') { group = 'verification'; dependsOn ':neoforge:runGameTestServer' }
+tasks.register('runAllProductionGameTests') { group = 'verification'; dependsOn ':fabric:runAllProductionGameTests', ':neoforge:runGameTestServer' }
+def fabricJar = project(':fabric').tasks.named('jar', org.gradle.api.tasks.bundling.AbstractArchiveTask)
+def neoForgeJar = project(':neoforge').tasks.named('jar', org.gradle.api.tasks.bundling.AbstractArchiveTask)
+tasks.register('collectReleaseArtifacts', Sync) { dependsOn fabricJar, neoForgeJar; from fabricJar.flatMap { it.archiveFile }; from neoForgeJar.flatMap { it.archiveFile }; into layout.buildDirectory.dir('libs') }
+tasks.register('build') { group = 'build'; dependsOn subprojects.collect { it.tasks.named('build') }; dependsOn 'collectReleaseArtifacts' }
