@@ -16,6 +16,7 @@ workspaceDependencies {
 
 dependencies {
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    compileOnly "net.fabricmc:fabric-loader:${rootProject.loader_version}"
     compileOnly "io.github.brainage04:brainagelib:${rootProject.brainagelib_version}"
     testImplementation platform('org.junit:junit-bom:6.0.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
