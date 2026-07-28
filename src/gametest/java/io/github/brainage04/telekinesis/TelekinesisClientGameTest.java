@@ -6,7 +6,7 @@ import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -35,114 +35,111 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     public void runTest(ClientGameTestContext context) {
         Properties serverProperties = ClientGameTestServers.flatServerProperties();
 
-        try (TestDedicatedServerContext server = context.worldBuilder().createServer(serverProperties)) {
-            ClientGameTestServers.connectToDedicatedServer(context, server, "Telekinesis recording GameTest");
-            try {
-                boolean previousTelekinesis = server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    TelekinesisConfigManager.setEnabled(true);
-                    TelekinesisPlayerSettings.setEnabled(player, true);
-                    prepareStage(player.level(), player);
-                    return TelekinesisConfigManager.config().enabled();
-                });
-
-                context.runOnClient(client -> {
-                    if (client.player == null) {
-                        throw new AssertionError("Expected a connected client player for the recording.");
-                    }
-                    client.player.setYRot(180.0F);
-                    client.player.setXRot(12.0F);
-                });
-
-                try {
-                    context.waitTicks(30);
-                    ClientGameTestRecorder.startRecording(context);
-                    ClientGameTestRecorder.showStep(
-                            context,
-                            "telekinesis.stage",
-                            "Telekinesis",
-                            "Survival player on the elevated ore stage"
-                    );
-                    context.waitTicks(30);
-
-                    ClientGameTestRecorder.showStep(
-                            context,
-                            "telekinesis.ore",
-                            "Diamond ore",
-                            "Breaking ore sends its diamond directly to inventory"
-                    );
-                    server.computeOnServer(minecraftServer -> {
-                        ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                        ServerLevel level = player.level();
-                        destroy(player, ORE_POS);
-                        assertInventoryCount(player, Items.DIAMOND, 1);
-                        assertNoItemEntity(level, Items.DIAMOND);
-                        return null;
-                    });
-                    context.waitTicks(35);
-
-                    ClientGameTestRecorder.showStep(
-                            context,
-                            "telekinesis.chest",
-                            "Chest contents",
-                            "The chest and each unique contents stack go directly to inventory"
-                    );
-                    server.computeOnServer(minecraftServer -> {
-                        ServerLevel level = minecraftServer.getPlayerList().getPlayers().getFirst().level();
-                        level.setBlock(CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
-                        ChestBlockEntity chest = (ChestBlockEntity) level.getBlockEntity(CHEST_POS);
-                        if (chest == null) {
-                            throw new AssertionError("Expected the demonstration chest block entity.");
-                        }
-                        chest.setItem(0, new ItemStack(Items.DIAMOND, 3));
-                        chest.setItem(1, new ItemStack(Items.EMERALD, 2));
-                        return null;
-                    });
-                    context.waitTicks(25);
-                    ClientGameTestRecorder.showStep(
-                            context,
-                            "telekinesis.chest.break",
-                            "Chest contents",
-                            "Breaking the chest transfers every drop directly to inventory"
-                    );
-                    server.computeOnServer(minecraftServer -> {
-                        ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                        ServerLevel level = player.level();
-                        destroy(player, CHEST_POS);
-                        assertInventoryCount(player, Items.CHEST, 1);
-                        assertInventoryCount(player, Items.DIAMOND, 4);
-                        assertInventoryCount(player, Items.EMERALD, 2);
-                        assertNoItemEntities(level);
-                        return null;
-                    });
-                    context.waitTicks(35);
-
-                    ClientGameTestRecorder.showStep(
-                            context,
-                            "telekinesis.disabled",
-                            "Telekinesis disabled",
-                            "With the game rule off, the diamond remains in the world"
-                    );
-                    server.computeOnServer(minecraftServer -> {
-                        ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                        ServerLevel level = player.level();
-                        TelekinesisConfigManager.setEnabled(false);
-                        destroy(player, DISABLED_ORE_POS);
-                        assertInventoryCount(player, Items.DIAMOND, 4);
-                        assertItemEntityPresent(level, Items.DIAMOND);
-                        return null;
-                    });
-                    context.waitTicks(40);
-                } finally {
-                    server.computeOnServer(minecraftServer -> {
-                        TelekinesisConfigManager.setEnabled(previousTelekinesis);
-                        return null;
-                    });
+        ClientGameTestServers.withDedicatedServer(context, serverProperties, "Telekinesis recording GameTest", server -> { try {
+            boolean previousTelekinesis = server.computeOnServer(minecraftServer -> {
+                ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                TelekinesisConfigManager.setEnabled(true);
+                TelekinesisPlayerSettings.setEnabled(player, true);
+                prepareStage(player.level(), player);
+                return TelekinesisConfigManager.config().enabled();
+            });
+        
+            context.runOnClient(client -> {
+                if (client.player == null) {
+                    throw new AssertionError("Expected a connected client player for the recording.");
                 }
+                client.player.setYRot(180.0F);
+                client.player.setXRot(12.0F);
+            });
+        
+            try {
+                context.waitTicks(30);
+                ClientGameTestRecorder.startRecording(context);
+                ClientGameTestRecorder.showStep(
+                        context,
+                        "telekinesis.stage",
+                        "Telekinesis",
+                        "Survival player on the elevated ore stage"
+                );
+                context.waitTicks(30);
+        
+                ClientGameTestRecorder.showStep(
+                        context,
+                        "telekinesis.ore",
+                        "Diamond ore",
+                        "Breaking ore sends its diamond directly to inventory"
+                );
+                server.computeOnServer(minecraftServer -> {
+                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                    ServerLevel level = player.level();
+                    destroy(player, ORE_POS);
+                    assertInventoryCount(player, Items.DIAMOND, 1);
+                    assertNoItemEntity(level, Items.DIAMOND);
+                    return null;
+                });
+                context.waitTicks(35);
+        
+                ClientGameTestRecorder.showStep(
+                        context,
+                        "telekinesis.chest",
+                        "Chest contents",
+                        "The chest and each unique contents stack go directly to inventory"
+                );
+                server.computeOnServer(minecraftServer -> {
+                    ServerLevel level = minecraftServer.getPlayerList().getPlayers().getFirst().level();
+                    level.setBlock(CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
+                    ChestBlockEntity chest = (ChestBlockEntity) level.getBlockEntity(CHEST_POS);
+                    if (chest == null) {
+                        throw new AssertionError("Expected the demonstration chest block entity.");
+                    }
+                    chest.setItem(0, new ItemStack(Items.DIAMOND, 3));
+                    chest.setItem(1, new ItemStack(Items.EMERALD, 2));
+                    return null;
+                });
+                context.waitTicks(25);
+                ClientGameTestRecorder.showStep(
+                        context,
+                        "telekinesis.chest.break",
+                        "Chest contents",
+                        "Breaking the chest transfers every drop directly to inventory"
+                );
+                server.computeOnServer(minecraftServer -> {
+                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                    ServerLevel level = player.level();
+                    destroy(player, CHEST_POS);
+                    assertInventoryCount(player, Items.CHEST, 1);
+                    assertInventoryCount(player, Items.DIAMOND, 4);
+                    assertInventoryCount(player, Items.EMERALD, 2);
+                    assertNoItemEntities(level);
+                    return null;
+                });
+                context.waitTicks(35);
+        
+                ClientGameTestRecorder.showStep(
+                        context,
+                        "telekinesis.disabled",
+                        "Telekinesis disabled",
+                        "With the game rule off, the diamond remains in the world"
+                );
+                server.computeOnServer(minecraftServer -> {
+                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                    ServerLevel level = player.level();
+                    TelekinesisConfigManager.setEnabled(false);
+                    destroy(player, DISABLED_ORE_POS);
+                    assertInventoryCount(player, Items.DIAMOND, 4);
+                    assertItemEntityPresent(level, Items.DIAMOND);
+                    return null;
+                });
+                context.waitTicks(40);
             } finally {
-                ClientGameTestServers.disconnectFromDedicatedServer(context);
+                server.computeOnServer(minecraftServer -> {
+                    TelekinesisConfigManager.setEnabled(previousTelekinesis);
+                    return null;
+                });
             }
-        }
+        } finally {
+            ;
+        } });
     }
 
 
