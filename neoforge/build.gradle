@@ -25,7 +25,7 @@ modPublishing {
     licenseFile.set(rootProject.layout.projectDirectory.file('LICENSE'))
     modrinth.projectConfig.set(rootProject.layout.projectDirectory.file('.modrinth/project.json'))
     modrinth.projectBody.set(rootProject.layout.projectDirectory.file('README.md'))
-    modrinth.iconFile.set(rootProject.layout.projectDirectory.file('fabric/src/main/resources/assets/telekinesis/icon.png'))
+    modrinth.iconFile.set(rootProject.layout.projectDirectory.file('common/src/main/resources/assets/telekinesis/icon.png'))
 }
 tasks.named('validateModPublication') { dependsOn ':fabric:processResources' }
 dependencies { minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"; neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"; common(project(':common')) { transitive = false }; implementation "io.github.brainage04:brainagelib-neoforge:${rootProject.brainagelib_version}" }
