@@ -38,10 +38,11 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         ClientGameTestServers.withDedicatedServer(context, serverProperties, "Telekinesis recording GameTest", server -> { try {
             boolean previousTelekinesis = server.computeOnServer(minecraftServer -> {
                 ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                boolean enabled = TelekinesisConfigManager.config().enabled();
                 TelekinesisConfigManager.setEnabled(true);
                 TelekinesisPlayerSettings.setEnabled(player, true);
                 prepareStage(player.level(), player);
-                return TelekinesisConfigManager.config().enabled();
+                return enabled;
             });
         
             context.runOnClient(client -> {
