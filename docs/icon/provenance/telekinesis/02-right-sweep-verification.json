@@ -1,0 +1,142 @@
+{
+  "project": "telekinesis",
+  "label": "02-right-sweep",
+  "packed_images": 36,
+  "renderer": {
+    "Blender": "5.1.1",
+    "engine": "Cycles",
+    "device": "CPU",
+    "samples": 64,
+    "threads": 2,
+    "duration_seconds": 89.60136423099902,
+    "resolution": [
+      1024,
+      1024
+    ],
+    "noaudio": true,
+    "display_server": false,
+    "GPU_allocated": false,
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/render-blender.service",
+    "resource_policy": "Watchdog shared Blender cgroup: total cap 3 cores, CPUWeight 20."
+  },
+  "saved_camera": {
+    "location_blender_xyz": [
+      -0.07883429527282715,
+      -2.3182220458984375,
+      3.5
+    ],
+    "rotation_euler_radians_xyz": [
+      0.7649927735328674,
+      -2.565452206226837e-08,
+      0.2617994248867035
+    ],
+    "rotation_euler_degrees_xyz": [
+      43.830857281440494,
+      -1.4698958395932345e-06,
+      15.00000212496032
+    ],
+    "matrix_world": [
+      [
+        0.9659258127212524,
+        -0.18670883774757385,
+        0.179240420460701,
+        -0.07883429527282715
+      ],
+      [
+        0.2588190734386444,
+        0.6968066692352295,
+        -0.6689343452453613,
+        -2.3182220458984375
+      ],
+      [
+        2.565452206226837e-08,
+        0.6925317645072937,
+        0.7213873863220215,
+        3.5
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "projection": "PERSP",
+    "lens_mm": 24.0,
+    "sensor_width_mm": 36.0,
+    "sensor_height_mm": 24.0,
+    "sensor_fit": "HORIZONTAL",
+    "shift_x": 0.0,
+    "shift_y": 0.0,
+    "clip_start": 0.05000000074505806,
+    "clip_end": 150.0,
+    "horizontal_fov_degrees": 73.73979461915735
+  },
+  "geometry": {
+    "player_bbox": [
+      0.15828455984592438,
+      0.30058640241622925,
+      0.40120023488998413,
+      0.6613819599151611
+    ],
+    "zombie_bbox": [
+      0.44509366154670715,
+      0.08123859763145447,
+      0.9107182621955872,
+      0.3951270282268524
+    ],
+    "skeleton_bbox": [
+      0.5174075365066528,
+      0.3820982873439789,
+      0.8779209852218628,
+      0.5279796719551086
+    ],
+    "XP": [
+      {
+        "name": "Vanilla XP camera billboard 0",
+        "normal_camera_dot": 1.0000000447034836,
+        "visible": true,
+        "bbox": [
+          0.5137746334075928,
+          0.2350946068763733,
+          0.5812943577766418,
+          0.30261433124542236
+        ]
+      },
+      {
+        "name": "Vanilla XP camera billboard 1",
+        "normal_camera_dot": 1.0000000447034836,
+        "visible": true,
+        "bbox": [
+          0.6929659247398376,
+          0.5326213240623474,
+          0.7485902905464172,
+          0.588245689868927
+        ]
+      },
+      {
+        "name": "Vanilla XP camera billboard 2",
+        "normal_camera_dot": 1.0000000447034836,
+        "visible": true,
+        "bbox": [
+          0.3515318036079407,
+          0.41459646821022034,
+          0.41815391182899475,
+          0.481218546628952
+        ]
+      }
+    ],
+    "fancy_items": [],
+    "Steve_yaw_degrees": 102.00000283840859
+  },
+  "construction_payload_sha256": "253650117a3a5405b2072265d3b1b4e4d74dbf659720511cd8d744f06e41c69a",
+  "non_camera_payload_sha256": "53bff809a3b55122681488b83b51667be747e636a4a4f163d72ecf2db4f74908",
+  "PNG": {
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "sha256": "ce455da29766644688936df069b6eef0144121ed2871b9618bc8633b8b299b81",
+    "RGB_variance": 0.03433786169798934
+  }
+}

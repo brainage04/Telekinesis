@@ -1,0 +1,304 @@
+{
+  "project": "telekinesis",
+  "label": "02-right-sweep",
+  "source_blend_sha256": "69da3ce9a5de6e81083249820f8213f77a8183d404dbc49566f29db533c3b25d",
+  "camera": {
+    "azimuth_delta_degrees": 10,
+    "elevation_delta_degrees": 0,
+    "distance_multiplier": 1,
+    "look_at_blender_xyz": [
+      -0.699999988079071,
+      0.0,
+      1.0
+    ],
+    "location_blender_xyz": [
+      -0.07883429527282715,
+      -2.3182220458984375,
+      3.5
+    ],
+    "rotation_euler_radians_xyz": [
+      0.7649927735328674,
+      -2.565452206226837e-08,
+      0.2617994248867035
+    ],
+    "rotation_euler_degrees_xyz": [
+      43.830857281440494,
+      -1.4698958395932345e-06,
+      15.00000212496032
+    ],
+    "matrix_world": [
+      [
+        0.9659258127212524,
+        -0.18670883774757385,
+        0.179240420460701,
+        -0.07883429527282715
+      ],
+      [
+        0.2588190734386444,
+        0.6968066692352295,
+        -0.6689343452453613,
+        -2.3182220458984375
+      ],
+      [
+        2.565452206226837e-08,
+        0.6925317645072937,
+        0.7213873863220215,
+        3.5
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "projection": "PERSP",
+    "lens_mm": 24.0,
+    "sensor_width_mm": 36.0,
+    "sensor_height_mm": 24.0,
+    "sensor_fit": "HORIZONTAL",
+    "shift_x": 0.0,
+    "shift_y": 0.0,
+    "clip_start": 0.05000000074505806,
+    "clip_end": 150.0,
+    "horizontal_fov_degrees": 73.73979461915735
+  },
+  "geometry": {
+    "player_bbox": [
+      0.15828455984592438,
+      0.30058640241622925,
+      0.40120023488998413,
+      0.6613819599151611
+    ],
+    "zombie_bbox": [
+      0.44509366154670715,
+      0.08123859763145447,
+      0.9107182621955872,
+      0.3951270282268524
+    ],
+    "skeleton_bbox": [
+      0.5174075365066528,
+      0.3820982873439789,
+      0.8779209852218628,
+      0.5279796719551086
+    ],
+    "XP": [
+      {
+        "name": "Vanilla XP camera billboard 0",
+        "normal_camera_dot": 1.0000000447034836,
+        "visible": true,
+        "bbox": [
+          0.5137746334075928,
+          0.2350946068763733,
+          0.5812943577766418,
+          0.30261433124542236
+        ]
+      },
+      {
+        "name": "Vanilla XP camera billboard 1",
+        "normal_camera_dot": 1.0000000447034836,
+        "visible": true,
+        "bbox": [
+          0.6929659247398376,
+          0.5326213240623474,
+          0.7485902905464172,
+          0.588245689868927
+        ]
+      },
+      {
+        "name": "Vanilla XP camera billboard 2",
+        "normal_camera_dot": 1.0000000447034836,
+        "visible": true,
+        "bbox": [
+          0.3515318036079407,
+          0.41459646821022034,
+          0.41815391182899475,
+          0.481218546628952
+        ]
+      }
+    ],
+    "fancy_items": [],
+    "Steve_yaw_degrees": 102.00000283840859
+  },
+  "source_non_camera_payload_sha256": "6f09467607cd2de602518288da4823ce4dbb00117ecae144f9fa8b7b3668f6ef",
+  "variant_non_camera_payload_sha256": "253650117a3a5405b2072265d3b1b4e4d74dbf659720511cd8d744f06e41c69a",
+  "only_common_source_addition": "Identical COPY_ROTATION constraints on the three XP billboards; raw source transforms, meshes, UVs, materials, lights, world and rendering values unchanged.",
+  "packed_textures": [
+    {
+      "name": "azalea_plant.png",
+      "sha256": "6c8ce38013e6ae0e3ebd7ecb712a53ce35b91bdd5bd382c7b627870690bcd51a"
+    },
+    {
+      "name": "azalea_side.png",
+      "sha256": "dda7fa2de1ac92d112cf7df5fc0b82c544cb265d885c288c603abbda6c4cb497"
+    },
+    {
+      "name": "azalea_top.png",
+      "sha256": "e41d6a29fe0f65a19cb3fcbfd248526bde1c04abdb4ae163621f064c1c44e395"
+    },
+    {
+      "name": "bone.png",
+      "sha256": "acc1fb127f3f1139e51e748ee8b259eebac8f1ad369b33bd9643246ee96ae62d"
+    },
+    {
+      "name": "bone.png.001",
+      "sha256": "acc1fb127f3f1139e51e748ee8b259eebac8f1ad369b33bd9643246ee96ae62d"
+    },
+    {
+      "name": "cave_vines.png",
+      "sha256": "102a2725691436bb721e42c692f615c1035a81da3958d8718766bd18dffdd9a6"
+    },
+    {
+      "name": "cave_vines_lit.png",
+      "sha256": "12c52ce43d666be83db0d3bd8e01ea9de1e6529ae5ee36d9f3d058f24fae5b00"
+    },
+    {
+      "name": "cave_vines_plant.png",
+      "sha256": "85fb79c512e159ffbeb7f9f412f5eaa1d725466975b728034267a0b3910f5606"
+    },
+    {
+      "name": "cave_vines_plant_lit.png",
+      "sha256": "8521c74a148da3266101aa6ef6e3e00da044b5d197ff9f30d9aa2a0ed651e62c"
+    },
+    {
+      "name": "clay.png",
+      "sha256": "b07491d561b5814961019829cc802a4ec5ad8cc66a9075572364eacc51350c58"
+    },
+    {
+      "name": "deepslate.png",
+      "sha256": "dc72c722bec23c929817fab7cc56e08e5e828ae3607fbfb7e7730e68b67d4cfc"
+    },
+    {
+      "name": "deepslate_diamond_ore.png",
+      "sha256": "0acd146e99716a104c6053198fa51fe0d1ef464501c123ae9a56ba3f6f957dd7"
+    },
+    {
+      "name": "deepslate_gold_ore.png",
+      "sha256": "ae0e8aec748e94a966e35b06a171aef39d208c651d77f68d47b459d250305854"
+    },
+    {
+      "name": "deepslate_iron_ore.png",
+      "sha256": "63ea4e6794a98251c475a160ee889273cfccfb37fd3c5098b24b6dc4d34113c0"
+    },
+    {
+      "name": "deepslate_redstone_ore.png",
+      "sha256": "ebfe512c3840e87f55d2bd64c0e6ba38a2b426fb9b6d12f51e2034afd89b17c3"
+    },
+    {
+      "name": "deepslate_top.png",
+      "sha256": "9f2f5e0a67b4a007244cf7064e09da7e693322cfd21b1884190bcd6b26e91aec"
+    },
+    {
+      "name": "diamond_sword.png",
+      "sha256": "5634a8cb79a70beb306210de9ec492fc2d4dc8f739372683e9882ef06bf63008"
+    },
+    {
+      "name": "experience_orb.png",
+      "sha256": "fe55d3823ae0f2c8114e051ae26a38d48808abc31a514401047ed08862ac8ec0"
+    },
+    {
+      "name": "experience_orb.png.001",
+      "sha256": "fe55d3823ae0f2c8114e051ae26a38d48808abc31a514401047ed08862ac8ec0"
+    },
+    {
+      "name": "flowering_azalea_side.png",
+      "sha256": "6f620b0436cb72a7845f22046670aeccbc9bc63f6d594fd3e05c10639e76bdad"
+    },
+    {
+      "name": "flowering_azalea_top.png",
+      "sha256": "cb276e1f266d770dd33fa89a95b87da96adf8935ea9573977433fb18c9cc6ece"
+    },
+    {
+      "name": "glow_lichen.png",
+      "sha256": "2ceca88f67b0d3275e222191738902984a374d4872cfce8926973ad7b193f0d2"
+    },
+    {
+      "name": "gravel.png",
+      "sha256": "bc1558fa64b238fabca4cc957e61c232337d410495784b106676bf73e52e16e0"
+    },
+    {
+      "name": "inferium_ore.png",
+      "sha256": "4d2a448d99c663af4710a6b993c09ac678c3d5cdd912bfb08c5430255c041b90"
+    },
+    {
+      "name": "moss_block.png",
+      "sha256": "863aae6a09178ccd3700c7ee6e3e9f2448e99f51cbbd8c157dd0126f8c749c80"
+    },
+    {
+      "name": "prosperity_ore.png",
+      "sha256": "210c8fc279d68d9e5d31e492eac428e839a33defef695105092e1049a9a6ec7c"
+    },
+    {
+      "name": "rotten_flesh.png",
+      "sha256": "9168edab9a9063ee23340fedd2bbf31f85aed2bd42c3fedf527dba24629d48e8"
+    },
+    {
+      "name": "rotten_flesh.png.001",
+      "sha256": "9168edab9a9063ee23340fedd2bbf31f85aed2bd42c3fedf527dba24629d48e8"
+    },
+    {
+      "name": "short_grass.png",
+      "sha256": "40e2ad5d034d0ffc58b4c496c0badfa2104e0fc1888fc92c5f9bd79dcd84cb20"
+    },
+    {
+      "name": "skeleton.png",
+      "sha256": "854dd39acb1d8852db3b9e5d3d2bdc032070e37f421b53661ff48d0c1ddf290a"
+    },
+    {
+      "name": "steve.png",
+      "sha256": "06628f9cef88520da742ab280a01677ce17c99717f964ed89ed791673121094c"
+    },
+    {
+      "name": "tall_grass_bottom.png",
+      "sha256": "30d9b656f406ab5231bc39dfb1c08e6f4b1d275cf242e699a750e358eeed4194"
+    },
+    {
+      "name": "tall_grass_top.png",
+      "sha256": "16cfd90e32fb04756fd0cfbd652ae358d545a069a9ed22cbb390ec5bf3f17f1a"
+    },
+    {
+      "name": "torch.png",
+      "sha256": "1e0a18d6a5f4e839f07b3a7cbe2703f98d7db1c65eb1c96e1e575eec61410e16"
+    },
+    {
+      "name": "tuff.png",
+      "sha256": "a9e5466e34449fb0c73de64341e38a6bef1bcb16efba2a387a5ad6700af2cd90"
+    },
+    {
+      "name": "zombie.png",
+      "sha256": "1b88eea9b63889c2c3399773f887af375defc3aad0e7a375adc84249da54cbbd"
+    }
+  ],
+  "reproduction": {
+    "wrapper": "02-right-sweep.py",
+    "implementation": "../render_variants.py",
+    "implementation_sha256": "f88a9b1f7db39b9d03cdca23a2f6a1e9af23275df6d45cde9d6914e33f8bdbed",
+    "command": "nix shell nixpkgs#blender --command blender --background -noaudio --python 02-right-sweep.py",
+    "script_policy": "Saved local-only script; no portfolio commit or tracked-file edits."
+  },
+  "renderer": {
+    "Blender": "5.1.1",
+    "engine": "Cycles",
+    "device": "CPU",
+    "samples": 64,
+    "threads": 2,
+    "duration_seconds": 89.60136423099902,
+    "resolution": [
+      1024,
+      1024
+    ],
+    "noaudio": true,
+    "display_server": false,
+    "GPU_allocated": false,
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/render-blender.service",
+    "resource_policy": "Watchdog shared Blender cgroup: total cap 3 cores, CPUWeight 20."
+  },
+  "PNG": {
+    "sha256": "ce455da29766644688936df069b6eef0144121ed2871b9618bc8633b8b299b81",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "sample_variance": 0.0386776462643559
+  }
+}
