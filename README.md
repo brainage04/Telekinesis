@@ -6,7 +6,7 @@ Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.2 that pla
 
 - Minecraft 26.2
 - Fabric Loader 0.19.3 or newer with Fabric API, or NeoForge 26.2.0.23-beta or newer
-- BrainageLib 1.0.0 or newer for the matching loader
+- BrainageLib 1.0.1 or newer for the matching loader
 - Java 25 or newer
 
 ## Migrating from the Fabric-only release
