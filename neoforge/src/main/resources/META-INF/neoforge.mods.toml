@@ -7,7 +7,7 @@ modId="telekinesis"
 version="${version}"
 displayName="Telekinesis"
 description='''Automatically places player-mined block drops into the player's inventory.'''
-logoFile="assets/telekinesis/icon.png"
+iconFile="assets/telekinesis/icon.png"
 
 [[dependencies.telekinesis]]
 modId="neoforge"
