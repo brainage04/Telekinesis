@@ -1,6 +1,7 @@
 modLoader="javafml"
 loaderVersion="[11,)"
 license="MIT"
+issueTrackerURL="https://github.com/brainage04/Telekinesis/issues"
 
 [[mods]]
 modId="telekinesis"
@@ -8,6 +9,8 @@ version="${version}"
 displayName="Telekinesis"
 description='''Automatically places player-mined block drops into the player's inventory.'''
 iconFile="assets/telekinesis/icon.png"
+authors="brainage04"
+displayURL="https://github.com/brainage04/Telekinesis"
 
 [[dependencies.telekinesis]]
 modId="neoforge"

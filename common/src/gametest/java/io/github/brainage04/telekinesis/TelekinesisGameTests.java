@@ -18,10 +18,17 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-public final class TelekinesisGameTest {
+/**
+ * Loader-neutral server GameTest bodies. Both loaders compile this source set into their GameTest
+ * mods: Fabric runs them through {@code @GameTest} methods, NeoForge through registered test
+ * functions and {@code test_instance} data.
+ */
+public final class TelekinesisGameTests {
     private static final BlockPos DROP_POS = new BlockPos(1, 1, 1);
 
-    
+    private TelekinesisGameTests() {
+    }
+
     public static void commandIsRegistered(GameTestHelper context) {
         var command = context.getLevel().getServer().getCommands().getDispatcher().getRoot()
                 .getChild(TelekinesisCommand.COMMAND_NAME);
@@ -37,7 +44,6 @@ public final class TelekinesisGameTest {
         context.succeed();
     }
 
-    
     public static void minedBlockDropGoesDirectlyToInventory(GameTestHelper context) {
         ServerPlayer player = makeEnabledSurvivalPlayer(context);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
@@ -49,7 +55,6 @@ public final class TelekinesisGameTest {
         context.succeed();
     }
 
-    
     public static void blockExperienceGoesDirectlyToPlayer(GameTestHelper context) {
         ServerPlayer player = makeEnabledSurvivalPlayer(context);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
@@ -64,7 +69,6 @@ public final class TelekinesisGameTest {
         context.succeed();
     }
 
-    
     public static void randomLootResultGoesDirectlyToInventory(GameTestHelper context) {
         ServerPlayer player = makeEnabledSurvivalPlayer(context);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SHOVEL));
@@ -80,7 +84,6 @@ public final class TelekinesisGameTest {
         context.succeed();
     }
 
-    
     public static void multipleUniqueContainerDropsGoDirectlyToInventory(GameTestHelper context) {
         ServerPlayer player = makeEnabledSurvivalPlayer(context);
         context.setBlock(DROP_POS, Blocks.CHEST);
@@ -96,7 +99,6 @@ public final class TelekinesisGameTest {
         context.succeed();
     }
 
-    
     public static void fullInventoryDropsRemainderAtPlayerFeet(GameTestHelper context) {
         ServerPlayer player = makeEnabledSurvivalPlayer(context);
         for (int slot = 0; slot < player.getInventory().getNonEquipmentItems().size(); slot++) {
@@ -121,7 +123,6 @@ public final class TelekinesisGameTest {
         context.succeed();
     }
 
-    
     public static void disabledServerConfigLeavesDropInWorld(GameTestHelper context) {
         boolean previousValue = TelekinesisConfigManager.config().enabled();
         if (!TelekinesisConfigManager.setEnabled(false)) {
@@ -144,7 +145,6 @@ public final class TelekinesisGameTest {
         context.succeed();
     }
 
-    
     public static void disabledPlayerPreferenceLeavesDropInWorld(GameTestHelper context) {
         ServerPlayer player = makeSurvivalPlayer(context);
         TelekinesisConfigManager.setEnabled(true);
