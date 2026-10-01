@@ -1,6 +1,6 @@
 {
   "environment": "minecraft:default",
-  "structure": "minecraft:empty",
+  "structure":"fabricmoddingconventions:empty",
   "max_ticks": 20,
   "type": "minecraft:function",
   "function": "telekinesis:disabled_server_config_leaves_drop_in_world"
