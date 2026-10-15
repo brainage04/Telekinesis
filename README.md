@@ -9,13 +9,6 @@ Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.2 that pla
 - BrainageLib 1.0.1 or newer for the matching loader
 - Java 25 or newer
 
-## Migrating from the Fabric-only release
-
-- Install exactly one matching loader JAR: `telekinesis-<version>.jar` for Fabric or `telekinesis-neoforge-<version>.jar` for NeoForge. Remove the old Telekinesis JAR before switching loaders.
-- Telekinesis remains server-side; vanilla clients do not install it. Install the matching Fabric or NeoForge BrainageLib release on the server.
-- The mod ID remains `telekinesis`, and the existing `config/telekinesis.json` plus per-world `telekinesis-players.json` data paths are preserved.
-- Maintainers can produce both loader artifacts with root `./gradlew build`; they are collected under `build/libs`.
-
 ## Behavior
 
 - Uses Minecraft's actual block-loot result, preserving Fortune, Silk Touch, random loot, block-entity contents, and modded loot tables.
