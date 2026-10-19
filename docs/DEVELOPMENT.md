@@ -48,3 +48,11 @@ Fabric client check. There is no custom rendering, gamerule, config screen or ke
 
 Still manual: actual Vein Miner/modded-loot integration, Fortune's random distribution,
 NeoForge client presentation, and preference persistence across a separate process.
+
+## Preference-file recovery
+
+Unreadable or unsupported-schema `telekinesis-players.json` files are left intact.
+Personal commands still apply in memory and report that saving failed. Repair or
+restore the file and restart the server before expecting preferences to persist.
+A shared regression test checks malformed JSON and a newer schema through both
+production lifecycle callbacks, including command-time save and shutdown.

@@ -79,4 +79,9 @@ public class TelekinesisGameTest {
     public void preferencesSurviveServerLifecycle(GameTestHelper context) {
         TelekinesisBehaviorGameTests.preferencesSurviveServerLifecycle(context);
     }
+
+    @GameTest
+    public void unreadablePreferencesAreNotOverwritten(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.unreadablePreferencesAreNotOverwritten(context);
+    }
 }

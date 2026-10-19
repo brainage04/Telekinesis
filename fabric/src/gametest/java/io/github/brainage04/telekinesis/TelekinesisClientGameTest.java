@@ -35,7 +35,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     public void runTest(ClientGameTestContext context) {
         Properties serverProperties = ClientGameTestServers.flatServerProperties();
 
-        ClientGameTestServers.withDedicatedServer(context, serverProperties, "Telekinesis recording GameTest", server -> { try {
+        ClientGameTestServers.withDedicatedServer(context, serverProperties, "Telekinesis recording GameTest", server -> {
             boolean previousTelekinesis = server.computeOnServer(minecraftServer -> {
                 ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
                 boolean enabled = TelekinesisConfigManager.config().enabled();
@@ -120,7 +120,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                         context,
                         "telekinesis.disabled",
                         "Telekinesis disabled",
-                        "With the game rule off, the diamond remains in the world"
+                        "With the server setting off, the diamond remains in the world"
                 );
                 server.computeOnServer(minecraftServer -> {
                     ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
@@ -138,9 +138,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     return null;
                 });
             }
-        } finally {
-            ;
-        } });
+        });
     }
 
 

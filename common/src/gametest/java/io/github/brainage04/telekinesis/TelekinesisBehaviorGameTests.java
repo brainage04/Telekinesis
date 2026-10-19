@@ -21,9 +21,12 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -187,6 +190,33 @@ public final class TelekinesisBehaviorGameTests {
         } finally {
             callbacks.started.accept(server);
             TelekinesisPlayerSettings.setEnabled(player, previous);
+        }
+        helper.succeed();
+    }
+
+    public static void unreadablePreferencesAreNotOverwritten(GameTestHelper helper) {
+        LifecycleCallbacks callbacks = new LifecycleCallbacks();
+        TelekinesisPlayerSettings.initialize(callbacks);
+        MinecraftServer server = helper.getLevel().getServer();
+        Path file = server.getWorldPath(LevelResource.ROOT).resolve("telekinesis-players.json");
+        ServerPlayer player = player(helper);
+        try {
+            byte[] original = Files.readAllBytes(file);
+            try {
+                for (String document : new String[]{"{broken", "{\"schemaVersion\":2,\"players\":{}}"}) {
+                    Files.writeString(file, document);
+                    callbacks.started.accept(server);
+                    check(!TelekinesisPlayerSettings.setEnabled(player, false), "Unreadable state must not be replaced by a preference command");
+                    check(!TelekinesisPlayerSettings.isEnabled(player), "The unsaved preference must still apply this session");
+                    callbacks.stopping.accept(server);
+                    check(Files.readString(file).equals(document), "Shutdown must preserve unreadable or newer-schema state");
+                }
+            } finally {
+                Files.write(file, original);
+                callbacks.started.accept(server);
+            }
+        } catch (IOException exception) {
+            throw new AssertionError("Could not exercise preference file recovery", exception);
         }
         helper.succeed();
     }

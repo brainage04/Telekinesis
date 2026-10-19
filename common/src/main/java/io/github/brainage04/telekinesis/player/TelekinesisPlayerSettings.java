@@ -27,6 +27,7 @@ public final class TelekinesisPlayerSettings {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Map<UUID, PlayerPreference> PREFERENCES = new HashMap<>();
     private static Path statePath;
+    private static boolean canSave;
 
     private TelekinesisPlayerSettings() {
     }
@@ -38,6 +39,7 @@ public final class TelekinesisPlayerSettings {
             synchronized (TelekinesisPlayerSettings.class) {
                 PREFERENCES.clear();
                 statePath = null;
+                canSave = false;
             }
         });
     }
@@ -59,16 +61,13 @@ public final class TelekinesisPlayerSettings {
         return save();
     }
 
-    public static synchronized boolean toggle(ServerPlayer player) {
-        boolean enabled = !isEnabled(player);
-        setEnabled(player, enabled);
-        return enabled;
-    }
 
     private static synchronized void load(MinecraftServer server) {
         statePath = server.getWorldPath(LevelResource.ROOT).resolve(FILE_NAME);
+        canSave = false;
         PREFERENCES.clear();
         if (!Files.exists(statePath)) {
+            canSave = true;
             save();
             return;
         }
@@ -89,13 +88,14 @@ public final class TelekinesisPlayerSettings {
                     Telekinesis.LOGGER.warn("Ignoring invalid player UUID in {}: {}", statePath, entry.getKey());
                 }
             }
+            canSave = true;
         } catch (IOException | JsonParseException exception) {
             Telekinesis.LOGGER.error("Failed to load Telekinesis player settings from {}", statePath, exception);
         }
     }
 
     private static synchronized boolean save() {
-        if (statePath == null) {
+        if (statePath == null || !canSave) {
             return false;
         }
 

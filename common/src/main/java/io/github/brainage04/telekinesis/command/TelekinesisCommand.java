@@ -123,9 +123,9 @@ public final class TelekinesisCommand {
 
     private static int showHelp(CommandSourceStack source) {
         FEEDBACK.neutral(source, "Player commands:");
-        FEEDBACK.neutral(source, "/telekinesis status — show server, personal, and effective states");
-        FEEDBACK.neutral(source, "/telekinesis <enable|disable|toggle> — change your persistent preference");
-        FEEDBACK.neutral(source, "/telekinesis config — operator-only server-wide configuration");
+        FEEDBACK.neutral(source, "/telekinesis status – show server, personal, and effective states");
+        FEEDBACK.neutral(source, "/telekinesis <enable|disable|toggle> – change your persistent preference");
+        FEEDBACK.neutral(source, "/telekinesis config – operator-only server-wide configuration");
         return 1;
     }
 
