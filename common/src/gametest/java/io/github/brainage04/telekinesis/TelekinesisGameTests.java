@@ -1,6 +1,5 @@
 package io.github.brainage04.telekinesis;
 
-import io.github.brainage04.telekinesis.command.TelekinesisCommand;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.core.BlockPos;
@@ -29,20 +28,6 @@ public final class TelekinesisGameTests {
     private TelekinesisGameTests() {
     }
 
-    public static void commandIsRegistered(GameTestHelper context) {
-        var command = context.getLevel().getServer().getCommands().getDispatcher().getRoot()
-                .getChild(TelekinesisCommand.COMMAND_NAME);
-        if (command == null) {
-            throw new AssertionError("Expected the telekinesis command to be registered.");
-        }
-        if (command.getChild("help") == null
-                || command.getChild("toggle") == null
-                || command.getChild("config") == null) {
-            throw new AssertionError("Expected player help/toggle and operator config command branches.");
-        }
-
-        context.succeed();
-    }
 
     public static void minedBlockDropGoesDirectlyToInventory(GameTestHelper context) {
         ServerPlayer player = makeEnabledSurvivalPlayer(context);

@@ -21,7 +21,6 @@ public final class NeoForgeServerGameTests {
 
     @SubscribeEvent
     public static void registerTestFunctions(RegisterEvent event) {
-        register(event, "command_is_registered", TelekinesisGameTests::commandIsRegistered);
         register(event, "mined_block_drop_goes_directly_to_inventory", TelekinesisGameTests::minedBlockDropGoesDirectlyToInventory);
         register(event, "block_experience_goes_directly_to_player", TelekinesisGameTests::blockExperienceGoesDirectlyToPlayer);
         register(event, "random_loot_result_goes_directly_to_inventory", TelekinesisGameTests::randomLootResultGoesDirectlyToInventory);

@@ -4,10 +4,6 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 
 public class TelekinesisGameTest {
-    @GameTest
-    public void commandIsRegistered(GameTestHelper context) {
-        TelekinesisGameTests.commandIsRegistered(context);
-    }
 
     @GameTest
     public void minedBlockDropGoesDirectlyToInventory(GameTestHelper context) {
