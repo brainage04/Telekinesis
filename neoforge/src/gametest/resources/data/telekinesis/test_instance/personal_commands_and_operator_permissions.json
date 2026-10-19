@@ -1,0 +1,7 @@
+{
+  "environment": "minecraft:default",
+  "structure": "fabricmoddingconventions:empty",
+  "max_ticks": 20,
+  "type": "minecraft:function",
+  "function": "telekinesis:personal_commands_and_operator_permissions"
+}

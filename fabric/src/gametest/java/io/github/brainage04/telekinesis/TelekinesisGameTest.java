@@ -39,4 +39,44 @@ public class TelekinesisGameTest {
     public void disabledPlayerPreferenceLeavesDropInWorld(GameTestHelper context) {
         TelekinesisGameTests.disabledPlayerPreferenceLeavesDropInWorld(context);
     }
+
+    @GameTest
+    public void personalCommandsAndOperatorPermissions(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.personalCommandsAndOperatorPermissions(context);
+    }
+
+    @GameTest
+    public void operatorCommandsSaveAndReload(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.operatorCommandsSaveAndReload(context);
+    }
+
+    @GameTest
+    public void partialInventoryConservesOverflow(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.partialInventoryConservesOverflow(context);
+    }
+
+    @GameTest
+    public void silkTouchPreservesLootAndSuppressesExperience(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.silkTouchPreservesLootAndSuppressesExperience(context);
+    }
+
+    @GameTest
+    public void experienceRepairsMendingBeforeAwardingPoints(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.experienceRepairsMendingBeforeAwardingPoints(context);
+    }
+
+    @GameTest
+    public void unrelatedSpawnsRemainInWorldAfterBreak(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.unrelatedSpawnsRemainInWorldAfterBreak(context);
+    }
+
+    @GameTest
+    public void nestedBreaksRestoreOuterPlayer(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.nestedBreaksRestoreOuterPlayer(context);
+    }
+
+    @GameTest
+    public void preferencesSurviveServerLifecycle(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.preferencesSurviveServerLifecycle(context);
+    }
 }

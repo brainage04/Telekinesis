@@ -1,6 +1,7 @@
 package io.github.brainage04.telekinesis.neoforge;
 
 import io.github.brainage04.telekinesis.Telekinesis;
+import io.github.brainage04.telekinesis.TelekinesisBehaviorGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
 import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -28,6 +29,14 @@ public final class NeoForgeServerGameTests {
         register(event, "full_inventory_drops_remainder_at_player_feet", TelekinesisGameTests::fullInventoryDropsRemainderAtPlayerFeet);
         register(event, "disabled_server_config_leaves_drop_in_world", TelekinesisGameTests::disabledServerConfigLeavesDropInWorld);
         register(event, "disabled_player_preference_leaves_drop_in_world", TelekinesisGameTests::disabledPlayerPreferenceLeavesDropInWorld);
+        register(event, "personal_commands_and_operator_permissions", TelekinesisBehaviorGameTests::personalCommandsAndOperatorPermissions);
+        register(event, "operator_commands_save_and_reload", TelekinesisBehaviorGameTests::operatorCommandsSaveAndReload);
+        register(event, "partial_inventory_conserves_overflow", TelekinesisBehaviorGameTests::partialInventoryConservesOverflow);
+        register(event, "silk_touch_preserves_loot_and_suppresses_experience", TelekinesisBehaviorGameTests::silkTouchPreservesLootAndSuppressesExperience);
+        register(event, "experience_repairs_mending_before_awarding_points", TelekinesisBehaviorGameTests::experienceRepairsMendingBeforeAwardingPoints);
+        register(event, "unrelated_spawns_remain_in_world_after_break", TelekinesisBehaviorGameTests::unrelatedSpawnsRemainInWorldAfterBreak);
+        register(event, "nested_breaks_restore_outer_player", TelekinesisBehaviorGameTests::nestedBreaksRestoreOuterPlayer);
+        register(event, "preferences_survive_server_lifecycle", TelekinesisBehaviorGameTests::preferencesSurviveServerLifecycle);
     }
 
     private static void register(RegisterEvent event, String path, Consumer<GameTestHelper> function) {
