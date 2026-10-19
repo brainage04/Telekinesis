@@ -1,6 +1,6 @@
 {
   "environment": "minecraft:default",
-  "structure":"fabricmoddingconventions:empty",
+  "structure":"minecraftmodconventions:empty",
   "max_ticks": 20,
   "type": "minecraft:function",
   "function": "telekinesis:multiple_unique_container_drops_go_directly_to_inventory"
