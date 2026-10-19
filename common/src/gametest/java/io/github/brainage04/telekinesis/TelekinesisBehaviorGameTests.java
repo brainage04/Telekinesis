@@ -6,12 +6,17 @@ import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.drop.BlockDropCapture;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
+import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -41,6 +46,11 @@ public final class TelekinesisBehaviorGameTests {
         ServerPlayer player = player(helper);
         boolean previousGlobal = TelekinesisConfigManager.config().enabled();
         boolean previousPersonal = TelekinesisPlayerSettings.isEnabled(player);
+        Connection connection = new Connection(PacketFlow.SERVERBOUND);
+        EmbeddedChannel channel = new EmbeddedChannel(connection);
+        player.connection = new ServerGamePacketListenerImpl(
+                helper.getLevel().getServer(), connection, player,
+                CommonListenerCookie.createInitial(player.getGameProfile(), false));
         CommandSourceStack source = player.createCommandSourceStack().withSuppressedOutput();
         try {
             TelekinesisConfigManager.setEnabled(true);
@@ -60,6 +70,7 @@ public final class TelekinesisBehaviorGameTests {
         } finally {
             TelekinesisPlayerSettings.setEnabled(player, previousPersonal);
             TelekinesisConfigManager.setEnabled(previousGlobal);
+            channel.finishAndReleaseAll();
         }
         helper.succeed();
     }
