@@ -2,21 +2,17 @@ package io.github.brainage04.telekinesis;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.drop.BlockDropCapture;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.CommonListenerCookie;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -43,19 +39,18 @@ public final class TelekinesisBehaviorGameTests {
     }
 
     public static void personalCommandsAndOperatorPermissions(GameTestHelper helper) {
-        ServerPlayer player = player(helper);
+        GameTestPlayer fixture = GameTestPlayer.join(helper, "TkCommands").gameMode(GameType.SURVIVAL);
+        ServerPlayer player = fixture.player();
         boolean previousGlobal = TelekinesisConfigManager.config().enabled();
         boolean previousPersonal = TelekinesisPlayerSettings.isEnabled(player);
-        Connection connection = new Connection(PacketFlow.SERVERBOUND);
-        EmbeddedChannel channel = new EmbeddedChannel(connection);
-        player.connection = new ServerGamePacketListenerImpl(
-                helper.getLevel().getServer(), connection, player,
-                CommonListenerCookie.createInitial(player.getGameProfile(), false));
-        CommandSourceStack source = player.createCommandSourceStack().withSuppressedOutput();
+        CommandSourceStack source = player.createCommandSourceStack();
         try {
             TelekinesisConfigManager.setEnabled(true);
+            fixture.clearMessages();
             run(helper, source, "telekinesis disable");
             check(!TelekinesisPlayerSettings.isEffective(player), "Disable must affect the player's drops");
+            check(fixture.received("[" + Telekinesis.MOD_NAME + "] Your Telekinesis preference is now disabled."),
+                    "The player must be told about the change, got " + fixture.messageTexts());
             run(helper, source, "telekinesis toggle");
             check(TelekinesisPlayerSettings.isEffective(player), "Toggle must restore the personal setting");
             run(helper, source, "telekinesis enable");
@@ -70,7 +65,7 @@ public final class TelekinesisBehaviorGameTests {
         } finally {
             TelekinesisPlayerSettings.setEnabled(player, previousPersonal);
             TelekinesisConfigManager.setEnabled(previousGlobal);
-            channel.finishAndReleaseAll();
+            fixture.close();
         }
         helper.succeed();
     }
@@ -228,6 +223,33 @@ public final class TelekinesisBehaviorGameTests {
             }
         } catch (IOException exception) {
             throw new AssertionError("Could not exercise preference file recovery", exception);
+        }
+        helper.succeed();
+    }
+
+    /** A file written by the previous version loads unchanged and is written back byte for byte. */
+    public static void preferencesFromPreviousVersionLoad(GameTestHelper helper) {
+        LifecycleCallbacks callbacks = new LifecycleCallbacks();
+        TelekinesisPlayerSettings.initialize(callbacks);
+        MinecraftServer server = helper.getLevel().getServer();
+        Path file = server.getWorldPath(LevelResource.ROOT).resolve("telekinesis-players.json");
+        ServerPlayer player = player(helper);
+        try {
+            byte[] original = Files.readAllBytes(file);
+            try {
+                String previous = "{\n  \"schemaVersion\": 1,\n  \"players\": {\n    \"" + player.getUUID()
+                        + "\": {\n      \"lastKnownName\": \"Legacy\",\n      \"enabled\": false\n    }\n  }\n}";
+                Files.writeString(file, previous);
+                callbacks.started.accept(server);
+                check(!TelekinesisPlayerSettings.isEnabled(player), "The previous version's preference must load");
+                callbacks.stopping.accept(server);
+                check(Files.readString(file).equals(previous), "Saving unchanged preferences must keep the file's format");
+            } finally {
+                Files.write(file, original);
+                callbacks.started.accept(server);
+            }
+        } catch (IOException exception) {
+            throw new AssertionError("Could not exercise the preference file", exception);
         }
         helper.succeed();
     }

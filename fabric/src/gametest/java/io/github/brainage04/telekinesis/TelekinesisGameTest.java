@@ -84,4 +84,9 @@ public class TelekinesisGameTest {
     public void unreadablePreferencesAreNotOverwritten(GameTestHelper context) {
         TelekinesisBehaviorGameTests.unreadablePreferencesAreNotOverwritten(context);
     }
+
+    @GameTest
+    public void preferencesFromPreviousVersionLoad(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.preferencesFromPreviousVersionLoad(context);
+    }
 }

@@ -38,6 +38,7 @@ public final class NeoForgeServerGameTests {
         register(event, "nested_breaks_restore_outer_player", TelekinesisBehaviorGameTests::nestedBreaksRestoreOuterPlayer);
         register(event, "preferences_survive_server_lifecycle", TelekinesisBehaviorGameTests::preferencesSurviveServerLifecycle);
         register(event, "unreadable_preferences_are_not_overwritten", TelekinesisBehaviorGameTests::unreadablePreferencesAreNotOverwritten);
+        register(event, "preferences_from_previous_version_load", TelekinesisBehaviorGameTests::preferencesFromPreviousVersionLoad);
     }
 
     private static void register(RegisterEvent event, String path, Consumer<GameTestHelper> function) {

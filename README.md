@@ -16,7 +16,7 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 
 - Minecraft 26.2
 - Fabric Loader 0.19.3 or newer with Fabric API, or NeoForge 26.2.0.88 or newer
-- BrainageLib 1.0.1 or newer for the matching loader
+- BrainageLib 1.1.0 or newer for the matching loader
 - Java 25 or newer
 - Install Telekinesis and its dependencies on the server.
 
@@ -42,7 +42,7 @@ Telekinesis registers with BrainageLib's combined first-join notice.
 
 ## Configuration
 
-The server-wide setting defaults to enabled and is stored in `config/telekinesis.json`.
+The server-wide setting defaults to enabled and is stored in `config/telekinesis.json`. If that file or a world's `telekinesis-players.json` cannot be read, Telekinesis leaves it untouched: changes made with commands apply until the server stops and the command says they could not be saved. Fix the file and restart the server; for `telekinesis.json`, `/telekinesis config reload` also works.
 
 The global and personal settings must both be enabled for Telekinesis to take effect.
 

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,6 +37,32 @@ class TelekinesisConfigManagerTest {
             assertFalse(TelekinesisConfigManager.reload());
             assertFalse(TelekinesisConfigManager.config().enabled());
         }
+    }
+
+    @Test
+    void configWrittenByThePreviousVersionLoadsAndKeepsItsFormat() throws IOException {
+        Path config = directory.resolve("telekinesis.json");
+        String previous = "{\n  \"enabled\": false\n}";
+        Files.writeString(config, previous);
+        TelekinesisConfigManager.initialize(directory);
+        assertFalse(TelekinesisConfigManager.config().enabled());
+        assertTrue(TelekinesisConfigManager.setEnabled(false));
+        assertEquals(previous, Files.readString(config));
+    }
+
+    @Test
+    void configThatFailedToLoadIsNotOverwrittenUntilAReloadSucceeds() throws IOException {
+        Path config = directory.resolve("telekinesis.json");
+        Files.writeString(config, "{\"enabled\":true}");
+        TelekinesisConfigManager.initialize(directory);
+        Files.writeString(config, "{broken");
+        assertFalse(TelekinesisConfigManager.reload());
+        assertFalse(TelekinesisConfigManager.setEnabled(false));
+        assertFalse(TelekinesisConfigManager.config().enabled(), "The change applies for the session");
+        assertEquals("{broken", Files.readString(config));
+        Files.writeString(config, "{\"enabled\":true}");
+        assertTrue(TelekinesisConfigManager.reload());
+        assertTrue(TelekinesisConfigManager.setEnabled(false));
     }
 
     @Test
