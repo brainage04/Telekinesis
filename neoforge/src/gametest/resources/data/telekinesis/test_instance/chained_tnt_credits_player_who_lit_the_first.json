@@ -1,0 +1,8 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 150,
+  "padding": 16,
+  "type": "minecraft:function",
+  "function": "telekinesis:chained_tnt_credits_player_who_lit_the_first"
+}

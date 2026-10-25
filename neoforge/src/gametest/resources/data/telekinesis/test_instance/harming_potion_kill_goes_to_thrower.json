@@ -1,0 +1,7 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 60,
+  "type": "minecraft:function",
+  "function": "telekinesis:harming_potion_kill_goes_to_thrower"
+}

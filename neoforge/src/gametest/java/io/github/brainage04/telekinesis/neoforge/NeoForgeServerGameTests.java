@@ -54,6 +54,10 @@ public final class NeoForgeServerGameTests {
         register(event, "expired_kill_credit_leaves_kill_loot_in_world", TelekinesisKillAndExplosionGameTests::expiredKillCreditLeavesKillLootInWorld);
         register(event, "player_death_inside_another_scope_stays_in_world", TelekinesisKillAndExplosionGameTests::playerDeathInsideAnotherScopeStaysInWorld);
         register(event, "dragon_death_experience_goes_to_killer", TelekinesisKillAndExplosionGameTests::dragonDeathExperienceGoesToKiller);
+        register(event, "tamed_wolf_kill_goes_to_owner", TelekinesisKillAndExplosionGameTests::tamedWolfKillGoesToOwner);
+        register(event, "harming_potion_kill_goes_to_thrower", TelekinesisKillAndExplosionGameTests::harmingPotionKillGoesToThrower);
+        register(event, "chained_tnt_credits_player_who_lit_the_first", TelekinesisKillAndExplosionGameTests::chainedTntCreditsPlayerWhoLitTheFirst);
+        register(event, "living_drops_event_item_goes_to_killer_once", NeoForgeLivingDropsGameTests::livingDropsEventItemGoesToKillerOnce);
         register(event, "command_items_are_not_captured", TelekinesisKillAndExplosionGameTests::commandItemsAreNotCaptured);
     }
 

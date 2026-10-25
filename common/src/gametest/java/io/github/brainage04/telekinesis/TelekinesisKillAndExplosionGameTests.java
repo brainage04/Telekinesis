@@ -14,13 +14,19 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownSplashPotion;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameType;
@@ -351,6 +357,81 @@ public final class TelekinesisKillAndExplosionGameTests {
                 .thenSucceed();
     }
 
+    /// Vanilla credits a tamed wolf's kill to its owner, as if the owner had hit the mob.
+    public static void tamedWolfKillGoesToOwner(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkWolfOwner", PLAYER_POS);
+        try {
+            ServerPlayer player = fixture.player();
+            Wolf wolf = helper.spawn(EntityTypes.WOLF, new BlockPos(3, 1, 3));
+            wolf.setNoAi(true);
+            wolf.tame(player);
+            Husk husk = probeMob(helper, "tk_wolf", MOB_POS);
+
+            wolf.doHurtTarget(helper.getLevel(), husk);
+
+            check(husk.isDeadOrDying(), "The wolf's bite must kill the husk");
+            checkCount(player, Items.EMERALD, 1, "the tamed wolf's kill");
+            checkNoDropsNear(helper, MOB_POS);
+        } finally {
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
+    /// Harming heals undead, so this probe is a pig. The thrower stands far outside the splash.
+    public static void harmingPotionKillGoesToThrower(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkPotion", FAR_PLAYER_POS);
+        ServerPlayer player = fixture.player();
+        ServerLevel level = helper.getLevel();
+        Pig pig = probeMob(helper, "minecraft:pig", Pig.class, "tk_potion", MOB_POS);
+        ThrownSplashPotion potion = new ThrownSplashPotion(level, player,
+                PotionContents.createItemStack(Items.SPLASH_POTION, Potions.HARMING));
+        potion.setPos(pig.position().add(0.0D, 2.0D, 0.0D));
+        potion.setDeltaMovement(0.0D, -0.5D, 0.0D);
+        level.addFreshEntity(potion);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(pig.isDeadOrDying(), "The Harming splash must kill the pig"))
+                .thenExecute(() -> {
+                    try {
+                        checkCount(player, Items.EMERALD, 1, "the potion kill's drop");
+                        checkNoDropsNear(helper, MOB_POS);
+                    } finally {
+                        fixture.close();
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /// The player's TNT sets off a row of TNT blocks; only the last one reaches the chest. A power-4 blast breaks a
+    /// chest at most about 4.2 blocks away, and the chest's near face is 4.5 blocks from the first TNT, which the
+    /// test checks before the chain reaches the chest.
+    public static void chainedTntCreditsPlayerWhoLitTheFirst(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkTntChain", FAR_PLAYER_POS);
+        ServerPlayer player = fixture.player();
+        BlockPos chest = new BlockPos(8, 1, 3);
+        helper.setBlock(new BlockPos(5, 1, 3), Blocks.TNT);
+        helper.setBlock(new BlockPos(7, 1, 3), Blocks.TNT);
+        helper.setBlock(chest, Blocks.CHEST);
+        helper.getBlockEntity(chest, ChestBlockEntity.class).setItem(0, new ItemStack(Items.EMERALD, 64));
+        PrimedTnt first = primeTnt(helper, player);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(first.isRemoved(), "The first TNT must explode"))
+                .thenExecute(() -> check(helper.getBlockState(chest).is(Blocks.CHEST),
+                        "The first TNT's blast must not reach the chest"))
+                .thenWaitUntil(() -> helper.assertTrue(helper.getBlockState(chest).isAir(), "The chained TNT must destroy the chest"))
+                .thenExecute(() -> {
+                    try {
+                        checkCount(player, Items.EMERALD, 64, "chest contents from chained TNT");
+                        check(emeraldsNear(helper, chest) == 0, "No emerald may stay at the chest");
+                    } finally {
+                        fixture.close();
+                    }
+                })
+                .thenSucceed();
+    }
+
     public static void commandItemsAreNotCaptured(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkCommandItems", PLAYER_POS);
         try {
@@ -372,7 +453,7 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    private static GameTestPlayer enabledPlayer(GameTestHelper helper, String name, BlockPos position) {
+    public static GameTestPlayer enabledPlayer(GameTestHelper helper, String name, BlockPos position) {
         TelekinesisConfigManager.setEnabled(true);
         GameTestPlayer fixture = GameTestPlayer.join(helper, name)
                 .markLoaded()
@@ -384,16 +465,21 @@ public final class TelekinesisKillAndExplosionGameTests {
 
     /// A husk does not burn in daylight, so only the test can kill it. Its 0.1 health falls to any hit: a player who
     /// just joined attacks with no charge, and a held sword's damage applies from the next tick.
-    private static Husk probeMob(GameTestHelper helper, String tag, BlockPos relative) {
+    public static Husk probeMob(GameTestHelper helper, String tag, BlockPos relative) {
+        return probeMob(helper, "minecraft:husk", Husk.class, tag, relative);
+    }
+
+    private static <T extends LivingEntity> T probeMob(
+            GameTestHelper helper, String type, Class<T> entityClass, String tag, BlockPos relative) {
         Vec3 at = Vec3.atBottomCenterOf(helper.absolutePos(relative));
         CommandSourceStack source = helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput();
         helper.getLevel().getServer().getCommands().performPrefixedCommand(source, String.format(java.util.Locale.ROOT,
-                "summon minecraft:husk %.2f %.2f %.2f {NoAI:1b,Health:0.1f,DeathLootTable:\"%s\",Tags:[\"%s\"]}",
-                at.x(), at.y(), at.z(), KILL_PROBE, tag));
-        return helper.getLevel().getEntitiesOfClass(Husk.class, new AABB(at, at).inflate(1.0D),
-                        husk -> husk.entityTags().contains(tag))
+                "summon %s %.2f %.2f %.2f {NoAI:1b,Health:0.1f,DeathLootTable:\"%s\",Tags:[\"%s\"]}",
+                type, at.x(), at.y(), at.z(), KILL_PROBE, tag));
+        return helper.getLevel().getEntitiesOfClass(entityClass, new AABB(at, at).inflate(1.0D),
+                        entity -> entity.entityTags().contains(tag))
                 .stream().findFirst()
-                .orElseThrow(() -> new AssertionError("Could not summon the " + tag + " husk"));
+                .orElseThrow(() -> new AssertionError("Could not summon the " + tag + " " + type));
     }
 
     private static void placeEmeraldChest(GameTestHelper helper) {
@@ -401,14 +487,15 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.getBlockEntity(CHEST_POS, ChestBlockEntity.class).setItem(0, new ItemStack(Items.EMERALD, 64));
     }
 
-    private static void primeTnt(GameTestHelper helper, ServerPlayer owner) {
+    private static PrimedTnt primeTnt(GameTestHelper helper, ServerPlayer owner) {
         Vec3 at = Vec3.atBottomCenterOf(helper.absolutePos(TNT_POS));
         PrimedTnt tnt = new PrimedTnt(helper.getLevel(), at.x(), at.y(), at.z(), owner);
         tnt.setFuse(1);
         helper.getLevel().addFreshEntity(tnt);
+        return tnt;
     }
 
-    private static void checkNoDropsNear(GameTestHelper helper, BlockPos relative) {
+    public static void checkNoDropsNear(GameTestHelper helper, BlockPos relative) {
         AABB area = new AABB(helper.absolutePos(relative)).inflate(3.0D);
         check(helper.getLevel().getEntitiesOfClass(ItemEntity.class, area).isEmpty(), "No item may drop at the mob");
         check(helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, area).isEmpty(), "No experience orb may drop at the mob");
@@ -420,7 +507,7 @@ public final class TelekinesisKillAndExplosionGameTests {
                 .stream().mapToInt(item -> item.getItem().getCount()).sum();
     }
 
-    private static void checkCount(ServerPlayer player, Item item, int expected, String what) {
+    public static void checkCount(ServerPlayer player, Item item, int expected, String what) {
         int actual = 0;
         for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (stack.is(item)) {
@@ -430,7 +517,7 @@ public final class TelekinesisKillAndExplosionGameTests {
         check(actual == expected, "Expected " + expected + " " + item + " in the inventory (" + what + "), found " + actual);
     }
 
-    private static void check(boolean value, String message) {
+    public static void check(boolean value, String message) {
         if (!value) {
             throw new AssertionError(message);
         }

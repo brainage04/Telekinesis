@@ -156,6 +156,21 @@ public class TelekinesisGameTest {
     }
 
     @GameTest
+    public void tamedWolfKillGoesToOwner(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.tamedWolfKillGoesToOwner(context);
+    }
+
+    @GameTest(maxTicks = 60)
+    public void harmingPotionKillGoesToThrower(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.harmingPotionKillGoesToThrower(context);
+    }
+
+    @GameTest(maxTicks = 150, padding = 16)
+    public void chainedTntCreditsPlayerWhoLitTheFirst(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.chainedTntCreditsPlayerWhoLitTheFirst(context);
+    }
+
+    @GameTest
     public void killedPlayersDropsStayInWorld(GameTestHelper context) {
         TelekinesisKillAndExplosionGameTests.killedPlayersDropsStayInWorld(context);
     }
