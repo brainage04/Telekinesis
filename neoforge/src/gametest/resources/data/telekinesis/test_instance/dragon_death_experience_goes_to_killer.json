@@ -1,0 +1,8 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 300,
+  "padding": 16,
+  "type": "minecraft:function",
+  "function": "telekinesis:dragon_death_experience_goes_to_killer"
+}

@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.brainage04.telekinesis.drop.DropCapture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ServerExplosion;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,7 +27,12 @@ public abstract class ServerExplosionMixin {
             List<BlockPos> positions,
             Operation<Void> original
     ) {
-        DropCapture.begin(DropCapture.explosionCause(explosion));
+        ServerPlayer cause = DropCapture.explosionCause(explosion);
+        if (cause == null) {
+            original.call(explosion, positions);
+            return;
+        }
+        DropCapture.begin(cause);
         try {
             original.call(explosion, positions);
         } finally {

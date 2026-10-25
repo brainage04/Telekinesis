@@ -3,12 +3,14 @@
 	"package": "io.github.brainage04.telekinesis.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"EnderDragonMixin",
 		"ExperienceOrbAccessor",
 		"ExperienceOrbMixin",
 		"LivingEntityMixin",
 		"ServerExplosionMixin",
 		"ServerLevelMixin",
-		"ServerPlayerGameModeMixin"
+		"ServerPlayerGameModeMixin",
+		"ServerPlayerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

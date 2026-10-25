@@ -1,0 +1,8 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 100,
+  "padding": 16,
+  "type": "minecraft:function",
+  "function": "telekinesis:dead_tnt_owner_leaves_drops_in_world"
+}

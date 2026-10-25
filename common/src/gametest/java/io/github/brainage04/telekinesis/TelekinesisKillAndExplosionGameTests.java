@@ -2,6 +2,7 @@ package io.github.brainage04.telekinesis;
 
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
+import io.github.brainage04.telekinesis.drop.DropCapture;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -10,8 +11,10 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.zombie.Husk;
@@ -234,6 +237,118 @@ public final class TelekinesisKillAndExplosionGameTests {
             killer.close();
         }
         helper.succeed();
+    }
+
+    /// A dead player still resolves as the TNT's owner until they respawn, and the corpse's inventory is discarded
+    /// at respawn, so the chest's contents must stay in the world.
+    public static void deadTntOwnerLeavesDropsInWorld(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkTntDead", FAR_PLAYER_POS);
+        ServerPlayer player = fixture.player();
+        placeEmeraldChest(helper);
+        primeTnt(helper, player);
+        player.kill(helper.getLevel());
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(helper.getBlockState(CHEST_POS).isAir(), "The TNT must destroy the chest"))
+                .thenExecute(() -> {
+                    try {
+                        check(player.isDeadOrDying(), "The TNT's owner must be dead");
+                        checkCount(player, Items.EMERALD, 0, "a dead TNT owner");
+                        int dropped = emeraldsNear(helper, CHEST_POS);
+                        check(dropped == 64, "Expected the 64 emeralds on the ground, found " + dropped);
+                    } finally {
+                        fixture.close();
+                    }
+                })
+                .thenSucceed();
+    }
+
+    public static void deadKillerLeavesKillLootInWorld(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkKillerDead", PLAYER_POS);
+        try {
+            ServerPlayer player = fixture.player();
+            Husk husk = probeMob(helper, "tk_deadkiller", MOB_POS);
+            husk.setLastHurtByPlayer(player, 100);
+            player.kill(helper.getLevel());
+
+            husk.kill(helper.getLevel());
+
+            checkCount(player, Items.EMERALD, 0, "a dead killer");
+            check(emeraldsNear(helper, MOB_POS) == 1, "Expected the husk's emerald on the ground");
+        } finally {
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
+    /// Vanilla's kill credit lasts 100 ticks after the player's last hit; after that the death is nobody's.
+    public static void expiredKillCreditLeavesKillLootInWorld(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkKillerOld", PLAYER_POS);
+        try {
+            ServerPlayer player = fixture.player();
+            Husk husk = probeMob(helper, "tk_oldkiller", MOB_POS);
+            husk.setLastHurtByPlayer(player, 0);
+
+            husk.kill(helper.getLevel());
+
+            checkCount(player, Items.EMERALD, 0, "an expired kill credit");
+            check(emeraldsNear(helper, MOB_POS) == 1, "Expected the husk's emerald on the ground");
+        } finally {
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
+    /// A player who dies inside another player's capture scope (here opened directly, as a block break or kill
+    /// would) keeps their death drops in the world.
+    public static void playerDeathInsideAnotherScopeStaysInWorld(GameTestHelper helper) {
+        GameTestPlayer outer = enabledPlayer(helper, "TkScopeOwner", PLAYER_POS);
+        GameTestPlayer victim = enabledPlayer(helper, "TkScopeVictim", MOB_POS);
+        try {
+            victim.player().getInventory().setItem(9, new ItemStack(Items.EMERALD, 5));
+
+            DropCapture.begin(outer.player());
+            try {
+                victim.player().kill(helper.getLevel());
+            } finally {
+                DropCapture.end();
+            }
+
+            check(victim.player().isDeadOrDying(), "The victim must be dead");
+            checkCount(outer.player(), Items.EMERALD, 0, "another player's death drops inside a scope");
+            check(emeraldsNear(helper, MOB_POS) == 5, "Expected the victim's emeralds on the ground");
+        } finally {
+            victim.close();
+            outer.close();
+        }
+        helper.succeed();
+    }
+
+    /// The dragon releases 500 experience (no previous dragon fight) between death ticks 155 and 200, after the
+    /// 100-tick kill credit has expired.
+    public static void dragonDeathExperienceGoesToKiller(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkDragon", FAR_PLAYER_POS);
+        ServerPlayer player = fixture.player();
+        int experienceBefore = player.totalExperience;
+        EnderDragon dragon = helper.spawn(EntityTypes.ENDER_DRAGON, MOB_POS);
+        dragon.setNoAi(true);
+        dragon.setLastHurtByPlayer(player, 100);
+        dragon.setHealth(0.0F);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(dragon.isRemoved(), "The dragon must finish its death animation"))
+                .thenExecute(() -> {
+                    try {
+                        int gained = player.totalExperience - experienceBefore;
+                        check(gained == 500, "Expected the dragon's 500 experience, found " + gained);
+                        check(helper.getLevel().getEntitiesOfClass(ExperienceOrb.class,
+                                        new AABB(helper.absolutePos(MOB_POS)).inflate(32.0D)).isEmpty(),
+                                "No experience orb may drop at the dragon");
+                    } finally {
+                        fixture.close();
+                    }
+                })
+                .thenSucceed();
     }
 
     public static void commandItemsAreNotCaptured(GameTestHelper helper) {

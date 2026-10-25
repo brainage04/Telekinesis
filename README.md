@@ -15,13 +15,15 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 ### Which drops count
 
 - **Mined blocks:** blocks the player breaks, including blocks other mods break through the normal player block-break path.
-- **Mob kills:** the drops and experience of a mob the game credits to the player, which is the same record vanilla uses for player-kill loot and experience. That covers melee hits, the player's arrows, tridents and thrown potions, and a kill by the player's tamed wolf. A mob the player hurt shortly before it died from something else also counts, as in vanilla. Other pets' kills are not credited to their owner by the game, so they do not count.
+- **Mob kills:** the drops and experience of a mob the game credits to the player, which is the same record vanilla uses for player-kill loot and experience. That covers melee hits, the player's arrows, tridents and damaging thrown potions (Harming; Poison and Wither effects are not credited), and a kill by the player's tamed wolf. A mob the player hurt in the last 5 seconds before it died from something else also counts, as in vanilla. Other pets' kills are not credited to their owner by the game, so they do not count. The ender dragon's experience, which it releases during its death animation, goes to the player who killed it.
 - **Explosions:** the drops of blocks (and the contents of containers) broken by an explosion the player caused. The game records the cause as the explosion's source, and Telekinesis follows it:
   - TNT the player lit, directly or with a flaming arrow, and further TNT that this TNT sets off;
   - a projectile or fireball the player owns;
-  - an end crystal the player hit.
+  - an end crystal the player hit (not further crystals that one sets off: the game credits nobody for those).
 
-  Creepers, beds, respawn anchors and TNT that nobody lit (redstone, fire) have no player cause. Mobs an explosion kills follow the mob rule; entities it breaks, such as item frames, armor stands and minecarts, drop in the world.
+  Creepers, beds, respawn anchors and TNT that nobody lit (redstone, fire) have no player cause: the game records none, and Telekinesis does not add one. Mobs an explosion kills follow the mob rule; entities it breaks, such as item frames, armor stands and minecarts, drop in the world.
+- **Not mobs:** armor stands, item frames, paintings, boats and minecarts the player breaks drop in the world.
+- **Dead players:** while the player is dead, their kills and explosions drop in the world, because the inventory of a dead player is lost when they respawn.
 - **Never captured:** items created by commands (`/give`, `/summon`, `/loot`), drops nobody caused (a mob that died without being hurt by a player, an explosion without a player cause), other players' death drops, and unrelated item and experience entities.
 
 ## Getting started
@@ -60,7 +62,7 @@ The global and personal settings must both be enabled for Telekinesis to take ef
 
 ## Compatibility
 
-Telekinesis wraps the normal server-player block-break path rather than replacing loot-table calculation. Mods that break additional blocks through that path inherit Telekinesis automatically. In particular, every connected block mined by Vein Miner sends its drops and experience to the breaking player when both mods are installed. Vein Miner continues to use normal world drops when Telekinesis is absent or ineffective for that player.
+Telekinesis wraps the normal server-player block-break path rather than replacing loot-table calculation. Mods that break additional blocks through that path inherit Telekinesis automatically, including mob deaths and explosions without a player cause that happen during that break. In particular, every connected block mined by Vein Miner sends its drops and experience to the breaking player when both mods are installed. Vein Miner continues to use normal world drops when Telekinesis is absent or ineffective for that player.
 
 Mob drops are captured around the game's death-loot step, after NeoForge's `LivingDropsEvent`, so drops that mods add or change there go to the player too. Drops only reach a player in the same dimension; otherwise they stay in the world. The ender dragon's experience is released during its death animation rather than with its loot, so it stays in the world.
 

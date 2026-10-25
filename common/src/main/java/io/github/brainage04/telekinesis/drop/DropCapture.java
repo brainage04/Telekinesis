@@ -8,7 +8,6 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerExplosion;
@@ -18,9 +17,11 @@ import java.util.ArrayList;
 
 /// Sends the items and experience spawned inside a capture scope to the scope's player.
 ///
-/// A scope covers one player block break, one mob's death loot or one explosion's block drops. Scopes nest; the
-/// innermost one decides. A scope opened for nobody (a `null` player) keeps an outer scope from claiming drops
-/// that belong to nobody, such as a player's own death drops during a block break.
+/// A scope covers one player block break, one mob's death loot credited to a player, or the block drops of one
+/// explosion a player caused. Scopes nest; the innermost one decides. A mob death or explosion without a player
+/// cause opens no scope, so inside a block break its drops still go to the breaker, as before mob and explosion
+/// support existed. A player's own death drops open a scope for nobody (a `null` player), which keeps any outer
+/// scope from handing that inventory to someone else.
 public final class DropCapture {
     private static final ThreadLocal<ArrayList<ServerPlayer>> RECIPIENTS = new ThreadLocal<>();
 
@@ -44,11 +45,11 @@ public final class DropCapture {
         }
     }
 
-    /// The player the game credits with killing `victim`: the player who last hurt it, directly, with a projectile
-    /// or thrown potion they own, or through their tamed wolf. Vanilla uses the same record for player-kill loot and
-    /// experience. A player's own death drops belong to nobody (`null`).
+    /// The player the game credits with killing `victim`, or `null`: the player who hurt it within the last 100
+    /// ticks, directly, with a projectile or damaging potion they own, or through their tamed wolf. Vanilla uses the
+    /// same record, with the same `lastHurtByPlayerMemoryTime > 0` test, for player-kill loot and experience.
     public static ServerPlayer mobKiller(LivingEntity victim) {
-        if (victim instanceof Player) {
+        if (victim.getLastHurtByPlayerMemoryTime() <= 0) {
             return null;
         }
         return victim.getLastHurtByPlayer() instanceof ServerPlayer player ? player : null;
@@ -112,8 +113,11 @@ public final class DropCapture {
             return null;
         }
 
+        // A dead player still resolves as a killer or TNT owner until they respawn, and a corpse's inventory is
+        // discarded at respawn: their drops stay in the world instead.
         ServerPlayer player = recipients.getLast();
-        if (player == null || player.level() != level || !TelekinesisPlayerSettings.isEffective(player)) {
+        if (player == null || !player.isAlive() || player.level() != level
+                || !TelekinesisPlayerSettings.isEffective(player)) {
             return null;
         }
         return player;

@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.brainage04.telekinesis.drop.DropCapture;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class LivingEntityMixin {
     /// Wraps the call in `die` rather than the method, so overrides that drop items before calling super (a fox's
     /// held item) are covered. On NeoForge the drops pass `LivingDropsEvent` and are spawned inside the call too.
+    /// `ServerPlayer.die` does not call this method; `ServerPlayerMixin` covers players.
     @WrapOperation(
             method = "die",
             at = @At(
@@ -26,7 +28,12 @@ public abstract class LivingEntityMixin {
             DamageSource source,
             Operation<Void> original
     ) {
-        DropCapture.begin(DropCapture.mobKiller(victim));
+        ServerPlayer killer = DropCapture.mobKiller(victim);
+        if (killer == null) {
+            original.call(victim, level, source);
+            return;
+        }
+        DropCapture.begin(killer);
         try {
             original.call(victim, level, source);
         } finally {

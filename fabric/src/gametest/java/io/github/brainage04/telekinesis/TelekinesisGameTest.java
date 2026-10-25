@@ -130,6 +130,31 @@ public class TelekinesisGameTest {
         TelekinesisKillAndExplosionGameTests.anotherPlayersKillGoesToThatPlayer(context);
     }
 
+    @GameTest(maxTicks = 100, padding = 16)
+    public void deadTntOwnerLeavesDropsInWorld(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.deadTntOwnerLeavesDropsInWorld(context);
+    }
+
+    @GameTest
+    public void deadKillerLeavesKillLootInWorld(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.deadKillerLeavesKillLootInWorld(context);
+    }
+
+    @GameTest
+    public void expiredKillCreditLeavesKillLootInWorld(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.expiredKillCreditLeavesKillLootInWorld(context);
+    }
+
+    @GameTest
+    public void playerDeathInsideAnotherScopeStaysInWorld(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.playerDeathInsideAnotherScopeStaysInWorld(context);
+    }
+
+    @GameTest(maxTicks = 300, padding = 16)
+    public void dragonDeathExperienceGoesToKiller(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.dragonDeathExperienceGoesToKiller(context);
+    }
+
     @GameTest
     public void killedPlayersDropsStayInWorld(GameTestHelper context) {
         TelekinesisKillAndExplosionGameTests.killedPlayersDropsStayInWorld(context);
