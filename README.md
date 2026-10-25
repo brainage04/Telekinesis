@@ -1,6 +1,6 @@
 # Telekinesis
 
-Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.2 that places player-mined block drops and experience directly into the breaking player's inventory and experience total. Vanilla clients can join without installing the mod.
+Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.3 that places player-mined block drops and experience directly into the breaking player's inventory and experience total. Vanilla clients can join without installing the mod.
 
 Telekinesis is enabled for each player by default. Preferences are stored by UUID in `telekinesis-players.json` in the current world's directory and survive restarts.
 
@@ -14,9 +14,9 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 
 ## Getting started
 
-- Minecraft 26.2
-- Fabric Loader 0.19.3 or newer with Fabric API, or NeoForge 26.2.0.88 or newer
-- BrainageLib 1.1.0 or newer for the matching loader
+- Minecraft 26.3
+- Fabric Loader 0.19.5 or newer with Fabric API, or NeoForge 26.3.0.99 or newer
+- BrainageLib 1.2.0 or newer for the matching loader
 - Java 25 or newer
 - Install Telekinesis and its dependencies on the server.
 
