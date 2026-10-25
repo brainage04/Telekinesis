@@ -4,7 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
-import io.github.brainage04.telekinesis.drop.BlockDropCapture;
+import io.github.brainage04.telekinesis.drop.DropCapture;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.commands.CommandSourceStack;
@@ -163,17 +163,17 @@ public final class TelekinesisBehaviorGameTests {
         ServerPlayer outer = enabledPlayer(helper);
         ServerPlayer inner = enabledPlayer(helper);
         Vec3 position = Vec3.atCenterOf(helper.absolutePos(DROP_POS));
-        BlockDropCapture.begin(outer);
+        DropCapture.begin(outer);
         try {
-            BlockDropCapture.begin(inner);
+            DropCapture.begin(inner);
             try {
                 helper.getLevel().addFreshEntity(new ItemEntity(helper.getLevel(), position.x, position.y, position.z, new ItemStack(Items.EMERALD)));
             } finally {
-                BlockDropCapture.end();
+                DropCapture.end();
             }
             helper.getLevel().addFreshEntity(new ItemEntity(helper.getLevel(), position.x, position.y, position.z, new ItemStack(Items.DIAMOND)));
         } finally {
-            BlockDropCapture.end();
+            DropCapture.end();
         }
         check(inner.getInventory().countItem(Items.EMERALD) == 1, "Nested drop must belong to the inner breaker");
         check(inner.getInventory().countItem(Items.DIAMOND) == 0, "Nested breaker must not retain the outer scope");

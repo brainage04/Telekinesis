@@ -1,0 +1,8 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 100,
+  "padding": 16,
+  "type": "minecraft:function",
+  "function": "telekinesis:tnt_lit_by_player_sends_block_drops_to_player"
+}

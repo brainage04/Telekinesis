@@ -11,7 +11,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.item.PrimedTnt;
+import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -29,6 +34,10 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final BlockPos ORE_POS = new BlockPos(0, STAGE_Y + 1, 0);
     private static final BlockPos CHEST_POS = new BlockPos(2, STAGE_Y + 1, 0);
     private static final BlockPos DISABLED_ORE_POS = new BlockPos(-2, STAGE_Y + 1, 0);
+    private static final BlockPos MOB_POS = new BlockPos(0, STAGE_Y + 1, 2);
+    /// Far enough from the player and from DISABLED_ORE_POS that the blast reaches neither.
+    private static final BlockPos TNT_POS = new BlockPos(5, STAGE_Y + 1, -3);
+    private static final BlockPos TNT_CHEST_POS = new BlockPos(4, STAGE_Y + 1, -3);
     private static final AABB STAGE_BOX = new AABB(-6, STAGE_Y, -4, 6, STAGE_Y + 4, 6);
 
     @Override
@@ -115,7 +124,84 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     return null;
                 });
                 context.waitTicks(35);
-        
+
+                server.computeOnServer(minecraftServer -> {
+                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                    Husk husk = EntityTypes.HUSK.create(player.level(), EntitySpawnReason.COMMAND);
+                    if (husk == null) {
+                        throw new AssertionError("Expected the demonstration husk.");
+                    }
+                    husk.setNoAi(true);
+                    husk.setPos(Vec3.atBottomCenterOf(MOB_POS));
+                    husk.setYRot(0.0F);
+                    husk.setYHeadRot(0.0F);
+                    husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+                    husk.setDropChance(EquipmentSlot.MAINHAND, 2.0F);
+                    husk.setHealth(1.0F);
+                    player.level().addFreshEntity(husk);
+                    player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
+                    return null;
+                });
+                ClientGameTestRecorder.showStep(
+                        context,
+                        "telekinesis.mob",
+                        "Mob kill",
+                        "The husk's loot, held sword and experience go to the player who killed it"
+                );
+                context.waitTicks(30);
+                server.computeOnServer(minecraftServer -> {
+                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                    ServerLevel level = player.level();
+                    Husk husk = level.getEntitiesOfClass(Husk.class, STAGE_BOX).stream().findFirst()
+                            .orElseThrow(() -> new AssertionError("Expected the demonstration husk on the stage."));
+                    int experienceBefore = player.totalExperience;
+                    player.attack(husk);
+                    if (!husk.isDeadOrDying()) {
+                        throw new AssertionError("Expected the melee hit to kill the husk.");
+                    }
+                    assertInventoryCount(player, Items.IRON_SWORD, 1);
+                    if (player.totalExperience <= experienceBefore) {
+                        throw new AssertionError("Expected the husk's experience to go to the player.");
+                    }
+                    assertNoItemEntities(level);
+                    player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+                    return null;
+                });
+                context.waitTicks(35);
+
+                server.computeOnServer(minecraftServer -> {
+                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                    ServerLevel level = player.level();
+                    level.setBlock(TNT_CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
+                    ChestBlockEntity chest = (ChestBlockEntity) level.getBlockEntity(TNT_CHEST_POS);
+                    if (chest == null) {
+                        throw new AssertionError("Expected the explosion demonstration chest.");
+                    }
+                    chest.setItem(0, new ItemStack(Items.EMERALD, 64));
+                    PrimedTnt tnt = new PrimedTnt(level, TNT_POS.getX() + 0.5D, TNT_POS.getY(), TNT_POS.getZ() + 0.5D, player);
+                    tnt.setFuse(40);
+                    level.addFreshEntity(tnt);
+                    return null;
+                });
+                ClientGameTestRecorder.showStep(
+                        context,
+                        "telekinesis.explosion",
+                        "TNT the player lit",
+                        "The chest the player's TNT destroys sends its 64 emeralds to that player"
+                );
+                context.waitTicks(55);
+                server.computeOnServer(minecraftServer -> {
+                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
+                    ServerLevel level = player.level();
+                    if (!level.getBlockState(TNT_CHEST_POS).isAir()) {
+                        throw new AssertionError("Expected the TNT to destroy the chest.");
+                    }
+                    assertInventoryCount(player, Items.EMERALD, 66);
+                    assertNoItemEntity(level, Items.EMERALD);
+                    return null;
+                });
+                context.waitTicks(30);
+
                 ClientGameTestRecorder.showStep(
                         context,
                         "telekinesis.disabled",

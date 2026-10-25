@@ -1,0 +1,8 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 100,
+  "padding": 16,
+  "type": "minecraft:function",
+  "function": "telekinesis:explosion_without_player_leaves_drops_in_world"
+}

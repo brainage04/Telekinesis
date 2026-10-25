@@ -5,6 +5,8 @@
   "mixins": [
     "ExperienceOrbAccessor",
     "ExperienceOrbMixin",
+    "LivingEntityMixin",
+    "ServerExplosionMixin",
     "ServerLevelMixin",
     "ServerPlayerGameModeMixin"
   ],

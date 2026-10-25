@@ -1,16 +1,28 @@
 # Telekinesis
 
-Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.3 that places player-mined block drops and experience directly into the breaking player's inventory and experience total. Vanilla clients can join without installing the mod.
+Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.3 that places drops and experience directly into a player's inventory and experience total: from blocks the player mines, mobs the player kills and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.
 
 Telekinesis is enabled for each player by default. Preferences are stored by UUID in `telekinesis-players.json` in the current world's directory and survive restarts.
 
 ## Features
 
-- Uses Minecraft's actual block-loot result, preserving Fortune, Silk Touch, random loot, block-entity contents, and modded loot tables.
-- Handles every item stack produced by one attributed player block break, including non-guaranteed and multiple unique drops.
-- Inserts as much as the player's inventory can accept. Any remainder is dropped at that player's feet rather than left at the mined block.
-- Credits experience produced by the same player block break directly to that player.
-- Does not intercept mob drops, commands, explosions, or unrelated item and experience entities.
+- Uses Minecraft's actual loot results, so Fortune, Silk Touch, Looting, random loot, block-entity and container contents, equipment drops with their drop chances, and modded loot tables are all kept.
+- Handles every item stack produced by one source, including non-guaranteed and multiple unique drops.
+- Inserts as much as the player's inventory can accept. Any remainder is dropped at that player's feet rather than left where it was produced. Mined blocks already behaved this way, and mob kills and explosions do the same.
+- Credits the experience from the same source directly to that player, repairing Mending items first as an experience orb would.
+- There is no separate switch per source: the server-wide and personal settings below cover all three.
+
+### Which drops count
+
+- **Mined blocks:** blocks the player breaks, including blocks other mods break through the normal player block-break path.
+- **Mob kills:** the drops and experience of a mob the game credits to the player, which is the same record vanilla uses for player-kill loot and experience. That covers melee hits, the player's arrows, tridents and thrown potions, and a kill by the player's tamed wolf. A mob the player hurt shortly before it died from something else also counts, as in vanilla. Other pets' kills are not credited to their owner by the game, so they do not count.
+- **Explosions:** the drops of blocks (and the contents of containers) broken by an explosion the player caused. The game records the cause as the explosion's source, and Telekinesis follows it:
+  - TNT the player lit, directly or with a flaming arrow, and further TNT that this TNT sets off;
+  - a projectile or fireball the player owns;
+  - an end crystal the player hit.
+
+  Creepers, beds, respawn anchors and TNT that nobody lit (redstone, fire) have no player cause. Mobs an explosion kills follow the mob rule; entities it breaks, such as item frames, armor stands and minecarts, drop in the world.
+- **Never captured:** items created by commands (`/give`, `/summon`, `/loot`), drops nobody caused (a mob that died without being hurt by a player, an explosion without a player cause), other players' death drops, and unrelated item and experience entities.
 
 ## Getting started
 
@@ -49,6 +61,8 @@ The global and personal settings must both be enabled for Telekinesis to take ef
 ## Compatibility
 
 Telekinesis wraps the normal server-player block-break path rather than replacing loot-table calculation. Mods that break additional blocks through that path inherit Telekinesis automatically. In particular, every connected block mined by Vein Miner sends its drops and experience to the breaking player when both mods are installed. Vein Miner continues to use normal world drops when Telekinesis is absent or ineffective for that player.
+
+Mob drops are captured around the game's death-loot step, after NeoForge's `LivingDropsEvent`, so drops that mods add or change there go to the player too. Drops only reach a player in the same dimension; otherwise they stay in the world. The ender dragon's experience is released during its death animation rather than with its loot, so it stays in the world.
 
 ## Documentation
 

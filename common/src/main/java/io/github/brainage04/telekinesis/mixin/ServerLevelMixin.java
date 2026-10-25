@@ -1,6 +1,6 @@
 package io.github.brainage04.telekinesis.mixin;
 
-import io.github.brainage04.telekinesis.drop.BlockDropCapture;
+import io.github.brainage04.telekinesis.drop.DropCapture;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -13,12 +13,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelMixin {
     @Inject(method = "addFreshEntity", at = @At("HEAD"), cancellable = true)
-    private void telekinesis$captureBlockDrop(Entity entity, CallbackInfoReturnable<Boolean> callback) {
+    private void telekinesis$captureDrop(Entity entity, CallbackInfoReturnable<Boolean> callback) {
         ServerLevel level = (ServerLevel) (Object) this;
         boolean captured = entity instanceof ItemEntity itemEntity
-                ? BlockDropCapture.capture(level, itemEntity)
+                ? DropCapture.capture(level, itemEntity)
                 : entity instanceof ExperienceOrb experienceOrb
-                && BlockDropCapture.captureExperience(level, experienceOrb.getValue());
+                && DropCapture.captureExperience(level, experienceOrb.getValue());
         if (captured) {
             callback.setReturnValue(false);
         }

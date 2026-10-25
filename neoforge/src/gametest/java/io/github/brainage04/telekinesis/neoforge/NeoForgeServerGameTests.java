@@ -3,6 +3,7 @@ package io.github.brainage04.telekinesis.neoforge;
 import io.github.brainage04.telekinesis.Telekinesis;
 import io.github.brainage04.telekinesis.TelekinesisBehaviorGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
+import io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests;
 import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -39,6 +40,16 @@ public final class NeoForgeServerGameTests {
         register(event, "preferences_survive_server_lifecycle", TelekinesisBehaviorGameTests::preferencesSurviveServerLifecycle);
         register(event, "unreadable_preferences_are_not_overwritten", TelekinesisBehaviorGameTests::unreadablePreferencesAreNotOverwritten);
         register(event, "preferences_from_previous_version_load", TelekinesisBehaviorGameTests::preferencesFromPreviousVersionLoad);
+        register(event, "melee_kill_sends_loot_equipment_and_experience_to_killer", TelekinesisKillAndExplosionGameTests::meleeKillSendsLootEquipmentAndExperienceToKiller);
+        register(event, "projectile_kill_sends_loot_to_shooter", TelekinesisKillAndExplosionGameTests::projectileKillSendsLootToShooter);
+        register(event, "looting_applies_to_captured_loot", TelekinesisKillAndExplosionGameTests::lootingAppliesToCapturedLoot);
+        register(event, "full_inventory_drops_kill_loot_at_killer_feet", TelekinesisKillAndExplosionGameTests::fullInventoryDropsKillLootAtKillerFeet);
+        register(event, "tnt_lit_by_player_sends_block_drops_to_player", TelekinesisKillAndExplosionGameTests::tntLitByPlayerSendsBlockDropsToPlayer);
+        register(event, "explosion_without_player_leaves_drops_in_world", TelekinesisKillAndExplosionGameTests::explosionWithoutPlayerLeavesDropsInWorld);
+        register(event, "mob_death_without_player_leaves_drops_in_world", TelekinesisKillAndExplosionGameTests::mobDeathWithoutPlayerLeavesDropsInWorld);
+        register(event, "another_players_kill_goes_to_that_player", TelekinesisKillAndExplosionGameTests::anotherPlayersKillGoesToThatPlayer);
+        register(event, "killed_players_drops_stay_in_world", TelekinesisKillAndExplosionGameTests::killedPlayersDropsStayInWorld);
+        register(event, "command_items_are_not_captured", TelekinesisKillAndExplosionGameTests::commandItemsAreNotCaptured);
     }
 
     private static void register(RegisterEvent event, String path, Consumer<GameTestHelper> function) {

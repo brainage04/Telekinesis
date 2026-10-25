@@ -26,7 +26,7 @@ public final class Telekinesis {
         ServerModHelpRegistry.register(new ServerModHelpEntry(
                 MOD_ID,
                 MOD_NAME,
-                "Places player-mined drops and experience directly into the player's inventory.",
+                "Sends drops and experience from blocks you mine, mobs you kill and explosions you cause straight to you.",
                 "/telekinesis help",
                 "/telekinesis config"
         ));

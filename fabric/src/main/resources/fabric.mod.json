@@ -3,7 +3,7 @@
 	"id": "${mod_id}",
 	"version": "${mod_version}",
 	"name": "${mod_name}",
-	"description": "Automatically places player-mined block drops into the player's inventory.",
+	"description": "Puts drops and experience from blocks you mine, mobs you kill and explosions you cause straight into your inventory.",
 	"authors": [
 		"brainage04"
 	],

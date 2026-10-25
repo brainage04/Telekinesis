@@ -89,4 +89,54 @@ public class TelekinesisGameTest {
     public void preferencesFromPreviousVersionLoad(GameTestHelper context) {
         TelekinesisBehaviorGameTests.preferencesFromPreviousVersionLoad(context);
     }
+
+    @GameTest
+    public void meleeKillSendsLootEquipmentAndExperienceToKiller(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.meleeKillSendsLootEquipmentAndExperienceToKiller(context);
+    }
+
+    @GameTest(maxTicks = 100)
+    public void projectileKillSendsLootToShooter(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.projectileKillSendsLootToShooter(context);
+    }
+
+    @GameTest
+    public void lootingAppliesToCapturedLoot(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.lootingAppliesToCapturedLoot(context);
+    }
+
+    @GameTest
+    public void fullInventoryDropsKillLootAtKillerFeet(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.fullInventoryDropsKillLootAtKillerFeet(context);
+    }
+
+    @GameTest(maxTicks = 100, padding = 16)
+    public void tntLitByPlayerSendsBlockDropsToPlayer(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.tntLitByPlayerSendsBlockDropsToPlayer(context);
+    }
+
+    @GameTest(maxTicks = 100, padding = 16)
+    public void explosionWithoutPlayerLeavesDropsInWorld(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.explosionWithoutPlayerLeavesDropsInWorld(context);
+    }
+
+    @GameTest
+    public void mobDeathWithoutPlayerLeavesDropsInWorld(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.mobDeathWithoutPlayerLeavesDropsInWorld(context);
+    }
+
+    @GameTest
+    public void anotherPlayersKillGoesToThatPlayer(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.anotherPlayersKillGoesToThatPlayer(context);
+    }
+
+    @GameTest
+    public void killedPlayersDropsStayInWorld(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.killedPlayersDropsStayInWorld(context);
+    }
+
+    @GameTest
+    public void commandItemsAreNotCaptured(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.commandItemsAreNotCaptured(context);
+    }
 }
