@@ -1,7 +1,7 @@
 {
   "environment": "minecraft:default",
   "structure": "minecraftmodconventions:empty",
-  "max_ticks": 20,
+  "max_ticks": 100,
   "type": "minecraft:function",
   "function": "telekinesis:respawn_anchor_blast_pays_the_player_who_used_it"
 }

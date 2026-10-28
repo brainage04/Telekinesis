@@ -186,7 +186,7 @@ public class TelekinesisGameTest {
         TelekinesisLeafAndCreditGameTests.decayedLeafOfAFelledTreePaysTheFeller(context);
     }
 
-    @GameTest
+    @GameTest(maxTicks = 100)
     public void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper context) {
         TelekinesisLeafAndCreditGameTests.respawnAnchorBlastPaysThePlayerWhoUsedIt(context);
     }

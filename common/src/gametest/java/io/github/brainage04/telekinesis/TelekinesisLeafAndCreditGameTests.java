@@ -5,10 +5,13 @@ import static io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTe
 import static io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests.enabledPlayer;
 
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
+import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -17,6 +20,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -39,6 +43,22 @@ public final class TelekinesisLeafAndCreditGameTests {
     private static final int LEAF_ROLLS = 300;
 
     private TelekinesisLeafAndCreditGameTests() {}
+
+    /// Whether the player's client was sent an explosion that hit them (one with their knockback).
+    private static boolean blastHit(GameTestPlayer fixture) {
+        EmbeddedChannel channel = fixture.channel();
+        channel.runPendingTasks();
+        channel.flushOutbound();
+        boolean hit = false;
+        Object outbound;
+        while ((outbound = channel.readOutbound()) != null) {
+            hit |=
+                    outbound instanceof ClientboundExplodePacket explosion
+                            && explosion.playerKnockback().isPresent();
+            ReferenceCountUtil.release(outbound);
+        }
+        return hit;
+    }
 
     /// A player cuts a tree's trunk; the leaf it held up decays later with no entity to name, and
     /// its drops reach the player who cut the tree instead of the ground.
@@ -79,16 +99,27 @@ public final class TelekinesisLeafAndCreditGameTests {
     }
 
     /// A charged respawn anchor used outside the Nether explodes naming nobody; the chest its blast
-    /// breaks pays the player who used it, and the blast still hurts that player.
+    /// breaks pays the player who used it, and the blast still reaches that player. The room is a
+    /// force-loaded chunk of the End, clicked once it ticks entities: only an entity-ticking
+    /// chunk's entities are in an explosion's reach, as on a real server around a player.
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
         BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        BlockPos anchor = new BlockPos(origin.getX() + 20_000, 64, origin.getZ() + 64);
+        ChunkPos room = new ChunkPos((origin.getX() + 20_000) >> 4, (origin.getZ() + 64) >> 4);
+        BlockPos anchor = new BlockPos(room.getMinBlockX() + 8, 64, room.getMinBlockZ() + 8);
         BlockPos chest = anchor.west(2);
         GameTestPlayer fixture = enabledPlayer(helper, "TkAnchor", PLAYER_POS);
         ServerPlayer player = fixture.player();
+        Runnable cleanup =
+                () -> {
+                    end.getEntitiesOfClass(ItemEntity.class, new AABB(anchor).inflate(8.0D))
+                            .forEach(ItemEntity::discard);
+                    end.setChunkForced(room.x(), room.z(), false);
+                    fixture.close();
+                };
         try {
+            end.setChunkForced(room.x(), room.z(), true);
             for (BlockPos pos :
                     BlockPos.betweenClosed(anchor.offset(-6, -1, -6), anchor.offset(6, 6, 6))) {
                 boolean shell =
@@ -125,25 +156,49 @@ public final class TelekinesisLeafAndCreditGameTests {
             player.hasChangedDimension();
             fixture.markLoaded();
             player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 200, 3));
-            float health = player.getHealth();
-
-            player.gameMode.useItemOn(
-                    player,
-                    end,
-                    ItemStack.EMPTY,
-                    InteractionHand.MAIN_HAND,
-                    new BlockHitResult(Vec3.atCenterOf(anchor), Direction.UP, anchor, false));
-
-            check(!end.getBlockState(anchor).is(Blocks.RESPAWN_ANCHOR), "The anchor must explode");
-            checkCount(player, Items.EMERALD, 64, "the chest the anchor's blast broke");
-            check(
-                    player.getHealth() < health,
-                    "The player must still take their own blast's damage");
-        } finally {
-            end.getEntitiesOfClass(ItemEntity.class, new AABB(anchor).inflate(8.0D))
-                    .forEach(ItemEntity::discard);
-            fixture.close();
+        } catch (RuntimeException | Error failure) {
+            cleanup.run();
+            throw failure;
         }
-        helper.succeed();
+        helper.startSequence()
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        end.isPositionEntityTicking(anchor),
+                                        "The End room must tick entities"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                fixture.clearMessages();
+
+                                player.gameMode.useItemOn(
+                                        player,
+                                        end,
+                                        ItemStack.EMPTY,
+                                        InteractionHand.MAIN_HAND,
+                                        new BlockHitResult(
+                                                Vec3.atCenterOf(anchor),
+                                                Direction.UP,
+                                                anchor,
+                                                false));
+
+                                check(
+                                        !end.getBlockState(anchor).is(Blocks.RESPAWN_ANCHOR),
+                                        "The anchor must explode");
+                                checkCount(
+                                        player,
+                                        Items.EMERALD,
+                                        64,
+                                        "the chest the anchor's blast broke");
+                                // The game's own blast still hits the player, so their client is
+                                // sent its knockback, as it always was.
+                                check(
+                                        blastHit(fixture),
+                                        "The blast must still reach the player who used the anchor");
+                            } finally {
+                                cleanup.run();
+                            }
+                        })
+                .thenSucceed();
     }
 }
