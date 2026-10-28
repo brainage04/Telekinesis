@@ -485,19 +485,23 @@ public final class TelekinesisKillAndExplosionGameTests {
                 .thenSucceed();
     }
 
-    /// The player's TNT sets off a row of TNT blocks; only the last one reaches the chest. A
-    /// power-4 blast breaks a chest at most about 4.2 blocks away, and the chest's near face is 4.5
-    /// blocks from the first TNT, which the test checks before the chain reaches the chest.
+    /// The player's TNT sets off a row of TNT blocks; only the chain reaches the chest, which the
+    /// test checks before the chain goes off. Each ray of a power-4 blast starts with 4 times 0.7
+    /// to 1.3 of power and spends 0.225 per 0.3-block step plus a block's resistance (TNT 0, a
+    /// chest 2.5) as it enters it: a straight ray needs about 5.07 to break a chest whose near face
+    /// is 4.5 blocks away, which about one blast in ten has, so the first TNT stands 6.5 blocks
+    /// from the chest, beyond any ray.
     public static void chainedTntCreditsPlayerWhoLitTheFirst(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkTntChain", FAR_PLAYER_POS);
         ServerPlayer player = fixture.player();
         BlockPos chest = new BlockPos(8, 1, 3);
+        helper.setBlock(new BlockPos(3, 1, 3), Blocks.TNT);
         helper.setBlock(new BlockPos(5, 1, 3), Blocks.TNT);
         helper.setBlock(new BlockPos(7, 1, 3), Blocks.TNT);
         helper.setBlock(chest, Blocks.CHEST);
         helper.getBlockEntity(chest, ChestBlockEntity.class)
                 .setItem(0, new ItemStack(Items.EMERALD, 64));
-        PrimedTnt first = primeTnt(helper, player);
+        PrimedTnt first = primeTnt(helper, player, new BlockPos(1, 1, 3));
 
         helper.startSequence()
                 .thenWaitUntil(
@@ -627,7 +631,12 @@ public final class TelekinesisKillAndExplosionGameTests {
     }
 
     private static PrimedTnt primeTnt(GameTestHelper helper, ServerPlayer owner) {
-        Vec3 at = Vec3.atBottomCenterOf(helper.absolutePos(TNT_POS));
+        return primeTnt(helper, owner, TNT_POS);
+    }
+
+    private static PrimedTnt primeTnt(
+            GameTestHelper helper, ServerPlayer owner, BlockPos relative) {
+        Vec3 at = Vec3.atBottomCenterOf(helper.absolutePos(relative));
         PrimedTnt tnt = new PrimedTnt(helper.getLevel(), at.x(), at.y(), at.z(), owner);
         tnt.setFuse(1);
         helper.getLevel().addFreshEntity(tnt);
