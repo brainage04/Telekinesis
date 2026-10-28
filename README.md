@@ -1,6 +1,6 @@
 # Telekinesis
 
-Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.3 that places drops and experience directly into a player's inventory and experience total: from blocks the player mines, mobs the player kills and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.
+Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.3 that places drops and experience directly into a player's inventory and experience total: from blocks the player mines, the leaves of trees the player cuts, mobs the player kills and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.
 
 Telekinesis is enabled for each player by default. Preferences are stored by UUID in `telekinesis-players.json` in the current world's directory and survive restarts.
 
@@ -10,18 +10,20 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 - Handles every item stack produced by one source, including non-guaranteed and multiple unique drops.
 - Inserts as much as the player's inventory can accept. Any remainder is dropped at that player's feet rather than left where it was produced. Mined blocks already behaved this way, and mob kills and explosions do the same.
 - Credits the experience from the same source directly to that player, repairing Mending items first as an experience orb would.
-- There is no separate switch per source: the server-wide and personal settings below cover all three.
+- There is no separate switch per source: the server-wide and personal settings below cover all of them.
 
 ### Which drops count
 
-- **Mined blocks:** blocks the player breaks, including blocks other mods break through the normal player block-break path.
+- **Mined blocks:** blocks the player breaks, including blocks other mods break through the normal player block-break path or break naming the player as the breaker.
+- **Leaves of a tree the player cut:** when the player breaks a log, the leaves that log held up (up to six leaves away, as the game counts it) and that decay within the next minute drop for that player. Leaves another tree's logs still hold, and leaves of trees nobody cut, drop in the world.
 - **Mob kills:** the drops and experience of a mob the game credits to the player, which is the same record vanilla uses for player-kill loot and experience. That covers melee hits, the player's arrows, tridents and damaging thrown potions (Harming; Poison and Wither effects are not credited), and a kill by the player's tamed wolf. A mob the player hurt in the last 5 seconds before it died from something else also counts, as in vanilla. Other pets' kills are not credited to their owner by the game, so they do not count. The ender dragon's experience, which it releases during its death animation, goes to the player who killed it.
 - **Explosions:** the drops of blocks (and the contents of containers) broken by an explosion the player caused. The game records the cause as the explosion's source, and Telekinesis follows it:
   - TNT the player lit, directly or with a flaming arrow, and further TNT that this TNT sets off;
   - a projectile or fireball the player owns;
-  - an end crystal the player hit (not further crystals that one sets off: the game credits nobody for those).
+  - an end crystal the player hit;
+  - a bed or charged respawn anchor the player used where it explodes (beds in the Nether and the End, anchors outside the Nether).
 
-  Creepers, beds, respawn anchors and TNT that nobody lit (redstone, fire) have no player cause: the game records none, and Telekinesis does not add one. Mobs an explosion kills follow the mob rule; entities it breaks, such as item frames, armor stands and minecarts, drop in the world.
+  The game itself names no cause for a bed or anchor explosion; Telekinesis credits the player who used it for that one explosion's block drops only, so its damage, knockback and kill credit stay the game's. Creepers and TNT that nobody lit (redstone, fire) have no player cause: the game records none, and Telekinesis does not add one. Mobs an explosion kills follow the mob rule; entities it breaks, such as item frames, armor stands and minecarts, drop in the world.
 - **Not mobs:** armor stands, item frames, paintings, boats and minecarts the player breaks drop in the world.
 - **Dead players:** while the player is dead, their kills and explosions drop in the world, because the inventory of a dead player is lost when they respawn.
 - **Never captured:** items created by commands (`/give`, `/summon`, `/loot`), drops nobody caused (a mob that died without being hurt by a player, an explosion without a player cause), other players' death drops, and unrelated item and experience entities.
@@ -30,7 +32,7 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 
 - Minecraft 26.3
 - Fabric Loader 0.19.5 or newer with Fabric API, or NeoForge 26.3.0.99 or newer
-- BrainageLib 1.2.0 or newer for the matching loader
+- BrainageLib 1.3.0 or newer for the matching loader
 - Java 25 or newer
 - Install Telekinesis and its dependencies on the server.
 
@@ -64,7 +66,9 @@ The global and personal settings must both be enabled for Telekinesis to take ef
 
 Telekinesis wraps the normal server-player block-break path rather than replacing loot-table calculation. Mods that break additional blocks through that path inherit Telekinesis automatically, including mob deaths and explosions without a player cause that happen during that break. In particular, every connected block mined by Vein Miner sends its drops and experience to the breaking player when both mods are installed. Vein Miner continues to use normal world drops when Telekinesis is absent or ineffective for that player.
 
-Mob drops are captured around the game's death-loot step, after NeoForge's `LivingDropsEvent`, so drops that mods add or change there go to the player too. Drops only reach a player in the same dimension; otherwise they stay in the world. The ender dragon's experience is released during its death animation rather than with its loot, so it stays in the world.
+Mob drops are captured around the game's death-loot step, after NeoForge's `LivingDropsEvent`, so drops that mods add or change there go to the player too. Drops only reach a player in the same dimension; otherwise they stay in the world.
+
+The capture itself is BrainageLib's shared drop engine, which Skyport Minigames uses too. When both are installed, a player in a Skyport Minigames match follows that match's rules (its mined-drops setting and its Telekinesis perks); Telekinesis' own settings decide everywhere else.
 
 ## Documentation
 

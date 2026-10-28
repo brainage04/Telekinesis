@@ -4,6 +4,7 @@ import io.github.brainage04.telekinesis.Telekinesis;
 import io.github.brainage04.telekinesis.TelekinesisBehaviorGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
 import io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests;
+import io.github.brainage04.telekinesis.TelekinesisLeafAndCreditGameTests;
 import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -59,6 +60,8 @@ public final class NeoForgeServerGameTests {
         register(event, "chained_tnt_credits_player_who_lit_the_first", TelekinesisKillAndExplosionGameTests::chainedTntCreditsPlayerWhoLitTheFirst);
         register(event, "living_drops_event_item_goes_to_killer_once", NeoForgeLivingDropsGameTests::livingDropsEventItemGoesToKillerOnce);
         register(event, "command_items_are_not_captured", TelekinesisKillAndExplosionGameTests::commandItemsAreNotCaptured);
+        register(event, "decayed_leaf_of_a_felled_tree_pays_the_feller", TelekinesisLeafAndCreditGameTests::decayedLeafOfAFelledTreePaysTheFeller);
+        register(event, "respawn_anchor_blast_pays_the_player_who_used_it", TelekinesisLeafAndCreditGameTests::respawnAnchorBlastPaysThePlayerWhoUsedIt);
     }
 
     private static void register(RegisterEvent event, String path, Consumer<GameTestHelper> function) {

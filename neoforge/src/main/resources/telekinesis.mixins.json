@@ -1,17 +1,14 @@
 {
-  "required": true,
-  "package": "io.github.brainage04.telekinesis.mixin",
-  "compatibilityLevel": "JAVA_25",
-  "mixins": [
-    "EnderDragonMixin",
-    "ExperienceOrbAccessor",
-    "ExperienceOrbMixin",
-    "LivingEntityMixin",
-    "ServerExplosionMixin",
-    "ServerLevelMixin",
-    "ServerPlayerGameModeMixin",
-    "ServerPlayerMixin"
-  ],
-  "injectors": { "defaultRequire": 1 },
-  "overwrites": { "requireAnnotations": true }
+	"required": true,
+	"package": "io.github.brainage04.telekinesis.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"ServerPlayerGameModeMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
 }

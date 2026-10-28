@@ -1,8 +1,8 @@
 package io.github.brainage04.telekinesis;
 
+import io.github.brainage04.brainagelib.drops.DropCapture;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
-import io.github.brainage04.telekinesis.drop.DropCapture;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;

@@ -2,9 +2,9 @@ package io.github.brainage04.telekinesis;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import io.github.brainage04.brainagelib.drops.DropCapture;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
-import io.github.brainage04.telekinesis.drop.DropCapture;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.commands.CommandSourceStack;

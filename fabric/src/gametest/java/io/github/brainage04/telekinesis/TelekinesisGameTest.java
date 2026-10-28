@@ -179,4 +179,14 @@ public class TelekinesisGameTest {
     public void commandItemsAreNotCaptured(GameTestHelper context) {
         TelekinesisKillAndExplosionGameTests.commandItemsAreNotCaptured(context);
     }
+
+    @GameTest
+    public void decayedLeafOfAFelledTreePaysTheFeller(GameTestHelper context) {
+        TelekinesisLeafAndCreditGameTests.decayedLeafOfAFelledTreePaysTheFeller(context);
+    }
+
+    @GameTest
+    public void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper context) {
+        TelekinesisLeafAndCreditGameTests.respawnAnchorBlastPaysThePlayerWhoUsedIt(context);
+    }
 }
