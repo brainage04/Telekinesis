@@ -19,9 +19,6 @@
 			"io.github.brainage04.telekinesis.fabric.TelekinesisFabric"
 		]
 	},
-	"mixins": [
-		"telekinesis.mixins.json"
-	],
 	"depends": {
 		"fabricloader": ">=${loader_version}",
 		"minecraft": "~${minecraft_version}",

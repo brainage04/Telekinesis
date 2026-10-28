@@ -174,6 +174,10 @@ public final class NeoForgeServerGameTests {
                 TelekinesisLeafAndCreditGameTests::decayedLeafOfAFelledTreePaysTheFeller);
         register(
                 event,
+                "last_feller_with_telekinesis_off_keeps_their_leaves",
+                TelekinesisLeafAndCreditGameTests::lastFellerWithTelekinesisOffKeepsTheirLeaves);
+        register(
+                event,
                 "respawn_anchor_blast_pays_the_player_who_used_it",
                 TelekinesisLeafAndCreditGameTests::respawnAnchorBlastPaysThePlayerWhoUsedIt);
     }

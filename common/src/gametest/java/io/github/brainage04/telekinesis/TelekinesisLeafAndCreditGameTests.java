@@ -5,6 +5,7 @@ import static io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTe
 import static io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests.enabledPlayer;
 
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
+import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
 import java.util.Set;
@@ -96,6 +97,76 @@ public final class TelekinesisLeafAndCreditGameTests {
             fixture.close();
         }
         helper.succeed();
+    }
+
+    /// Two players cut one tree: one with Telekinesis on breaks the lower log, one with it off
+    /// breaks the upper log, the last one holding the top leaf up. That leaf is the second
+    /// player's, so when it decays it drops in the world, as theirs always do, and never pays the
+    /// first.
+    public static void lastFellerWithTelekinesisOffKeepsTheirLeaves(GameTestHelper helper) {
+        GameTestPlayer first = enabledPlayer(helper, "TkFirstCut", PLAYER_POS);
+        GameTestPlayer last = enabledPlayer(helper, "TkLastCut", PLAYER_POS.east());
+        try {
+            TelekinesisPlayerSettings.setEnabled(last.player(), false);
+            BlockPos lower = LOG_POS;
+            BlockPos upper = LOG_POS.above();
+            BlockPos top = upper.above();
+            helper.setBlock(lower, Blocks.OAK_LOG);
+            helper.setBlock(upper, Blocks.OAK_LOG);
+            // A leaf chain from beside the lower log round to the top leaf, so the first cut
+            // reaches the top leaf too.
+            for (BlockPos leaf :
+                    new BlockPos[] {lower.east(), upper.east(), upper.east().above(), top}) {
+                helper.setBlock(leaf, Blocks.OAK_LEAVES);
+            }
+            first.player().getInventory().clearContent();
+            last.player().getInventory().clearContent();
+
+            check(
+                    first.player().gameMode.destroyBlock(helper.absolutePos(lower)),
+                    "The lower log must break");
+            check(
+                    last.player().gameMode.destroyBlock(helper.absolutePos(upper)),
+                    "The upper log must break");
+
+            BlockState leaf = helper.getBlockState(top);
+            check(leaf.is(Blocks.OAK_LEAVES), "The top leaf must still stand");
+            BlockPos leafPos = helper.absolutePos(top);
+            // The upper log's own drop stays in the world for the player with Telekinesis off.
+            helper.getLevel()
+                    .getEntitiesOfClass(ItemEntity.class, new AABB(leafPos).inflate(3.0D))
+                    .forEach(ItemEntity::discard);
+            helper.setBlock(top, Blocks.AIR);
+            for (int roll = 0; roll < LEAF_ROLLS; roll++) {
+                Block.dropResources(leaf, helper.getLevel(), leafPos);
+            }
+
+            check(
+                    leafDrops(first.player()) == 0,
+                    "The top leaf of a tree another player felled must not pay the first cutter");
+            check(
+                    leafDrops(last.player()) == 0,
+                    "A player with Telekinesis off gets no leaf drops");
+            check(
+                    !helper.getLevel()
+                            .getEntitiesOfClass(ItemEntity.class, new AABB(leafPos).inflate(1.0D))
+                            .isEmpty(),
+                    "The top leaf's drops must stay in the world");
+        } finally {
+            helper.getLevel()
+                    .getEntitiesOfClass(
+                            ItemEntity.class, new AABB(helper.absolutePos(LOG_POS)).inflate(8.0D))
+                    .forEach(ItemEntity::discard);
+            first.close();
+            last.close();
+        }
+        helper.succeed();
+    }
+
+    private static int leafDrops(ServerPlayer player) {
+        return player.getInventory().countItem(Items.OAK_SAPLING)
+                + player.getInventory().countItem(Items.STICK)
+                + player.getInventory().countItem(Items.APPLE);
     }
 
     /// A charged respawn anchor used outside the Nether explodes naming nobody; the chest its blast

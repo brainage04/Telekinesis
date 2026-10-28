@@ -32,6 +32,3 @@ type="required"
 versionRange="[${brainagelib_version},)"
 ordering="AFTER"
 side="SERVER"
-
-[[mixins]]
-config="telekinesis.mixins.json"

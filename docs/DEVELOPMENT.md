@@ -11,15 +11,13 @@ The conventions plugin manages headless client GameTests. The client-options pro
 
 ## How drops are captured
 
-`DropCapture` keeps a per-thread stack of capture scopes. These mixins in `common` open one, and both loaders use the same code:
-
-- `ServerPlayerGameModeMixin` wraps `ServerPlayerGameMode.destroyBlock` for the breaking player.
-- `LivingEntityMixin` wraps the `dropAllDeathLoot` call in `LivingEntity.die` for `getLastHurtByPlayer()`, while `getLastHurtByPlayerMemoryTime()` is above 0 (the test vanilla uses for player kills). On NeoForge the drops pass `LivingDropsEvent` and are spawned inside that call.
-- `EnderDragonMixin` records the dragon's killer on its first death tick and wraps the two `ExperienceOrb.award` calls in `EnderDragon.tickDeath` for that player, because the dragon releases its experience after the 100-tick kill credit has expired.
-- `ServerExplosionMixin` wraps the `interactWithBlocks` call in `ServerExplosion.explode` for the explosion's indirect source entity, or else the attacker in its damage source.
-- `ServerPlayerMixin` wraps the `dropAllDeathLoot` call in `ServerPlayer.die` (which does not call `LivingEntity.die`) in a scope for nobody, which hides any outer scope, so a dying player's inventory is never handed to someone else.
-
-A mob death or explosion without a player cause opens no scope, so inside a block break its drops still go to the breaker, as before mob and explosion support existed. While a scope is open, `ServerLevelMixin` (`addFreshEntity`) and `ExperienceOrbMixin` (`awardWithDirection`) move item entities and experience to its player if that player is alive, in the same level, and has Telekinesis in effect; otherwise they stay in the world. A dead player still resolves as a killer or TNT owner until they respawn, and their corpse's inventory is discarded at respawn.
+The capture itself is BrainageLib's shared engine (`io.github.brainage04.brainagelib.drops`, see BrainageLib's
+`docs/DEVELOPMENT.md`): its mixins open a capture scope for a player's block break, a mob's death loot credited to a
+player, an explosion's block step, a bed or respawn anchor the player clicked, and a decaying leaf of a tree the player
+cut (every log a player breaks is recorded, whoever they are). This mod has no mixins of its own. It registers
+`TelekinesisDropPolicy` at `DropPolicies.DEFAULT_PRIORITY`: it governs every player and delivers to those whose
+server-wide and personal settings are both on, so a minigame that registers a higher policy keeps its own rules for the
+players in its matches. What a policy does not deliver stays in the world.
 
 ## Kill and explosion GameTests
 
