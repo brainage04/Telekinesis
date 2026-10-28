@@ -27,22 +27,21 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
-/// The two sources the game gives no player to name: a leaf of a tree the player cut, which decays later with no
-/// entity at all, and a respawn anchor the player used where it explodes. Beds take the anchor's path; BrainageLib's
-/// own suite exercises both.
+/// The two sources the game gives no player to name: a leaf of a tree the player cut, which decays
+/// later with no entity at all, and a respawn anchor the player used where it explodes. Beds take
+/// the anchor's path; BrainageLib's own suite exercises both.
 public final class TelekinesisLeafAndCreditGameTests {
     private static final BlockPos PLAYER_POS = new BlockPos(1, 1, 1);
     private static final BlockPos LOG_POS = new BlockPos(3, 1, 3);
 
-    /// Rolls of a decaying oak leaf's loot table; with no drop at all in about one leaf of thirteen, a count that has
-    /// to be above zero is in practice.
+    /// Rolls of a decaying oak leaf's loot table; with no drop at all in about one leaf of
+    /// thirteen, a count that has to be above zero is in practice.
     private static final int LEAF_ROLLS = 300;
 
-    private TelekinesisLeafAndCreditGameTests() {
-    }
+    private TelekinesisLeafAndCreditGameTests() {}
 
-    /// A player cuts a tree's trunk; the leaf it held up decays later with no entity to name, and its drops reach the
-    /// player who cut the tree instead of the ground.
+    /// A player cuts a tree's trunk; the leaf it held up decays later with no entity to name, and
+    /// its drops reach the player who cut the tree instead of the ground.
     public static void decayedLeafOfAFelledTreePaysTheFeller(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkLeaves", PLAYER_POS);
         ServerPlayer player = fixture.player();
@@ -63,11 +62,15 @@ public final class TelekinesisLeafAndCreditGameTests {
                 Block.dropResources(leaf, helper.getLevel(), leafPos);
             }
 
-            int paid = player.getInventory().countItem(Items.OAK_SAPLING)
-                    + player.getInventory().countItem(Items.STICK)
-                    + player.getInventory().countItem(Items.APPLE);
+            int paid =
+                    player.getInventory().countItem(Items.OAK_SAPLING)
+                            + player.getInventory().countItem(Items.STICK)
+                            + player.getInventory().countItem(Items.APPLE);
             check(paid > 0, "The decayed leaf of the felled tree must pay the player who cut it");
-            check(helper.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(leafPos).inflate(3.0D)).isEmpty(),
+            check(
+                    helper.getLevel()
+                            .getEntitiesOfClass(ItemEntity.class, new AABB(leafPos).inflate(3.0D))
+                            .isEmpty(),
                     "No leaf drop may stay on the ground of a Telekinesis player");
         } finally {
             fixture.close();
@@ -75,8 +78,8 @@ public final class TelekinesisLeafAndCreditGameTests {
         helper.succeed();
     }
 
-    /// A charged respawn anchor used outside the Nether explodes naming nobody; the chest its blast breaks pays the
-    /// player who used it, and the blast still hurts that player.
+    /// A charged respawn anchor used outside the Nether explodes naming nobody; the chest its blast
+    /// breaks pays the player who used it, and the blast still hurts that player.
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
@@ -86,32 +89,59 @@ public final class TelekinesisLeafAndCreditGameTests {
         GameTestPlayer fixture = enabledPlayer(helper, "TkAnchor", PLAYER_POS);
         ServerPlayer player = fixture.player();
         try {
-            for (BlockPos pos : BlockPos.betweenClosed(anchor.offset(-6, -1, -6), anchor.offset(6, 6, 6))) {
-                boolean shell = pos.getY() == anchor.getY() - 1 || pos.getY() == anchor.getY() + 6
-                        || Math.abs(pos.getX() - anchor.getX()) == 6 || Math.abs(pos.getZ() - anchor.getZ()) == 6;
-                end.setBlock(pos, (shell ? Blocks.OBSIDIAN : Blocks.AIR).defaultBlockState(), Block.UPDATE_CLIENTS);
+            for (BlockPos pos :
+                    BlockPos.betweenClosed(anchor.offset(-6, -1, -6), anchor.offset(6, 6, 6))) {
+                boolean shell =
+                        pos.getY() == anchor.getY() - 1
+                                || pos.getY() == anchor.getY() + 6
+                                || Math.abs(pos.getX() - anchor.getX()) == 6
+                                || Math.abs(pos.getZ() - anchor.getZ()) == 6;
+                end.setBlock(
+                        pos,
+                        (shell ? Blocks.OBSIDIAN : Blocks.AIR).defaultBlockState(),
+                        Block.UPDATE_CLIENTS);
             }
-            end.setBlock(anchor, Blocks.RESPAWN_ANCHOR.defaultBlockState().setValue(RespawnAnchorBlock.CHARGE, 4),
+            end.setBlock(
+                    anchor,
+                    Blocks.RESPAWN_ANCHOR
+                            .defaultBlockState()
+                            .setValue(RespawnAnchorBlock.CHARGE, 4),
                     Block.UPDATE_CLIENTS);
             end.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
-            ((ChestBlockEntity) end.getBlockEntity(chest)).setItem(0, new ItemStack(Items.EMERALD, 64));
+            ((ChestBlockEntity) end.getBlockEntity(chest))
+                    .setItem(0, new ItemStack(Items.EMERALD, 64));
             player.getInventory().clearContent();
-            player.teleportTo(end, anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 3.5D, Set.of(), 0.0F, 0.0F,
+            player.teleportTo(
+                    end,
+                    anchor.getX() + 0.5D,
+                    anchor.getY(),
+                    anchor.getZ() + 3.5D,
+                    Set.of(),
+                    0.0F,
+                    0.0F,
                     true);
-            // What the client's teleport confirmation would do: a player still changing dimension takes no damage.
+            // What the client's teleport confirmation would do: a player still changing dimension
+            // takes no damage.
             player.hasChangedDimension();
             fixture.markLoaded();
             player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 200, 3));
             float health = player.getHealth();
 
-            player.gameMode.useItemOn(player, end, ItemStack.EMPTY, InteractionHand.MAIN_HAND,
+            player.gameMode.useItemOn(
+                    player,
+                    end,
+                    ItemStack.EMPTY,
+                    InteractionHand.MAIN_HAND,
                     new BlockHitResult(Vec3.atCenterOf(anchor), Direction.UP, anchor, false));
 
             check(!end.getBlockState(anchor).is(Blocks.RESPAWN_ANCHOR), "The anchor must explode");
             checkCount(player, Items.EMERALD, 64, "the chest the anchor's blast broke");
-            check(player.getHealth() < health, "The player must still take their own blast's damage");
+            check(
+                    player.getHealth() < health,
+                    "The player must still take their own blast's damage");
         } finally {
-            end.getEntitiesOfClass(ItemEntity.class, new AABB(anchor).inflate(8.0D)).forEach(ItemEntity::discard);
+            end.getEntitiesOfClass(ItemEntity.class, new AABB(anchor).inflate(8.0D))
+                    .forEach(ItemEntity::discard);
             fixture.close();
         }
         helper.succeed();

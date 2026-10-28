@@ -25,9 +25,7 @@ import net.minecraft.world.phys.Vec3;
 public final class TelekinesisGameTests {
     private static final BlockPos DROP_POS = new BlockPos(1, 1, 1);
 
-    private TelekinesisGameTests() {
-    }
-
+    private TelekinesisGameTests() {}
 
     public static void minedBlockDropGoesDirectlyToInventory(GameTestHelper context) {
         ServerPlayer player = makeEnabledSurvivalPlayer(context);
@@ -48,7 +46,8 @@ public final class TelekinesisGameTests {
 
         assertDestroyed(player, context.absolutePos(DROP_POS));
         if (player.totalExperience <= experienceBefore) {
-            throw new AssertionError("Expected diamond ore experience to be awarded directly to the player.");
+            throw new AssertionError(
+                    "Expected diamond ore experience to be awarded directly to the player.");
         }
         context.assertEntityNotPresent(EntityTypes.EXPERIENCE_ORB);
         context.succeed();
@@ -95,15 +94,24 @@ public final class TelekinesisGameTests {
 
         assertDestroyed(player, context.absolutePos(DROP_POS));
         assertItemCount(player, Items.CHEST, 0);
-        ItemEntity remainder = context.getLevel().getEntitiesOfClass(
-                        ItemEntity.class,
-                        new AABB(playerPosition, playerPosition).inflate(1.0D)
-                ).stream()
-                .filter(itemEntity -> itemEntity.getItem().is(Items.CHEST))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Expected the chest remainder at the player's feet."));
+        ItemEntity remainder =
+                context
+                        .getLevel()
+                        .getEntitiesOfClass(
+                                ItemEntity.class,
+                                new AABB(playerPosition, playerPosition).inflate(1.0D))
+                        .stream()
+                        .filter(itemEntity -> itemEntity.getItem().is(Items.CHEST))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new AssertionError(
+                                                "Expected the chest remainder at the player's feet."));
         if (remainder.position().distanceToSqr(player.position()) > 0.01D) {
-            throw new AssertionError("Expected overflow at the player's exact position, found " + remainder.position() + ".");
+            throw new AssertionError(
+                    "Expected overflow at the player's exact position, found "
+                            + remainder.position()
+                            + ".");
         }
         context.succeed();
     }
@@ -169,20 +177,31 @@ public final class TelekinesisGameTests {
         int actualCount = countItem(player, item);
         if (actualCount != expectedCount) {
             throw new AssertionError(
-                    "Expected " + expectedCount + " " + item + " in inventory, found " + actualCount + "."
-            );
+                    "Expected "
+                            + expectedCount
+                            + " "
+                            + item
+                            + " in inventory, found "
+                            + actualCount
+                            + ".");
         }
     }
 
     private static void assertItemEntityNearDrop(GameTestHelper context, Item item) {
         BlockPos dropPosition = context.absolutePos(DROP_POS);
-        boolean present = context.getLevel().getEntitiesOfClass(
-                ItemEntity.class,
-                new AABB(dropPosition).inflate(4.0D),
-                itemEntity -> itemEntity.getItem().is(item)
-        ).stream().findAny().isPresent();
+        boolean present =
+                context
+                        .getLevel()
+                        .getEntitiesOfClass(
+                                ItemEntity.class,
+                                new AABB(dropPosition).inflate(4.0D),
+                                itemEntity -> itemEntity.getItem().is(item))
+                        .stream()
+                        .findAny()
+                        .isPresent();
         if (!present) {
-            throw new AssertionError("Expected " + item + " to remain in the world near the mined block.");
+            throw new AssertionError(
+                    "Expected " + item + " to remain in the world near the mined block.");
         }
     }
 

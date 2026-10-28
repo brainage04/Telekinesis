@@ -1,20 +1,18 @@
 package io.github.brainage04.telekinesis;
 
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 class TelekinesisConfigManagerTest {
-    @TempDir
-    Path directory;
+    @TempDir Path directory;
 
     @Test
     void changesArePersistedAndReloaded() throws IOException {
@@ -32,7 +30,7 @@ class TelekinesisConfigManagerTest {
         Path config = directory.resolve("telekinesis.json");
         Files.writeString(config, "{\"enabled\":false}");
         TelekinesisConfigManager.initialize(directory);
-        for (String invalid : new String[]{"{broken", "null", ""}) {
+        for (String invalid : new String[] {"{broken", "null", ""}) {
             Files.writeString(config, invalid);
             assertFalse(TelekinesisConfigManager.reload());
             assertFalse(TelekinesisConfigManager.config().enabled());
@@ -58,7 +56,8 @@ class TelekinesisConfigManagerTest {
         Files.writeString(config, "{broken");
         assertFalse(TelekinesisConfigManager.reload());
         assertFalse(TelekinesisConfigManager.setEnabled(false));
-        assertFalse(TelekinesisConfigManager.config().enabled(), "The change applies for the session");
+        assertFalse(
+                TelekinesisConfigManager.config().enabled(), "The change applies for the session");
         assertEquals("{broken", Files.readString(config));
         Files.writeString(config, "{\"enabled\":true}");
         assertTrue(TelekinesisConfigManager.reload());

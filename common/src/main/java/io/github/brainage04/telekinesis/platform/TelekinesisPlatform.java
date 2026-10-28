@@ -1,11 +1,10 @@
 package io.github.brainage04.telekinesis.platform;
 
 import com.mojang.brigadier.CommandDispatcher;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.server.MinecraftServer;
-
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.MinecraftServer;
 
 /** Loader services required by Telekinesis' shared server implementation. */
 public interface TelekinesisPlatform {

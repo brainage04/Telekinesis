@@ -92,7 +92,8 @@ public class TelekinesisGameTest {
 
     @GameTest
     public void meleeKillSendsLootEquipmentAndExperienceToKiller(GameTestHelper context) {
-        TelekinesisKillAndExplosionGameTests.meleeKillSendsLootEquipmentAndExperienceToKiller(context);
+        TelekinesisKillAndExplosionGameTests.meleeKillSendsLootEquipmentAndExperienceToKiller(
+                context);
     }
 
     @GameTest(maxTicks = 100)

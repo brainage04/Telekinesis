@@ -25,14 +25,14 @@ public final class Telekinesis {
         TelekinesisPlayerSettings.initialize(platform);
         ModCommands.initialize(platform);
         DropPolicies.register(DropPolicies.DEFAULT_PRIORITY, TelekinesisDropPolicy.INSTANCE);
-        ServerModHelpRegistry.register(new ServerModHelpEntry(
-                MOD_ID,
-                MOD_NAME,
-                "Sends drops and experience from blocks you mine, mobs you kill and explosions you"
-                        + " cause straight to you, and pays you for the leaves of a tree you felled.",
-                "/telekinesis help",
-                "/telekinesis config"
-        ));
+        ServerModHelpRegistry.register(
+                new ServerModHelpEntry(
+                        MOD_ID,
+                        MOD_NAME,
+                        "Sends drops and experience from blocks you mine, mobs you kill and explosions you"
+                                + " cause straight to you, and pays you for the leaves of a tree you felled.",
+                        "/telekinesis help",
+                        "/telekinesis config"));
         LOGGER.info("{} initialised.", MOD_NAME);
     }
 }

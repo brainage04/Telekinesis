@@ -25,9 +25,9 @@ import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownSplashPotion;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -37,22 +37,24 @@ import net.minecraft.world.phys.Vec3;
 
 /// Mob kills and explosions, through the production implementation on both loaders.
 ///
-/// Mobs use the test loot table `telekinesis:gametest/kill_probe` (one emerald, plus one per Looting level), so
-/// every count is exact. Explosions break a chest holding 64 emeralds: container contents always drop, unlike block
-/// loot, which explosions destroy at random.
+/// Mobs use the test loot table `telekinesis:gametest/kill_probe` (one emerald, plus one per
+/// Looting level), so every count is exact. Explosions break a chest holding 64 emeralds: container
+/// contents always drop, unlike block loot, which explosions destroy at random.
 public final class TelekinesisKillAndExplosionGameTests {
     private static final String KILL_PROBE = "telekinesis:gametest/kill_probe";
     private static final BlockPos PLAYER_POS = new BlockPos(1, 1, 1);
     private static final BlockPos MOB_POS = new BlockPos(3, 1, 1);
-    /// Close to the structure: primed TNT placed 8 blocks out never exploded in a test run. The explosion tests have
-    /// extra padding so the blast does not reach neighbouring tests.
+
+    /// Close to the structure: primed TNT placed 8 blocks out never exploded in a test run. The
+    /// explosion tests have extra padding so the blast does not reach neighbouring tests.
     private static final BlockPos TNT_POS = new BlockPos(3, 1, 3);
+
     private static final BlockPos CHEST_POS = new BlockPos(4, 1, 3);
+
     /// Outside the 8-block reach of a power-4 explosion's damage.
     private static final BlockPos FAR_PLAYER_POS = new BlockPos(3, 1, 13);
 
-    private TelekinesisKillAndExplosionGameTests() {
-    }
+    private TelekinesisKillAndExplosionGameTests() {}
 
     public static void meleeKillSendsLootEquipmentAndExperienceToKiller(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkMelee", PLAYER_POS);
@@ -69,7 +71,9 @@ public final class TelekinesisKillAndExplosionGameTests {
             check(husk.isDeadOrDying(), "The melee hit must kill the husk");
             checkCount(player, Items.EMERALD, 1, "loot-table drop");
             checkCount(player, Items.IRON_HELMET, 1, "guaranteed equipment drop");
-            check(player.totalExperience > experienceBefore, "The husk's experience must go to the killer");
+            check(
+                    player.totalExperience > experienceBefore,
+                    "The husk's experience must go to the killer");
             checkNoDropsNear(helper, MOB_POS);
         } finally {
             fixture.close();
@@ -83,24 +87,31 @@ public final class TelekinesisKillAndExplosionGameTests {
         ServerLevel level = helper.getLevel();
         Husk husk = probeMob(helper, "tk_arrow", MOB_POS);
         int experienceBefore = player.totalExperience;
-        Arrow arrow = new Arrow(level, player, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
+        Arrow arrow =
+                new Arrow(level, player, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
         Vec3 target = husk.position().add(0.0D, husk.getBbHeight() / 2.0D, 0.0D);
         arrow.setPos(target.add(-1.5D, 0.0D, 0.0D));
         arrow.shoot(1.0D, 0.0D, 0.0D, 2.0F, 0.0F);
         level.addFreshEntity(arrow);
 
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(husk.isDeadOrDying(), "The arrow must kill the husk"))
-                .thenExecute(() -> {
-                    try {
-                        checkCount(player, Items.EMERALD, 1, "arrow kill drop");
-                        check(player.totalExperience > experienceBefore, "Experience must go to the shooter");
-                        checkNoDropsNear(helper, MOB_POS);
-                    } finally {
-                        arrow.discard();
-                        fixture.close();
-                    }
-                })
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        husk.isDeadOrDying(), "The arrow must kill the husk"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                checkCount(player, Items.EMERALD, 1, "arrow kill drop");
+                                check(
+                                        player.totalExperience > experienceBefore,
+                                        "Experience must go to the shooter");
+                                checkNoDropsNear(helper, MOB_POS);
+                            } finally {
+                                arrow.discard();
+                                fixture.close();
+                            }
+                        })
                 .thenSucceed();
     }
 
@@ -109,8 +120,12 @@ public final class TelekinesisKillAndExplosionGameTests {
         try {
             ServerPlayer player = fixture.player();
             ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-            sword.enchant(helper.getLevel().registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
-                    .getOrThrow(Enchantments.LOOTING), 3);
+            sword.enchant(
+                    helper.getLevel()
+                            .registryAccess()
+                            .lookupOrThrow(Registries.ENCHANTMENT)
+                            .getOrThrow(Enchantments.LOOTING),
+                    3);
             player.setItemInHand(InteractionHand.MAIN_HAND, sword);
             Husk husk = probeMob(helper, "tk_looting", MOB_POS);
 
@@ -139,12 +154,23 @@ public final class TelekinesisKillAndExplosionGameTests {
 
             check(husk.isDeadOrDying(), "The melee hit must kill the husk");
             checkCount(player, Items.EMERALD, 0, "full inventory");
-            ItemEntity remainder = helper.getLevel().getEntitiesOfClass(ItemEntity.class,
-                            player.getBoundingBox().inflate(1.0D), item -> item.getItem().is(Items.EMERALD))
-                    .stream().findFirst()
-                    .orElseThrow(() -> new AssertionError("Expected the emerald at the killer's feet"));
-            check(remainder.position().distanceToSqr(player.position()) < 0.01D,
-                    "Expected the overflow at the killer's exact position, found " + remainder.position());
+            ItemEntity remainder =
+                    helper
+                            .getLevel()
+                            .getEntitiesOfClass(
+                                    ItemEntity.class,
+                                    player.getBoundingBox().inflate(1.0D),
+                                    item -> item.getItem().is(Items.EMERALD))
+                            .stream()
+                            .findFirst()
+                            .orElseThrow(
+                                    () ->
+                                            new AssertionError(
+                                                    "Expected the emerald at the killer's feet"));
+            check(
+                    remainder.position().distanceToSqr(player.position()) < 0.01D,
+                    "Expected the overflow at the killer's exact position, found "
+                            + remainder.position());
             remainder.discard();
         } finally {
             fixture.close();
@@ -159,15 +185,26 @@ public final class TelekinesisKillAndExplosionGameTests {
         primeTnt(helper, player);
 
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(helper.getBlockState(CHEST_POS).isAir(), "The TNT must destroy the chest"))
-                .thenExecute(() -> {
-                    try {
-                        checkCount(player, Items.EMERALD, 64, "chest contents from the player's TNT");
-                        check(emeraldsNear(helper, CHEST_POS) == 0, "No emerald may stay at the chest");
-                    } finally {
-                        fixture.close();
-                    }
-                })
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        helper.getBlockState(CHEST_POS).isAir(),
+                                        "The TNT must destroy the chest"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                checkCount(
+                                        player,
+                                        Items.EMERALD,
+                                        64,
+                                        "chest contents from the player's TNT");
+                                check(
+                                        emeraldsNear(helper, CHEST_POS) == 0,
+                                        "No emerald may stay at the chest");
+                            } finally {
+                                fixture.close();
+                            }
+                        })
                 .thenSucceed();
     }
 
@@ -178,16 +215,23 @@ public final class TelekinesisKillAndExplosionGameTests {
         primeTnt(helper, null);
 
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(helper.getBlockState(CHEST_POS).isAir(), "The TNT must destroy the chest"))
-                .thenExecute(() -> {
-                    try {
-                        checkCount(player, Items.EMERALD, 0, "TNT nobody lit");
-                        int dropped = emeraldsNear(helper, CHEST_POS);
-                        check(dropped == 64, "Expected the 64 emeralds on the ground, found " + dropped);
-                    } finally {
-                        fixture.close();
-                    }
-                })
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        helper.getBlockState(CHEST_POS).isAir(),
+                                        "The TNT must destroy the chest"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                checkCount(player, Items.EMERALD, 0, "TNT nobody lit");
+                                int dropped = emeraldsNear(helper, CHEST_POS);
+                                check(
+                                        dropped == 64,
+                                        "Expected the 64 emeralds on the ground, found " + dropped);
+                            } finally {
+                                fixture.close();
+                            }
+                        })
                 .thenSucceed();
     }
 
@@ -210,7 +254,8 @@ public final class TelekinesisKillAndExplosionGameTests {
         GameTestPlayer watcher = enabledPlayer(helper, "TkWatcher", PLAYER_POS);
         GameTestPlayer killer = enabledPlayer(helper, "TkKiller", new BlockPos(1, 1, 3));
         try {
-            killer.player().setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
+            killer.player()
+                    .setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
             Husk husk = probeMob(helper, "tk_other", MOB_POS);
 
             killer.player().attack(husk);
@@ -229,7 +274,8 @@ public final class TelekinesisKillAndExplosionGameTests {
         GameTestPlayer killer = enabledPlayer(helper, "TkPvpKiller", PLAYER_POS);
         GameTestPlayer victim = enabledPlayer(helper, "TkPvpVictim", MOB_POS);
         try {
-            killer.player().setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
+            killer.player()
+                    .setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
             victim.player().getInventory().setItem(9, new ItemStack(Items.EMERALD, 5));
             victim.player().setHealth(0.1F);
 
@@ -237,7 +283,9 @@ public final class TelekinesisKillAndExplosionGameTests {
 
             check(victim.player().isDeadOrDying(), "The melee hit must kill the victim");
             checkCount(killer.player(), Items.EMERALD, 0, "another player's death drops");
-            check(emeraldsNear(helper, MOB_POS) == 5, "Expected the victim's emeralds on the ground");
+            check(
+                    emeraldsNear(helper, MOB_POS) == 5,
+                    "Expected the victim's emeralds on the ground");
         } finally {
             victim.close();
             killer.close();
@@ -245,8 +293,8 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// A dead player still resolves as the TNT's owner until they respawn, and the corpse's inventory is discarded
-    /// at respawn, so the chest's contents must stay in the world.
+    /// A dead player still resolves as the TNT's owner until they respawn, and the corpse's
+    /// inventory is discarded at respawn, so the chest's contents must stay in the world.
     public static void deadTntOwnerLeavesDropsInWorld(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkTntDead", FAR_PLAYER_POS);
         ServerPlayer player = fixture.player();
@@ -255,17 +303,24 @@ public final class TelekinesisKillAndExplosionGameTests {
         player.kill(helper.getLevel());
 
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(helper.getBlockState(CHEST_POS).isAir(), "The TNT must destroy the chest"))
-                .thenExecute(() -> {
-                    try {
-                        check(player.isDeadOrDying(), "The TNT's owner must be dead");
-                        checkCount(player, Items.EMERALD, 0, "a dead TNT owner");
-                        int dropped = emeraldsNear(helper, CHEST_POS);
-                        check(dropped == 64, "Expected the 64 emeralds on the ground, found " + dropped);
-                    } finally {
-                        fixture.close();
-                    }
-                })
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        helper.getBlockState(CHEST_POS).isAir(),
+                                        "The TNT must destroy the chest"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                check(player.isDeadOrDying(), "The TNT's owner must be dead");
+                                checkCount(player, Items.EMERALD, 0, "a dead TNT owner");
+                                int dropped = emeraldsNear(helper, CHEST_POS);
+                                check(
+                                        dropped == 64,
+                                        "Expected the 64 emeralds on the ground, found " + dropped);
+                            } finally {
+                                fixture.close();
+                            }
+                        })
                 .thenSucceed();
     }
 
@@ -287,7 +342,8 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// Vanilla's kill credit lasts 100 ticks after the player's last hit; after that the death is nobody's.
+    /// Vanilla's kill credit lasts 100 ticks after the player's last hit; after that the death is
+    /// nobody's.
     public static void expiredKillCreditLeavesKillLootInWorld(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkKillerOld", PLAYER_POS);
         try {
@@ -305,8 +361,8 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// A player who dies inside another player's capture scope (here opened directly, as a block break or kill
-    /// would) keeps their death drops in the world.
+    /// A player who dies inside another player's capture scope (here opened directly, as a block
+    /// break or kill would) keeps their death drops in the world.
     public static void playerDeathInsideAnotherScopeStaysInWorld(GameTestHelper helper) {
         GameTestPlayer outer = enabledPlayer(helper, "TkScopeOwner", PLAYER_POS);
         GameTestPlayer victim = enabledPlayer(helper, "TkScopeVictim", MOB_POS);
@@ -321,8 +377,14 @@ public final class TelekinesisKillAndExplosionGameTests {
             }
 
             check(victim.player().isDeadOrDying(), "The victim must be dead");
-            checkCount(outer.player(), Items.EMERALD, 0, "another player's death drops inside a scope");
-            check(emeraldsNear(helper, MOB_POS) == 5, "Expected the victim's emeralds on the ground");
+            checkCount(
+                    outer.player(),
+                    Items.EMERALD,
+                    0,
+                    "another player's death drops inside a scope");
+            check(
+                    emeraldsNear(helper, MOB_POS) == 5,
+                    "Expected the victim's emeralds on the ground");
         } finally {
             victim.close();
             outer.close();
@@ -330,8 +392,8 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// The dragon releases 500 experience (no previous dragon fight) between death ticks 155 and 200, after the
-    /// 100-tick kill credit has expired.
+    /// The dragon releases 500 experience (no previous dragon fight) between death ticks 155 and
+    /// 200, after the 100-tick kill credit has expired.
     public static void dragonDeathExperienceGoesToKiller(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkDragon", FAR_PLAYER_POS);
         ServerPlayer player = fixture.player();
@@ -342,18 +404,30 @@ public final class TelekinesisKillAndExplosionGameTests {
         dragon.setHealth(0.0F);
 
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(dragon.isRemoved(), "The dragon must finish its death animation"))
-                .thenExecute(() -> {
-                    try {
-                        int gained = player.totalExperience - experienceBefore;
-                        check(gained == 500, "Expected the dragon's 500 experience, found " + gained);
-                        check(helper.getLevel().getEntitiesOfClass(ExperienceOrb.class,
-                                        new AABB(helper.absolutePos(MOB_POS)).inflate(32.0D)).isEmpty(),
-                                "No experience orb may drop at the dragon");
-                    } finally {
-                        fixture.close();
-                    }
-                })
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        dragon.isRemoved(),
+                                        "The dragon must finish its death animation"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                int gained = player.totalExperience - experienceBefore;
+                                check(
+                                        gained == 500,
+                                        "Expected the dragon's 500 experience, found " + gained);
+                                check(
+                                        helper.getLevel()
+                                                .getEntitiesOfClass(
+                                                        ExperienceOrb.class,
+                                                        new AABB(helper.absolutePos(MOB_POS))
+                                                                .inflate(32.0D))
+                                                .isEmpty(),
+                                        "No experience orb may drop at the dragon");
+                            } finally {
+                                fixture.close();
+                            }
+                        })
                 .thenSucceed();
     }
 
@@ -384,28 +458,36 @@ public final class TelekinesisKillAndExplosionGameTests {
         ServerPlayer player = fixture.player();
         ServerLevel level = helper.getLevel();
         Pig pig = probeMob(helper, "minecraft:pig", Pig.class, "tk_potion", MOB_POS);
-        ThrownSplashPotion potion = new ThrownSplashPotion(level, player,
-                PotionContents.createItemStack(Items.SPLASH_POTION, Potions.HARMING));
+        ThrownSplashPotion potion =
+                new ThrownSplashPotion(
+                        level,
+                        player,
+                        PotionContents.createItemStack(Items.SPLASH_POTION, Potions.HARMING));
         potion.setPos(pig.position().add(0.0D, 2.0D, 0.0D));
         potion.setDeltaMovement(0.0D, -0.5D, 0.0D);
         level.addFreshEntity(potion);
 
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(pig.isDeadOrDying(), "The Harming splash must kill the pig"))
-                .thenExecute(() -> {
-                    try {
-                        checkCount(player, Items.EMERALD, 1, "the potion kill's drop");
-                        checkNoDropsNear(helper, MOB_POS);
-                    } finally {
-                        fixture.close();
-                    }
-                })
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        pig.isDeadOrDying(),
+                                        "The Harming splash must kill the pig"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                checkCount(player, Items.EMERALD, 1, "the potion kill's drop");
+                                checkNoDropsNear(helper, MOB_POS);
+                            } finally {
+                                fixture.close();
+                            }
+                        })
                 .thenSucceed();
     }
 
-    /// The player's TNT sets off a row of TNT blocks; only the last one reaches the chest. A power-4 blast breaks a
-    /// chest at most about 4.2 blocks away, and the chest's near face is 4.5 blocks from the first TNT, which the
-    /// test checks before the chain reaches the chest.
+    /// The player's TNT sets off a row of TNT blocks; only the last one reaches the chest. A
+    /// power-4 blast breaks a chest at most about 4.2 blocks away, and the chest's near face is 4.5
+    /// blocks from the first TNT, which the test checks before the chain reaches the chest.
     public static void chainedTntCreditsPlayerWhoLitTheFirst(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkTntChain", FAR_PLAYER_POS);
         ServerPlayer player = fixture.player();
@@ -413,22 +495,38 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.setBlock(new BlockPos(5, 1, 3), Blocks.TNT);
         helper.setBlock(new BlockPos(7, 1, 3), Blocks.TNT);
         helper.setBlock(chest, Blocks.CHEST);
-        helper.getBlockEntity(chest, ChestBlockEntity.class).setItem(0, new ItemStack(Items.EMERALD, 64));
+        helper.getBlockEntity(chest, ChestBlockEntity.class)
+                .setItem(0, new ItemStack(Items.EMERALD, 64));
         PrimedTnt first = primeTnt(helper, player);
 
         helper.startSequence()
-                .thenWaitUntil(() -> helper.assertTrue(first.isRemoved(), "The first TNT must explode"))
-                .thenExecute(() -> check(helper.getBlockState(chest).is(Blocks.CHEST),
-                        "The first TNT's blast must not reach the chest"))
-                .thenWaitUntil(() -> helper.assertTrue(helper.getBlockState(chest).isAir(), "The chained TNT must destroy the chest"))
-                .thenExecute(() -> {
-                    try {
-                        checkCount(player, Items.EMERALD, 64, "chest contents from chained TNT");
-                        check(emeraldsNear(helper, chest) == 0, "No emerald may stay at the chest");
-                    } finally {
-                        fixture.close();
-                    }
-                })
+                .thenWaitUntil(
+                        () -> helper.assertTrue(first.isRemoved(), "The first TNT must explode"))
+                .thenExecute(
+                        () ->
+                                check(
+                                        helper.getBlockState(chest).is(Blocks.CHEST),
+                                        "The first TNT's blast must not reach the chest"))
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        helper.getBlockState(chest).isAir(),
+                                        "The chained TNT must destroy the chest"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                checkCount(
+                                        player,
+                                        Items.EMERALD,
+                                        64,
+                                        "chest contents from chained TNT");
+                                check(
+                                        emeraldsNear(helper, chest) == 0,
+                                        "No emerald may stay at the chest");
+                            } finally {
+                                fixture.close();
+                            }
+                        })
                 .thenSucceed();
     }
 
@@ -436,16 +534,32 @@ public final class TelekinesisKillAndExplosionGameTests {
         GameTestPlayer fixture = enabledPlayer(helper, "TkCommandItems", PLAYER_POS);
         try {
             ServerPlayer player = fixture.player();
-            CommandSourceStack source = helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput();
+            CommandSourceStack source =
+                    helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput();
             Vec3 at = player.position();
-            helper.getLevel().getServer().getCommands().performPrefixedCommand(source, String.format(java.util.Locale.ROOT,
-                    "summon minecraft:item %.2f %.2f %.2f {Item:{id:\"minecraft:emerald\",count:5}}", at.x(), at.y(), at.z()));
+            helper.getLevel()
+                    .getServer()
+                    .getCommands()
+                    .performPrefixedCommand(
+                            source,
+                            String.format(
+                                    java.util.Locale.ROOT,
+                                    "summon minecraft:item %.2f %.2f %.2f {Item:{id:\"minecraft:emerald\",count:5}}",
+                                    at.x(),
+                                    at.y(),
+                                    at.z()));
             checkCount(player, Items.EMERALD, 0, "/summon item");
-            check(emeraldsNear(helper, PLAYER_POS) == 5, "Expected the summoned emeralds to stay in the world");
+            check(
+                    emeraldsNear(helper, PLAYER_POS) == 5,
+                    "Expected the summoned emeralds to stay in the world");
 
-            // /give also spawns a "fake" item entity for the pickup animation; capturing it would give more than 3.
-            helper.getLevel().getServer().getCommands().performPrefixedCommand(source,
-                    "give " + player.getScoreboardName() + " minecraft:diamond 3");
+            // /give also spawns a "fake" item entity for the pickup animation; capturing it would
+            // give more than 3.
+            helper.getLevel()
+                    .getServer()
+                    .getCommands()
+                    .performPrefixedCommand(
+                            source, "give " + player.getScoreboardName() + " minecraft:diamond 3");
             checkCount(player, Items.DIAMOND, 3, "/give");
         } finally {
             fixture.close();
@@ -453,38 +567,63 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    public static GameTestPlayer enabledPlayer(GameTestHelper helper, String name, BlockPos position) {
+    public static GameTestPlayer enabledPlayer(
+            GameTestHelper helper, String name, BlockPos position) {
         TelekinesisConfigManager.setEnabled(true);
-        GameTestPlayer fixture = GameTestPlayer.join(helper, name)
-                .markLoaded()
-                .gameMode(GameType.SURVIVAL)
-                .moveTo(helper, position);
+        GameTestPlayer fixture =
+                GameTestPlayer.join(helper, name)
+                        .markLoaded()
+                        .gameMode(GameType.SURVIVAL)
+                        .moveTo(helper, position);
         TelekinesisPlayerSettings.setEnabled(fixture.player(), true);
         return fixture;
     }
 
-    /// A husk does not burn in daylight, so only the test can kill it. Its 0.1 health falls to any hit: a player who
-    /// just joined attacks with no charge, and a held sword's damage applies from the next tick.
+    /// A husk does not burn in daylight, so only the test can kill it. Its 0.1 health falls to any
+    /// hit: a player who just joined attacks with no charge, and a held sword's damage applies from
+    /// the next tick.
     public static Husk probeMob(GameTestHelper helper, String tag, BlockPos relative) {
         return probeMob(helper, "minecraft:husk", Husk.class, tag, relative);
     }
 
     private static <T extends LivingEntity> T probeMob(
-            GameTestHelper helper, String type, Class<T> entityClass, String tag, BlockPos relative) {
+            GameTestHelper helper,
+            String type,
+            Class<T> entityClass,
+            String tag,
+            BlockPos relative) {
         Vec3 at = Vec3.atBottomCenterOf(helper.absolutePos(relative));
-        CommandSourceStack source = helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput();
-        helper.getLevel().getServer().getCommands().performPrefixedCommand(source, String.format(java.util.Locale.ROOT,
-                "summon %s %.2f %.2f %.2f {NoAI:1b,Health:0.1f,DeathLootTable:\"%s\",Tags:[\"%s\"]}",
-                type, at.x(), at.y(), at.z(), KILL_PROBE, tag));
-        return helper.getLevel().getEntitiesOfClass(entityClass, new AABB(at, at).inflate(1.0D),
+        CommandSourceStack source =
+                helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput();
+        helper.getLevel()
+                .getServer()
+                .getCommands()
+                .performPrefixedCommand(
+                        source,
+                        String.format(
+                                java.util.Locale.ROOT,
+                                "summon %s %.2f %.2f %.2f {NoAI:1b,Health:0.1f,DeathLootTable:\"%s\",Tags:[\"%s\"]}",
+                                type,
+                                at.x(),
+                                at.y(),
+                                at.z(),
+                                KILL_PROBE,
+                                tag));
+        return helper
+                .getLevel()
+                .getEntitiesOfClass(
+                        entityClass,
+                        new AABB(at, at).inflate(1.0D),
                         entity -> entity.entityTags().contains(tag))
-                .stream().findFirst()
+                .stream()
+                .findFirst()
                 .orElseThrow(() -> new AssertionError("Could not summon the " + tag + " " + type));
     }
 
     private static void placeEmeraldChest(GameTestHelper helper) {
         helper.setBlock(CHEST_POS, Blocks.CHEST);
-        helper.getBlockEntity(CHEST_POS, ChestBlockEntity.class).setItem(0, new ItemStack(Items.EMERALD, 64));
+        helper.getBlockEntity(CHEST_POS, ChestBlockEntity.class)
+                .setItem(0, new ItemStack(Items.EMERALD, 64));
     }
 
     private static PrimedTnt primeTnt(GameTestHelper helper, ServerPlayer owner) {
@@ -497,14 +636,24 @@ public final class TelekinesisKillAndExplosionGameTests {
 
     public static void checkNoDropsNear(GameTestHelper helper, BlockPos relative) {
         AABB area = new AABB(helper.absolutePos(relative)).inflate(3.0D);
-        check(helper.getLevel().getEntitiesOfClass(ItemEntity.class, area).isEmpty(), "No item may drop at the mob");
-        check(helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, area).isEmpty(), "No experience orb may drop at the mob");
+        check(
+                helper.getLevel().getEntitiesOfClass(ItemEntity.class, area).isEmpty(),
+                "No item may drop at the mob");
+        check(
+                helper.getLevel().getEntitiesOfClass(ExperienceOrb.class, area).isEmpty(),
+                "No experience orb may drop at the mob");
     }
 
     private static int emeraldsNear(GameTestHelper helper, BlockPos relative) {
-        return helper.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(helper.absolutePos(relative)).inflate(6.0D),
+        return helper
+                .getLevel()
+                .getEntitiesOfClass(
+                        ItemEntity.class,
+                        new AABB(helper.absolutePos(relative)).inflate(6.0D),
                         item -> item.getItem().is(Items.EMERALD))
-                .stream().mapToInt(item -> item.getItem().getCount()).sum();
+                .stream()
+                .mapToInt(item -> item.getItem().getCount())
+                .sum();
     }
 
     public static void checkCount(ServerPlayer player, Item item, int expected, String what) {
@@ -514,7 +663,16 @@ public final class TelekinesisKillAndExplosionGameTests {
                 actual += stack.getCount();
             }
         }
-        check(actual == expected, "Expected " + expected + " " + item + " in the inventory (" + what + "), found " + actual);
+        check(
+                actual == expected,
+                "Expected "
+                        + expected
+                        + " "
+                        + item
+                        + " in the inventory ("
+                        + what
+                        + "), found "
+                        + actual);
     }
 
     public static void check(boolean value, String message) {

@@ -4,9 +4,9 @@ import io.github.brainage04.minecraftmodconventions.ClientGameTestRecorder;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestServers;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
+import java.util.Properties;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,8 +26,6 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Properties;
-
 @SuppressWarnings("UnstableApiUsage")
 public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int STAGE_Y = 63;
@@ -35,8 +33,10 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final BlockPos CHEST_POS = new BlockPos(2, STAGE_Y + 1, 0);
     private static final BlockPos DISABLED_ORE_POS = new BlockPos(-2, STAGE_Y + 1, 0);
     private static final BlockPos MOB_POS = new BlockPos(0, STAGE_Y + 1, 2);
+
     /// Far enough from the player and from DISABLED_ORE_POS that the blast reaches neither.
     private static final BlockPos TNT_POS = new BlockPos(5, STAGE_Y + 1, -3);
+
     private static final BlockPos TNT_CHEST_POS = new BlockPos(4, STAGE_Y + 1, -3);
     private static final AABB STAGE_BOX = new AABB(-6, STAGE_Y, -4, 6, STAGE_Y + 4, 6);
 
@@ -44,189 +44,243 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     public void runTest(ClientGameTestContext context) {
         Properties serverProperties = ClientGameTestServers.flatServerProperties();
 
-        ClientGameTestServers.withDedicatedServer(context, serverProperties, "Telekinesis recording GameTest", server -> {
-            boolean previousTelekinesis = server.computeOnServer(minecraftServer -> {
-                ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                boolean enabled = TelekinesisConfigManager.config().enabled();
-                TelekinesisConfigManager.setEnabled(true);
-                TelekinesisPlayerSettings.setEnabled(player, true);
-                prepareStage(player.level(), player);
-                return enabled;
-            });
-        
-            context.runOnClient(client -> {
-                if (client.player == null) {
-                    throw new AssertionError("Expected a connected client player for the recording.");
-                }
-                client.player.setYRot(180.0F);
-                client.player.setXRot(12.0F);
-            });
-        
-            try {
-                context.waitTicks(30);
-                ClientGameTestRecorder.startRecording(context);
-                ClientGameTestRecorder.showStep(
-                        context,
-                        "telekinesis.stage",
-                        "Telekinesis",
-                        "Survival player on the elevated ore stage"
-                );
-                context.waitTicks(30);
-        
-                ClientGameTestRecorder.showStep(
-                        context,
-                        "telekinesis.ore",
-                        "Diamond ore",
-                        "Breaking ore sends its diamond directly to inventory"
-                );
-                server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    ServerLevel level = player.level();
-                    destroy(player, ORE_POS);
-                    assertInventoryCount(player, Items.DIAMOND, 1);
-                    assertNoItemEntity(level, Items.DIAMOND);
-                    return null;
-                });
-                context.waitTicks(35);
-        
-                ClientGameTestRecorder.showStep(
-                        context,
-                        "telekinesis.chest",
-                        "Chest contents",
-                        "The chest and each unique contents stack go directly to inventory"
-                );
-                server.computeOnServer(minecraftServer -> {
-                    ServerLevel level = minecraftServer.getPlayerList().getPlayers().getFirst().level();
-                    level.setBlock(CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
-                    ChestBlockEntity chest = (ChestBlockEntity) level.getBlockEntity(CHEST_POS);
-                    if (chest == null) {
-                        throw new AssertionError("Expected the demonstration chest block entity.");
-                    }
-                    chest.setItem(0, new ItemStack(Items.DIAMOND, 3));
-                    chest.setItem(1, new ItemStack(Items.EMERALD, 2));
-                    return null;
-                });
-                context.waitTicks(25);
-                ClientGameTestRecorder.showStep(
-                        context,
-                        "telekinesis.chest.break",
-                        "Chest contents",
-                        "Breaking the chest transfers every drop directly to inventory"
-                );
-                server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    ServerLevel level = player.level();
-                    destroy(player, CHEST_POS);
-                    assertInventoryCount(player, Items.CHEST, 1);
-                    assertInventoryCount(player, Items.DIAMOND, 4);
-                    assertInventoryCount(player, Items.EMERALD, 2);
-                    assertNoItemEntities(level);
-                    return null;
-                });
-                context.waitTicks(35);
+        ClientGameTestServers.withDedicatedServer(
+                context,
+                serverProperties,
+                "Telekinesis recording GameTest",
+                server -> {
+                    boolean previousTelekinesis =
+                            server.computeOnServer(
+                                    minecraftServer -> {
+                                        ServerPlayer player =
+                                                minecraftServer
+                                                        .getPlayerList()
+                                                        .getPlayers()
+                                                        .getFirst();
+                                        boolean enabled =
+                                                TelekinesisConfigManager.config().enabled();
+                                        TelekinesisConfigManager.setEnabled(true);
+                                        TelekinesisPlayerSettings.setEnabled(player, true);
+                                        prepareStage(player.level(), player);
+                                        return enabled;
+                                    });
 
-                server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    Husk husk = EntityTypes.HUSK.create(player.level(), EntitySpawnReason.COMMAND);
-                    if (husk == null) {
-                        throw new AssertionError("Expected the demonstration husk.");
-                    }
-                    husk.setNoAi(true);
-                    husk.setPos(Vec3.atBottomCenterOf(MOB_POS));
-                    husk.setYRot(0.0F);
-                    husk.setYHeadRot(0.0F);
-                    husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
-                    husk.setDropChance(EquipmentSlot.MAINHAND, 2.0F);
-                    husk.setHealth(1.0F);
-                    player.level().addFreshEntity(husk);
-                    player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
-                    return null;
-                });
-                ClientGameTestRecorder.showStep(
-                        context,
-                        "telekinesis.mob",
-                        "Mob kill",
-                        "The husk's loot, held sword and experience go to the player who killed it"
-                );
-                context.waitTicks(30);
-                server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    ServerLevel level = player.level();
-                    Husk husk = level.getEntitiesOfClass(Husk.class, STAGE_BOX).stream().findFirst()
-                            .orElseThrow(() -> new AssertionError("Expected the demonstration husk on the stage."));
-                    int experienceBefore = player.totalExperience;
-                    player.attack(husk);
-                    if (!husk.isDeadOrDying()) {
-                        throw new AssertionError("Expected the melee hit to kill the husk.");
-                    }
-                    assertInventoryCount(player, Items.IRON_SWORD, 1);
-                    if (player.totalExperience <= experienceBefore) {
-                        throw new AssertionError("Expected the husk's experience to go to the player.");
-                    }
-                    assertNoItemEntities(level);
-                    player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
-                    return null;
-                });
-                context.waitTicks(35);
+                    context.runOnClient(
+                            client -> {
+                                if (client.player == null) {
+                                    throw new AssertionError(
+                                            "Expected a connected client player for the recording.");
+                                }
+                                client.player.setYRot(180.0F);
+                                client.player.setXRot(12.0F);
+                            });
 
-                server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    ServerLevel level = player.level();
-                    level.setBlock(TNT_CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
-                    ChestBlockEntity chest = (ChestBlockEntity) level.getBlockEntity(TNT_CHEST_POS);
-                    if (chest == null) {
-                        throw new AssertionError("Expected the explosion demonstration chest.");
-                    }
-                    chest.setItem(0, new ItemStack(Items.EMERALD, 64));
-                    PrimedTnt tnt = new PrimedTnt(level, TNT_POS.getX() + 0.5D, TNT_POS.getY(), TNT_POS.getZ() + 0.5D, player);
-                    tnt.setFuse(40);
-                    level.addFreshEntity(tnt);
-                    return null;
-                });
-                ClientGameTestRecorder.showStep(
-                        context,
-                        "telekinesis.explosion",
-                        "TNT the player lit",
-                        "The chest the player's TNT destroys sends its 64 emeralds to that player"
-                );
-                context.waitTicks(55);
-                server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    ServerLevel level = player.level();
-                    if (!level.getBlockState(TNT_CHEST_POS).isAir()) {
-                        throw new AssertionError("Expected the TNT to destroy the chest.");
-                    }
-                    assertInventoryCount(player, Items.EMERALD, 66);
-                    assertNoItemEntity(level, Items.EMERALD);
-                    return null;
-                });
-                context.waitTicks(30);
+                    try {
+                        context.waitTicks(30);
+                        ClientGameTestRecorder.startRecording(context);
+                        ClientGameTestRecorder.showStep(
+                                context,
+                                "telekinesis.stage",
+                                "Telekinesis",
+                                "Survival player on the elevated ore stage");
+                        context.waitTicks(30);
 
-                ClientGameTestRecorder.showStep(
-                        context,
-                        "telekinesis.disabled",
-                        "Telekinesis disabled",
-                        "With the server setting off, the diamond remains in the world"
-                );
-                server.computeOnServer(minecraftServer -> {
-                    ServerPlayer player = minecraftServer.getPlayerList().getPlayers().getFirst();
-                    ServerLevel level = player.level();
-                    TelekinesisConfigManager.setEnabled(false);
-                    destroy(player, DISABLED_ORE_POS);
-                    assertInventoryCount(player, Items.DIAMOND, 4);
-                    assertItemEntityPresent(level, Items.DIAMOND);
-                    return null;
+                        ClientGameTestRecorder.showStep(
+                                context,
+                                "telekinesis.ore",
+                                "Diamond ore",
+                                "Breaking ore sends its diamond directly to inventory");
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerPlayer player =
+                                            minecraftServer.getPlayerList().getPlayers().getFirst();
+                                    ServerLevel level = player.level();
+                                    destroy(player, ORE_POS);
+                                    assertInventoryCount(player, Items.DIAMOND, 1);
+                                    assertNoItemEntity(level, Items.DIAMOND);
+                                    return null;
+                                });
+                        context.waitTicks(35);
+
+                        ClientGameTestRecorder.showStep(
+                                context,
+                                "telekinesis.chest",
+                                "Chest contents",
+                                "The chest and each unique contents stack go directly to inventory");
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerLevel level =
+                                            minecraftServer
+                                                    .getPlayerList()
+                                                    .getPlayers()
+                                                    .getFirst()
+                                                    .level();
+                                    level.setBlock(CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
+                                    ChestBlockEntity chest =
+                                            (ChestBlockEntity) level.getBlockEntity(CHEST_POS);
+                                    if (chest == null) {
+                                        throw new AssertionError(
+                                                "Expected the demonstration chest block entity.");
+                                    }
+                                    chest.setItem(0, new ItemStack(Items.DIAMOND, 3));
+                                    chest.setItem(1, new ItemStack(Items.EMERALD, 2));
+                                    return null;
+                                });
+                        context.waitTicks(25);
+                        ClientGameTestRecorder.showStep(
+                                context,
+                                "telekinesis.chest.break",
+                                "Chest contents",
+                                "Breaking the chest transfers every drop directly to inventory");
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerPlayer player =
+                                            minecraftServer.getPlayerList().getPlayers().getFirst();
+                                    ServerLevel level = player.level();
+                                    destroy(player, CHEST_POS);
+                                    assertInventoryCount(player, Items.CHEST, 1);
+                                    assertInventoryCount(player, Items.DIAMOND, 4);
+                                    assertInventoryCount(player, Items.EMERALD, 2);
+                                    assertNoItemEntities(level);
+                                    return null;
+                                });
+                        context.waitTicks(35);
+
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerPlayer player =
+                                            minecraftServer.getPlayerList().getPlayers().getFirst();
+                                    Husk husk =
+                                            EntityTypes.HUSK.create(
+                                                    player.level(), EntitySpawnReason.COMMAND);
+                                    if (husk == null) {
+                                        throw new AssertionError(
+                                                "Expected the demonstration husk.");
+                                    }
+                                    husk.setNoAi(true);
+                                    husk.setPos(Vec3.atBottomCenterOf(MOB_POS));
+                                    husk.setYRot(0.0F);
+                                    husk.setYHeadRot(0.0F);
+                                    husk.setItemSlot(
+                                            EquipmentSlot.MAINHAND,
+                                            new ItemStack(Items.IRON_SWORD));
+                                    husk.setDropChance(EquipmentSlot.MAINHAND, 2.0F);
+                                    husk.setHealth(1.0F);
+                                    player.level().addFreshEntity(husk);
+                                    player.setItemInHand(
+                                            InteractionHand.MAIN_HAND,
+                                            new ItemStack(Items.DIAMOND_SWORD));
+                                    return null;
+                                });
+                        ClientGameTestRecorder.showStep(
+                                context,
+                                "telekinesis.mob",
+                                "Mob kill",
+                                "The husk's loot, held sword and experience go to the player who killed it");
+                        context.waitTicks(30);
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerPlayer player =
+                                            minecraftServer.getPlayerList().getPlayers().getFirst();
+                                    ServerLevel level = player.level();
+                                    Husk husk =
+                                            level.getEntitiesOfClass(Husk.class, STAGE_BOX).stream()
+                                                    .findFirst()
+                                                    .orElseThrow(
+                                                            () ->
+                                                                    new AssertionError(
+                                                                            "Expected the demonstration husk on the stage."));
+                                    int experienceBefore = player.totalExperience;
+                                    player.attack(husk);
+                                    if (!husk.isDeadOrDying()) {
+                                        throw new AssertionError(
+                                                "Expected the melee hit to kill the husk.");
+                                    }
+                                    assertInventoryCount(player, Items.IRON_SWORD, 1);
+                                    if (player.totalExperience <= experienceBefore) {
+                                        throw new AssertionError(
+                                                "Expected the husk's experience to go to the player.");
+                                    }
+                                    assertNoItemEntities(level);
+                                    player.setItemInHand(
+                                            InteractionHand.MAIN_HAND,
+                                            new ItemStack(Items.DIAMOND_PICKAXE));
+                                    return null;
+                                });
+                        context.waitTicks(35);
+
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerPlayer player =
+                                            minecraftServer.getPlayerList().getPlayers().getFirst();
+                                    ServerLevel level = player.level();
+                                    level.setBlock(
+                                            TNT_CHEST_POS, Blocks.CHEST.defaultBlockState(), 3);
+                                    ChestBlockEntity chest =
+                                            (ChestBlockEntity) level.getBlockEntity(TNT_CHEST_POS);
+                                    if (chest == null) {
+                                        throw new AssertionError(
+                                                "Expected the explosion demonstration chest.");
+                                    }
+                                    chest.setItem(0, new ItemStack(Items.EMERALD, 64));
+                                    PrimedTnt tnt =
+                                            new PrimedTnt(
+                                                    level,
+                                                    TNT_POS.getX() + 0.5D,
+                                                    TNT_POS.getY(),
+                                                    TNT_POS.getZ() + 0.5D,
+                                                    player);
+                                    tnt.setFuse(40);
+                                    level.addFreshEntity(tnt);
+                                    return null;
+                                });
+                        ClientGameTestRecorder.showStep(
+                                context,
+                                "telekinesis.explosion",
+                                "TNT the player lit",
+                                "The chest the player's TNT destroys sends its 64 emeralds to that player");
+                        context.waitTicks(55);
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerPlayer player =
+                                            minecraftServer.getPlayerList().getPlayers().getFirst();
+                                    ServerLevel level = player.level();
+                                    if (!level.getBlockState(TNT_CHEST_POS).isAir()) {
+                                        throw new AssertionError(
+                                                "Expected the TNT to destroy the chest.");
+                                    }
+                                    assertInventoryCount(player, Items.EMERALD, 66);
+                                    assertNoItemEntity(level, Items.EMERALD);
+                                    return null;
+                                });
+                        context.waitTicks(30);
+
+                        ClientGameTestRecorder.showStep(
+                                context,
+                                "telekinesis.disabled",
+                                "Telekinesis disabled",
+                                "With the server setting off, the diamond remains in the world");
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    ServerPlayer player =
+                                            minecraftServer.getPlayerList().getPlayers().getFirst();
+                                    ServerLevel level = player.level();
+                                    TelekinesisConfigManager.setEnabled(false);
+                                    destroy(player, DISABLED_ORE_POS);
+                                    assertInventoryCount(player, Items.DIAMOND, 4);
+                                    assertItemEntityPresent(level, Items.DIAMOND);
+                                    return null;
+                                });
+                        context.waitTicks(40);
+                    } finally {
+                        server.computeOnServer(
+                                minecraftServer -> {
+                                    TelekinesisConfigManager.setEnabled(previousTelekinesis);
+                                    return null;
+                                });
+                    }
                 });
-                context.waitTicks(40);
-            } finally {
-                server.computeOnServer(minecraftServer -> {
-                    TelekinesisConfigManager.setEnabled(previousTelekinesis);
-                    return null;
-                });
-            }
-        });
     }
-
 
     private static void prepareStage(ServerLevel level, ServerPlayer player) {
         for (int x = -5; x <= 5; x++) {
@@ -261,7 +315,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
             }
         }
         if (actual != expected) {
-            throw new AssertionError("Expected " + expected + " " + item + " in inventory, found " + actual + ".");
+            throw new AssertionError(
+                    "Expected " + expected + " " + item + " in inventory, found " + actual + ".");
         }
     }
 
@@ -274,7 +329,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
 
     private static void assertNoItemEntities(ServerLevel level) {
         if (!level.getEntitiesOfClass(ItemEntity.class, STAGE_BOX).isEmpty()) {
-            throw new AssertionError("Expected every chest drop to enter inventory without an item entity.");
+            throw new AssertionError(
+                    "Expected every chest drop to enter inventory without an item entity.");
         }
     }
 
