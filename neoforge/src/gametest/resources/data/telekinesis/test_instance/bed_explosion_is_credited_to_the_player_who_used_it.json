@@ -1,0 +1,8 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 100,
+  "padding": 16,
+  "type": "minecraft:function",
+  "function": "telekinesis:bed_explosion_is_credited_to_the_player_who_used_it"
+}

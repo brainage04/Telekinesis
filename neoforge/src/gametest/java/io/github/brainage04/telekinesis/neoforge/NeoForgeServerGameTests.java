@@ -180,6 +180,19 @@ public final class NeoForgeServerGameTests {
                 event,
                 "respawn_anchor_blast_pays_the_player_who_used_it",
                 TelekinesisLeafAndCreditGameTests::respawnAnchorBlastPaysThePlayerWhoUsedIt);
+        register(
+                event,
+                "nether_bed_explosion_sends_block_drops_to_user",
+                TelekinesisKillAndExplosionGameTests::netherBedExplosionSendsBlockDropsToUser);
+        register(
+                event,
+                "overworld_respawn_anchor_explosion_sends_block_drops_to_user",
+                TelekinesisKillAndExplosionGameTests
+                        ::overworldRespawnAnchorExplosionSendsBlockDropsToUser);
+        register(
+                event,
+                "bed_explosion_is_credited_to_the_player_who_used_it",
+                TelekinesisKillAndExplosionGameTests::bedExplosionIsCreditedToThePlayerWhoUsedIt);
     }
 
     private static void register(

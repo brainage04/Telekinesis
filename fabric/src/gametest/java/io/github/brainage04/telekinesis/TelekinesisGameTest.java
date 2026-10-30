@@ -195,4 +195,20 @@ public class TelekinesisGameTest {
     public void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper context) {
         TelekinesisLeafAndCreditGameTests.respawnAnchorBlastPaysThePlayerWhoUsedIt(context);
     }
+
+    @GameTest(maxTicks = 100, padding = 16)
+    public void netherBedExplosionSendsBlockDropsToUser(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.netherBedExplosionSendsBlockDropsToUser(context);
+    }
+
+    @GameTest(maxTicks = 100, padding = 16)
+    public void overworldRespawnAnchorExplosionSendsBlockDropsToUser(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.overworldRespawnAnchorExplosionSendsBlockDropsToUser(
+                context);
+    }
+
+    @GameTest(maxTicks = 100, padding = 16)
+    public void bedExplosionIsCreditedToThePlayerWhoUsedIt(GameTestHelper context) {
+        TelekinesisKillAndExplosionGameTests.bedExplosionIsCreditedToThePlayerWhoUsedIt(context);
+    }
 }

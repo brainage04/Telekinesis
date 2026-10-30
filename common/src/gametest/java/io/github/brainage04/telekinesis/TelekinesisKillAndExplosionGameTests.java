@@ -4,8 +4,10 @@ import io.github.brainage04.brainagelib.drops.DropCapture;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
+import java.util.Set;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
@@ -30,9 +32,15 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /// Mob kills and explosions, through the production implementation on both loaders.
@@ -571,6 +579,95 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
+    /// Vanilla explodes a bed in the Nether without recording a cause. The player who used it owns
+    /// the explosion, so the chest's contents reach their inventory. The bystander stands next to
+    /// the blast, nearer than the user, and must get nothing: attribution follows the user, not
+    /// proximity.
+    public static void netherBedExplosionSendsBlockDropsToUser(GameTestHelper helper) {
+        GameTestPlayer user = enabledPlayer(helper, "TkBedUser", PLAYER_POS);
+        GameTestPlayer bystander = enabledPlayer(helper, "TkBedBystander", new BlockPos(1, 1, 4));
+        try {
+            // The explosion hurts entities before it breaks blocks, so both players must be immune
+            // to it.
+            user.gameMode(GameType.CREATIVE);
+            bystander.gameMode(GameType.CREATIVE);
+            ServerLevel nether = nether(helper);
+            BlockPos base = netherBase(helper);
+            BlockPos chest = placeBedWithChest(nether, base);
+            BlockPos foot = base.above();
+            moveIntoLevel(user.player(), nether, foot.south(2));
+            moveIntoLevel(bystander.player(), nether, foot.north().east(1));
+
+            useWithEmptyHand(nether, user.player(), foot);
+
+            checkCount(user.player(), Items.EMERALD, 64, "the bed user");
+            checkCount(bystander.player(), Items.EMERALD, 0, "a bystander nearer the blast");
+            check(emeraldsNear(nether, chest) == 0, "No emerald may stay at the chest");
+        } finally {
+            bystander.close();
+            user.close();
+        }
+        helper.succeed();
+    }
+
+    /// The same rule for a respawn anchor outside the Nether: the player who used it owns the
+    /// explosion, and a player standing nearer the blast gets nothing.
+    public static void overworldRespawnAnchorExplosionSendsBlockDropsToUser(GameTestHelper helper) {
+        GameTestPlayer user = enabledPlayer(helper, "TkAnchorUser", PLAYER_POS);
+        GameTestPlayer bystander =
+                enabledPlayer(helper, "TkAnchorBystander", new BlockPos(1, 1, 4));
+        try {
+            user.gameMode(GameType.CREATIVE);
+            bystander.gameMode(GameType.CREATIVE);
+            ServerLevel level = helper.getLevel();
+            BlockPos anchor = new BlockPos(4, 1, 6);
+            placeChargedAnchor(helper, anchor);
+            check(
+                    !RespawnAnchorBlock.canSetSpawn(level, helper.absolutePos(anchor)),
+                    "The anchor must explode outside the Nether");
+            BlockPos chest = new BlockPos(6, 1, 6);
+            placeEmeraldChest(helper, chest);
+            bystander.moveTo(helper, new BlockPos(5, 1, 7));
+
+            useWithEmptyHand(level, user.player(), helper.absolutePos(anchor));
+
+            checkCount(user.player(), Items.EMERALD, 64, "the anchor user");
+            checkCount(bystander.player(), Items.EMERALD, 0, "a bystander nearer the blast");
+            check(emeraldsNear(helper, chest) == 0, "No emerald may stay at the chest");
+        } finally {
+            bystander.close();
+            user.close();
+        }
+        helper.succeed();
+    }
+
+    /// A bed another player set off is credited to that player, even when the nearby player is
+    /// closer to the blast.
+    public static void bedExplosionIsCreditedToThePlayerWhoUsedIt(GameTestHelper helper) {
+        GameTestPlayer bystander = enabledPlayer(helper, "TkBedNearest", PLAYER_POS);
+        GameTestPlayer user = enabledPlayer(helper, "TkBedActor", new BlockPos(1, 1, 4));
+        try {
+            bystander.gameMode(GameType.CREATIVE);
+            user.gameMode(GameType.CREATIVE);
+            ServerLevel nether = nether(helper);
+            BlockPos base = netherBase(helper).offset(32, 0, 0);
+            BlockPos chest = placeBedWithChest(nether, base);
+            BlockPos foot = base.above();
+            moveIntoLevel(user.player(), nether, foot.south(2));
+            moveIntoLevel(bystander.player(), nether, foot.north().east(1));
+
+            useWithEmptyHand(nether, user.player(), foot);
+
+            checkCount(user.player(), Items.EMERALD, 64, "the player who used the bed");
+            checkCount(bystander.player(), Items.EMERALD, 0, "a player nearer the blast");
+            check(emeraldsNear(nether, chest) == 0, "No emerald may stay at the chest");
+        } finally {
+            user.close();
+            bystander.close();
+        }
+        helper.succeed();
+    }
+
     public static GameTestPlayer enabledPlayer(
             GameTestHelper helper, String name, BlockPos position) {
         TelekinesisConfigManager.setEnabled(true);
@@ -625,9 +722,92 @@ public final class TelekinesisKillAndExplosionGameTests {
     }
 
     private static void placeEmeraldChest(GameTestHelper helper) {
-        helper.setBlock(CHEST_POS, Blocks.CHEST);
-        helper.getBlockEntity(CHEST_POS, ChestBlockEntity.class)
+        placeEmeraldChest(helper, CHEST_POS);
+    }
+
+    private static void placeEmeraldChest(GameTestHelper helper, BlockPos relative) {
+        helper.setBlock(relative, Blocks.CHEST);
+        helper.getBlockEntity(relative, ChestBlockEntity.class)
                 .setItem(0, new ItemStack(Items.EMERALD, 64));
+    }
+
+    /// The Nether level of the test server.
+    private static ServerLevel nether(GameTestHelper helper) {
+        ServerLevel nether = helper.getLevel().getServer().getLevel(Level.NETHER);
+        check(nether != null, "The test server must have a Nether");
+        return nether;
+    }
+
+    /// A position in the Nether above the bedrock roof, where the chunk is air, at the test
+    /// structure's own x/z so no two test instances share ground.
+    private static BlockPos netherBase(GameTestHelper helper) {
+        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
+        return new BlockPos(origin.getX(), 200, origin.getZ());
+    }
+
+    /// Lays a stone platform with a bed (foot at `base`'s block above, head north of it) and a
+    /// chest of 64 emeralds two blocks east of the bed. The bed's power-5 blast reaches the chest.
+    private static BlockPos placeBedWithChest(ServerLevel level, BlockPos base) {
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                level.setBlockAndUpdate(base.offset(dx, 0, dz), Blocks.STONE.defaultBlockState());
+            }
+        }
+        BlockPos foot = base.above();
+        BlockState bed =
+                Blocks.BED
+                        .red()
+                        .defaultBlockState()
+                        .setValue(BedBlock.PART, BedPart.FOOT)
+                        .setValue(BedBlock.FACING, Direction.NORTH);
+        level.setBlockAndUpdate(foot, bed);
+        level.setBlockAndUpdate(foot.north(), bed.setValue(BedBlock.PART, BedPart.HEAD));
+        BlockPos chest = foot.east(2);
+        level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
+        ChestBlockEntity chestEntity = (ChestBlockEntity) level.getBlockEntity(chest);
+        check(chestEntity != null, "The chest must be placed in the Nether");
+        chestEntity.setItem(0, new ItemStack(Items.EMERALD, 64));
+        return chest;
+    }
+
+    private static void placeChargedAnchor(GameTestHelper helper, BlockPos relative) {
+        helper.setBlock(
+                relative,
+                Blocks.RESPAWN_ANCHOR.defaultBlockState().setValue(RespawnAnchorBlock.CHARGE, 4));
+    }
+
+    /// Moves the player into `level` at the centre of `pos`, as a portal or command teleport would.
+    private static void moveIntoLevel(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        player.teleportTo(
+                level,
+                pos.getX() + 0.5D,
+                pos.getY(),
+                pos.getZ() + 0.5D,
+                Set.of(),
+                0.0F,
+                0.0F,
+                false);
+        check(player.level() == level, "The player must end up in the Nether");
+    }
+
+    /// Right-clicks the block with an empty hand, the path a bed or charged respawn anchor explodes
+    /// through.
+    private static void useWithEmptyHand(Level level, ServerPlayer player, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        check(!state.isAir(), "Expected a block to use at " + pos);
+        state.useWithoutItem(
+                level, player, new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
+    }
+
+    private static int emeraldsNear(ServerLevel level, BlockPos absolutePos) {
+        return level
+                .getEntitiesOfClass(
+                        ItemEntity.class,
+                        new AABB(absolutePos).inflate(6.0D),
+                        item -> item.getItem().is(Items.EMERALD))
+                .stream()
+                .mapToInt(item -> item.getItem().getCount())
+                .sum();
     }
 
     private static PrimedTnt primeTnt(GameTestHelper helper, ServerPlayer owner) {
