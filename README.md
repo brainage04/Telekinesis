@@ -19,9 +19,10 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 - **Explosions:** the drops of blocks (and the contents of containers) broken by an explosion the player caused. The game records the cause as the explosion's source, and Telekinesis follows it:
   - TNT the player lit, directly or with a flaming arrow, and further TNT that this TNT sets off;
   - a projectile or fireball the player owns;
-  - an end crystal the player hit (not further crystals that one sets off: the game credits nobody for those).
+  - an end crystal the player hit (not further crystals that one sets off: the game credits nobody for those);
+  - a bed the player used in the Nether or the End, and a charged respawn anchor the player used outside the Nether. The game records no cause for these, so Telekinesis records the player who used the block and credits the explosion to them.
 
-  Creepers, beds, respawn anchors and TNT that nobody lit (redstone, fire) have no player cause: the game records none, and Telekinesis does not add one. Mobs an explosion kills follow the mob rule; entities it breaks, such as item frames, armor stands and minecarts, drop in the world.
+  Creepers and TNT that nobody lit (redstone, fire) have no player cause: the game records none, and Telekinesis does not add one. Mobs an explosion kills follow the mob rule; entities it breaks, such as item frames, armor stands and minecarts, drop in the world.
 - **Not mobs:** armor stands, item frames, paintings, boats and minecarts the player breaks drop in the world.
 - **Dead players:** while the player is dead, their kills and explosions drop in the world, because the inventory of a dead player is lost when they respawn.
 - **Never captured:** items created by commands (`/give`, `/summon`, `/loot`), drops nobody caused (a mob that died without being hurt by a player, an explosion without a player cause), other players' death drops, and unrelated item and experience entities.

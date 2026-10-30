@@ -59,6 +59,9 @@ public final class NeoForgeServerGameTests {
         register(event, "chained_tnt_credits_player_who_lit_the_first", TelekinesisKillAndExplosionGameTests::chainedTntCreditsPlayerWhoLitTheFirst);
         register(event, "living_drops_event_item_goes_to_killer_once", NeoForgeLivingDropsGameTests::livingDropsEventItemGoesToKillerOnce);
         register(event, "command_items_are_not_captured", TelekinesisKillAndExplosionGameTests::commandItemsAreNotCaptured);
+        register(event, "nether_bed_explosion_sends_block_drops_to_user", TelekinesisKillAndExplosionGameTests::netherBedExplosionSendsBlockDropsToUser);
+        register(event, "overworld_respawn_anchor_explosion_sends_block_drops_to_user", TelekinesisKillAndExplosionGameTests::overworldRespawnAnchorExplosionSendsBlockDropsToUser);
+        register(event, "bed_explosion_is_credited_to_the_player_who_used_it", TelekinesisKillAndExplosionGameTests::bedExplosionIsCreditedToThePlayerWhoUsedIt);
     }
 
     private static void register(RegisterEvent event, String path, Consumer<GameTestHelper> function) {

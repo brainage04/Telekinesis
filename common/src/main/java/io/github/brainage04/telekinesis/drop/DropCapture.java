@@ -24,6 +24,9 @@ import java.util.ArrayList;
 /// scope from handing that inventory to someone else.
 public final class DropCapture {
     private static final ThreadLocal<ArrayList<ServerPlayer>> RECIPIENTS = new ThreadLocal<>();
+    /// The player who used the bed or respawn anchor whose explosion is being created on this thread. Vanilla creates
+    /// those explosions without a source entity, so the game records no cause; the block mixins record the user.
+    private static final ThreadLocal<ServerPlayer> BLOCK_EXPLOSION_USER = new ThreadLocal<>();
 
     private DropCapture() {
     }
@@ -45,6 +48,16 @@ public final class DropCapture {
         }
     }
 
+    /// Opens the record for the explosion a bed or respawn anchor triggers. Pair with [#endBlockExplosion] in a
+    /// `finally`, so a failed explosion cannot leave the record behind for a later one.
+    public static void beginBlockExplosion(ServerPlayer user) {
+        BLOCK_EXPLOSION_USER.set(user);
+    }
+
+    public static void endBlockExplosion() {
+        BLOCK_EXPLOSION_USER.remove();
+    }
+
     /// The player the game credits with killing `victim`, or `null`: the player who hurt it within the last 100
     /// ticks, directly, with a projectile or damaging potion they own, or through their tamed wolf. Vanilla uses the
     /// same record, with the same `lastHurtByPlayerMemoryTime > 0` test, for player-kill loot and experience.
@@ -55,10 +68,15 @@ public final class DropCapture {
         return victim.getLastHurtByPlayer() instanceof ServerPlayer player ? player : null;
     }
 
-    /// The player who caused `explosion`: its indirect source (the player who lit the TNT, or who owns the
-    /// projectile or fireball that exploded), else the attacker in its damage source (the player who hit an end
-    /// crystal). Creepers, beds, respawn anchors and TNT nobody lit have no player cause (`null`).
+    /// The player who caused `explosion`: a bed or respawn anchor they used (the mod records the user, because vanilla
+    /// creates those explosions without a source), else its indirect source (the player who lit the TNT, or who owns
+    /// the projectile or fireball that exploded), else the attacker in its damage source (the player who hit an end
+    /// crystal). Creepers and TNT nobody lit have no player cause (`null`).
     public static ServerPlayer explosionCause(ServerExplosion explosion) {
+        ServerPlayer user = BLOCK_EXPLOSION_USER.get();
+        if (user != null) {
+            return user;
+        }
         if (explosion.getIndirectSourceEntity() instanceof ServerPlayer player) {
             return player;
         }
