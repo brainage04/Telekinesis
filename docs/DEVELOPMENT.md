@@ -9,6 +9,12 @@ heavy --label Telekinesis-tests -- ./gradlew --no-daemon build runAllGameTests
 
 The conventions plugin manages headless client GameTests. The client-options property prevents it from copying a developer's Prism options into the test instance.
 
+`TelekinesisClientGameTest` is also the showcase film: one stage per feature (a mined ore, a broken chest, a felled tree, a mob kill, TNT the player lit, a respawn anchor outside the Nether, a full inventory, the personal setting turned off, a bed in the Nether), each with its caption, and each checks on the server that the drops went where the caption says. It prints `STAGE_START`/`STAGE_END` lines around what a finished film keeps; everything between them (teleports, setup, chunk loading) is meant to be cut. Record it on a host with PulseAudio:
+
+```shell
+GTR_RECORDING_PROFILE=showcase ./gradlew --no-daemon :fabric:recordClientGameTest
+```
+
 ## How drops are captured
 
 The capture itself is BrainageLib's shared engine (`io.github.brainage04.brainagelib.drops`, see BrainageLib's
