@@ -43,8 +43,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
-/// Mob kills and explosions, through the production implementation on both loaders.
-///
 /// Mobs use the test loot table `telekinesis:gametest/kill_probe` (one emerald, plus one per
 /// Looting level), so every count is exact. Explosions break a chest holding 64 emeralds: container
 /// contents always drop, unlike block loot, which explosions destroy at random.
@@ -369,8 +367,6 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// A player who dies inside another player's capture scope (here opened directly, as a block
-    /// break or kill would) keeps their death drops in the world.
     public static void playerDeathInsideAnotherScopeStaysInWorld(GameTestHelper helper) {
         GameTestPlayer outer = enabledPlayer(helper, "TkScopeOwner", PLAYER_POS);
         GameTestPlayer victim = enabledPlayer(helper, "TkScopeVictim", MOB_POS);
@@ -460,7 +456,7 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// Harming heals undead, so this probe is a pig. The thrower stands far outside the splash.
+    /// Harming heals undead, so this probe is a pig.
     public static void harmingPotionKillGoesToThrower(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkPotion", FAR_PLAYER_POS);
         ServerPlayer player = fixture.player();
@@ -579,10 +575,7 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// Vanilla explodes a bed in the Nether without recording a cause. The player who used it owns
-    /// the explosion, so the chest's contents reach their inventory. The bystander stands next to
-    /// the blast, nearer than the user, and must get nothing: attribution follows the user, not
-    /// proximity.
+    /// Vanilla explodes a bed in the Nether without recording a cause.
     public static void netherBedExplosionSendsBlockDropsToUser(GameTestHelper helper) {
         GameTestPlayer user = enabledPlayer(helper, "TkBedUser", PLAYER_POS);
         GameTestPlayer bystander = enabledPlayer(helper, "TkBedBystander", new BlockPos(1, 1, 4));
@@ -610,8 +603,6 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// The same rule for a respawn anchor outside the Nether: the player who used it owns the
-    /// explosion, and a player standing nearer the blast gets nothing.
     public static void overworldRespawnAnchorExplosionSendsBlockDropsToUser(GameTestHelper helper) {
         GameTestPlayer user = enabledPlayer(helper, "TkAnchorUser", PLAYER_POS);
         GameTestPlayer bystander =
@@ -641,8 +632,6 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// A bed another player set off is credited to that player, even when the nearby player is
-    /// closer to the blast.
     public static void bedExplosionIsCreditedToThePlayerWhoUsedIt(GameTestHelper helper) {
         GameTestPlayer bystander = enabledPlayer(helper, "TkBedNearest", PLAYER_POS);
         GameTestPlayer user = enabledPlayer(helper, "TkBedActor", new BlockPos(1, 1, 4));
@@ -731,7 +720,6 @@ public final class TelekinesisKillAndExplosionGameTests {
                 .setItem(0, new ItemStack(Items.EMERALD, 64));
     }
 
-    /// The Nether level of the test server.
     private static ServerLevel nether(GameTestHelper helper) {
         ServerLevel nether = helper.getLevel().getServer().getLevel(Level.NETHER);
         check(nether != null, "The test server must have a Nether");
@@ -745,8 +733,6 @@ public final class TelekinesisKillAndExplosionGameTests {
         return new BlockPos(origin.getX(), 200, origin.getZ());
     }
 
-    /// Lays a stone platform with a bed (foot at `base`'s block above, head north of it) and a
-    /// chest of 64 emeralds two blocks east of the bed. The bed's power-5 blast reaches the chest.
     private static BlockPos placeBedWithChest(ServerLevel level, BlockPos base) {
         for (int dx = -3; dx <= 3; dx++) {
             for (int dz = -3; dz <= 3; dz++) {
@@ -776,7 +762,6 @@ public final class TelekinesisKillAndExplosionGameTests {
                 Blocks.RESPAWN_ANCHOR.defaultBlockState().setValue(RespawnAnchorBlock.CHARGE, 4));
     }
 
-    /// Moves the player into `level` at the centre of `pos`, as a portal or command teleport would.
     private static void moveIntoLevel(ServerPlayer player, ServerLevel level, BlockPos pos) {
         player.teleportTo(
                 level,
@@ -790,8 +775,6 @@ public final class TelekinesisKillAndExplosionGameTests {
         check(player.level() == level, "The player must end up in the Nether");
     }
 
-    /// Right-clicks the block with an empty hand, the path a bed or charged respawn anchor explodes
-    /// through.
     private static void useWithEmptyHand(Level level, ServerPlayer player, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         check(!state.isAir(), "Expected a block to use at " + pos);

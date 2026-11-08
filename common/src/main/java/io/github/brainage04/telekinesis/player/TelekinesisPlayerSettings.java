@@ -35,10 +35,6 @@ public final class TelekinesisPlayerSettings {
         return TelekinesisConfigManager.config().enabled() && isEnabled(player);
     }
 
-    /**
-     * Changes the player's preference; false when it applies for this session only because it could
-     * not be saved.
-     */
     public static synchronized boolean setEnabled(ServerPlayer player, boolean enabled) {
         STORE.put(player.getUUID(), new PlayerPreference(player.getGameProfile().name(), enabled));
         return STORE.save().saved();

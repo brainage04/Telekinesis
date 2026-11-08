@@ -17,7 +17,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
-/// A drop another mod adds in `LivingDropsEvent` goes to the killer once, like the loot-table drop.
 @EventBusSubscriber(modid = Telekinesis.MOD_ID)
 public final class NeoForgeLivingDropsGameTests {
     private static final String EXTRA_DROP_TAG = "tk_extra_drop";
@@ -26,7 +25,6 @@ public final class NeoForgeLivingDropsGameTests {
 
     private NeoForgeLivingDropsGameTests() {}
 
-    /// Stands in for another mod: adds one diamond to the drops of mobs tagged by this test only.
     @SubscribeEvent
     public static void addExtraDrop(LivingDropsEvent event) {
         LivingEntity entity = event.getEntity();

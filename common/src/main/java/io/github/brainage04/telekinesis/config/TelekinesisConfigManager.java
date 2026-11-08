@@ -46,7 +46,6 @@ public final class TelekinesisConfigManager {
         return save();
     }
 
-    /** Reloads the file, keeping the current setting when it is missing or cannot be loaded. */
     public static synchronized boolean reload() {
         if (file.load()
                 instanceof

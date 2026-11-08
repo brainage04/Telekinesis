@@ -30,7 +30,6 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/** Behaviour exercised through the production implementation on both loaders. */
 public final class TelekinesisBehaviorGameTests {
     private static final BlockPos DROP_POS = new BlockPos(1, 1, 1);
 
@@ -321,7 +320,6 @@ public final class TelekinesisBehaviorGameTests {
         helper.succeed();
     }
 
-    /** A file written by the previous version loads unchanged and is written back byte for byte. */
     public static void preferencesFromPreviousVersionLoad(GameTestHelper helper) {
         LifecycleCallbacks callbacks = new LifecycleCallbacks();
         TelekinesisPlayerSettings.initialize(callbacks);

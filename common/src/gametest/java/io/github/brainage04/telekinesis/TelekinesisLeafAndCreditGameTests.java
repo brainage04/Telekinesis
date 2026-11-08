@@ -32,9 +32,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
-/// The two sources the game gives no player to name: a leaf of a tree the player cut, which decays
-/// later with no entity at all, and a respawn anchor the player used where it explodes. Beds take
-/// the anchor's path; BrainageLib's own suite exercises both.
 public final class TelekinesisLeafAndCreditGameTests {
     private static final BlockPos PLAYER_POS = new BlockPos(1, 1, 1);
     private static final BlockPos LOG_POS = new BlockPos(3, 1, 3);
@@ -45,7 +42,6 @@ public final class TelekinesisLeafAndCreditGameTests {
 
     private TelekinesisLeafAndCreditGameTests() {}
 
-    /// Whether the player's client was sent an explosion that hit them (one with their knockback).
     private static boolean blastHit(GameTestPlayer fixture) {
         EmbeddedChannel channel = fixture.channel();
         channel.runPendingTasks();
@@ -61,8 +57,6 @@ public final class TelekinesisLeafAndCreditGameTests {
         return hit;
     }
 
-    /// A player cuts a tree's trunk; the leaf it held up decays later with no entity to name, and
-    /// its drops reach the player who cut the tree instead of the ground.
     public static void decayedLeafOfAFelledTreePaysTheFeller(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkLeaves", PLAYER_POS);
         ServerPlayer player = fixture.player();
@@ -99,10 +93,6 @@ public final class TelekinesisLeafAndCreditGameTests {
         helper.succeed();
     }
 
-    /// Two players cut one tree: one with Telekinesis on breaks the lower log, one with it off
-    /// breaks the upper log, the last one holding the top leaf up. That leaf is the second
-    /// player's, so when it decays it drops in the world, as theirs always do, and never pays the
-    /// first.
     public static void lastFellerWithTelekinesisOffKeepsTheirLeaves(GameTestHelper helper) {
         GameTestPlayer first = enabledPlayer(helper, "TkFirstCut", PLAYER_POS);
         GameTestPlayer last = enabledPlayer(helper, "TkLastCut", PLAYER_POS.east());
@@ -113,8 +103,6 @@ public final class TelekinesisLeafAndCreditGameTests {
             BlockPos top = upper.above();
             helper.setBlock(lower, Blocks.OAK_LOG);
             helper.setBlock(upper, Blocks.OAK_LOG);
-            // A leaf chain from beside the lower log round to the top leaf, so the first cut
-            // reaches the top leaf too.
             for (BlockPos leaf :
                     new BlockPos[] {lower.east(), upper.east(), upper.east().above(), top}) {
                 helper.setBlock(leaf, Blocks.OAK_LEAVES);
@@ -132,7 +120,6 @@ public final class TelekinesisLeafAndCreditGameTests {
             BlockState leaf = helper.getBlockState(top);
             check(leaf.is(Blocks.OAK_LEAVES), "The top leaf must still stand");
             BlockPos leafPos = helper.absolutePos(top);
-            // The upper log's own drop stays in the world for the player with Telekinesis off.
             helper.getLevel()
                     .getEntitiesOfClass(ItemEntity.class, new AABB(leafPos).inflate(3.0D))
                     .forEach(ItemEntity::discard);
@@ -169,10 +156,9 @@ public final class TelekinesisLeafAndCreditGameTests {
                 + player.getInventory().countItem(Items.APPLE);
     }
 
-    /// A charged respawn anchor used outside the Nether explodes naming nobody; the chest its blast
-    /// breaks pays the player who used it, and the blast still reaches that player. The room is a
-    /// force-loaded chunk of the End, clicked once it ticks entities: only an entity-ticking
-    /// chunk's entities are in an explosion's reach, as on a real server around a player.
+    /// The room is a force-loaded chunk of the End, clicked once it ticks entities: only an
+    /// entity-ticking chunk's entities are in an explosion's reach, as on a real server around a
+    /// player.
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
@@ -261,8 +247,6 @@ public final class TelekinesisLeafAndCreditGameTests {
                                         Items.EMERALD,
                                         64,
                                         "the chest the anchor's blast broke");
-                                // The game's own blast still hits the player, so their client is
-                                // sent its knockback, as it always was.
                                 check(
                                         blastHit(fixture),
                                         "The blast must still reach the player who used the anchor");

@@ -58,17 +58,6 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Films what Telekinesis does, one feature per stage, each with its caption: a mined block, a
- * broken chest, a felled tree, a mob kill, TNT the player lit, a respawn anchor used outside the
- * Nether, a full inventory, the personal setting turned off, and a bed used in the Nether.
- *
- * <p>Every overworld stage has its own site on one long stone stage floating at y 63, 24 blocks
- * apart, and the player faces north, so no other site is in the picture. Between stages the player
- * is moved, their inventory and experience are reset, and leftover item entities are removed; the
- * test logs {@code STAGE_START}/{@code STAGE_END} around what the film keeps, so all of that is
- * cut. Each stage also checks on the server that the drops went where the caption says.
- */
 @SuppressWarnings("UnstableApiUsage")
 public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int FLOOR_Y = 63;
@@ -87,15 +76,12 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int FULL_X = 48;
     private static final int OFF_X = 72;
 
-    /** Where the player stands for the close stages, and for the blasts, out of their reach. */
     private static final double NEAR_Z = 4.5D;
 
     private static final double FAR_Z = 5.5D;
 
-    /** The tree stage stands further back, so the whole tree is in the picture. */
     private static final double TREE_STAND_Z = 7.5D;
 
-    /** The bed stage: a platform above the Nether's bedrock roof, lit by invisible light blocks. */
     private static final int NETHER_FLOOR_Y = 200;
 
     private static final BlockPos NETHER_BED_FOOT = new BlockPos(0, NETHER_FLOOR_Y + 1, -6);
@@ -105,10 +91,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int GUI_SCALE = 3;
     private static final int NORMAL_FOV = 70;
 
-    /** The blasts are watched from out of their reach, so the camera zooms in. */
     private static final int BLAST_FOV = 45;
 
-    /** Long enough to reach the blasts' blocks from out of their reach. */
     private static final double INTERACTION_RANGE = 16.0D;
 
     private static final int LEAF_DECAY_TICK_SPEED = 300;
@@ -116,7 +100,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int CAPTION_LEAD_TICKS = 6;
     private static final int HOLD_AFTER_END_TICKS = 6;
 
-    /** About a block and a half at walking speed. */
     private static final int STEP_BACK_TICKS = 7;
 
     private static final int LOAD_TIMEOUT_TICKS = 2400;
@@ -127,7 +110,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         Properties serverProperties = ClientGameTestServers.flatServerProperties();
-        // Every site stays inside the view, so no chunk arrives while filming.
         serverProperties.setProperty("view-distance", Integer.toString(RENDER_DISTANCE));
 
         ClientGameTestServers.withDedicatedServer(
@@ -155,20 +137,14 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                     client -> {
                                         client.options.renderDistance().set(RENDER_DISTANCE);
                                         // The server only sends chunks out to the render distance
-                                        // the
-                                        // client last told it.
+                                        // the client last told it.
                                         client.options.broadcastOptions();
-                                        // The test profile keeps particles minimal; the film shows
-                                        // block-break and blast particles, though fewer than all
-                                        // of them, which would read as scattered items.
                                         client.options.particles().set(ParticleStatus.DECREASED);
                                         // A section that has just been built would fade in over a
-                                        // second;
-                                        // the film never shows that.
+                                        // second; the film never shows that.
                                         client.options.chunkSectionFadeInTime().set(0.0D);
                                         // Without occlusion culling every section in range is
-                                        // drawn, so
-                                        // none blinks out when the player moves.
+                                        // drawn, so none blinks out when the player moves.
                                         client.smartCull = false;
                                         client.options.guiScale().set(GUI_SCALE);
                                         // A new item in the hand shows its name for a while;
@@ -303,10 +279,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         stageEnd(context, id);
     }
 
-    /**
-     * The player chops every log of an oak, top to bottom; the leaves those logs held up decay in
-     * the next seconds, and their saplings, sticks and apples come to the player who felled it.
-     */
     private static void tree(ClientGameTestContext context, TestDedicatedServerContext server) {
         List<BlockPos> logs =
                 server.computeOnServer(
@@ -329,7 +301,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 TREE_STAND_Z,
                 NORMAL_FOV,
                 player -> player.getInventory().setItem(0, axe(player.level())));
-        // From further back, so the whole tree and the ground below it are in the picture.
         aim(context, new Vec3(TREE_X + 0.5D, STAND_Y + 3.0D, 0.5D));
         String id = "telekinesis.tree";
         caption(
@@ -474,7 +445,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
         context.getInput().pressKey(options -> options.keyUse);
-        // A shorter fuse than vanilla's four seconds keeps the stage short.
         waitForServer(
                 context,
                 server,
@@ -549,11 +519,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         stageEnd(context, id);
     }
 
-    /**
-     * With every slot full, the ore's diamond cannot go into the inventory, so it is put at the
-     * player's feet, not left at the block. The player then steps back, so the diamond at the spot
-     * where they stood comes into the picture.
-     */
     private static void fullInventory(
             ClientGameTestContext context, TestDedicatedServerContext server) {
         BlockPos ore = new BlockPos(FULL_X, STAND_Y, 2);
@@ -607,7 +572,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         stageEnd(context, id);
     }
 
-    /** The player turns their own Telekinesis off; the next ore's diamond stays in the world. */
     private static void turnedOff(
             ClientGameTestContext context, TestDedicatedServerContext server) {
         BlockPos ore = new BlockPos(OFF_X, STAND_Y, 1);
@@ -744,12 +708,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         stageEnd(context, id);
     }
 
-    /**
-     * Moves the player to a site off camera and gives them a clean start there: an empty inventory
-     * and experience bar, full health and food, no item entities left at the site. {@code setUp}
-     * then builds the stage's blocks and gives the stage's tool. Returns once the client shows all
-     * of it with every chunk built.
-     */
     private static void prepare(
             ClientGameTestContext context,
             TestDedicatedServerContext server,
@@ -798,16 +756,11 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         waitForMeshesIdle(context);
     }
 
-    /**
-     * Selects the empty last hotbar slot, so the player uses the bed or anchor with an empty hand
-     * and the drops that fill the first slots never land in the hand.
-     */
     private static void emptyHand(ClientGameTestContext context) {
         context.runOnClient(client -> client.player.getInventory().setSelectedSlot(8));
         context.waitTicks(2);
     }
 
-    /** Puts out the fire an earlier blast left, so it does not burn in a later stage's picture. */
     private static void clearFire(ServerLevel level) {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = STAGE_MIN_X; x <= STAGE_MAX_X; x++) {
@@ -834,7 +787,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         player.clearFire();
     }
 
-    /** Turns the camera to look at {@code target} and waits until the scene has settled there. */
     private static void aim(ClientGameTestContext context, Vec3 target) {
         context.runOnClient(client -> lookAt(client.player, target));
         context.waitTicks(SETTLE_TICKS);
@@ -857,10 +809,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         player.yBodyRotO = yaw;
     }
 
-    /**
-     * Sets the caption while the scene already stands still, a few ticks before the stage starts,
-     * so the first frame the film keeps already shows it.
-     */
     private static void caption(
             ClientGameTestContext context, String id, String title, String subtitle) {
         ClientGameTestRecorder.showStep(context, id, title, subtitle);
@@ -868,9 +816,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     }
 
     /**
-     * Holds the attack key until the client has broken the block it looks at, then lets go, and
-     * waits until the server has broken it too: the client removes the block before the server
-     * confirms, and the drops are only handed out on the server.
+     * The client removes the block before the server confirms, and the drops are only handed out
+     * on the server.
      */
     private static void mine(
             ClientGameTestContext context, TestDedicatedServerContext server, BlockPos pos) {
@@ -908,10 +855,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         throw new AssertionError("The server never reached the stage's expected state");
     }
 
-    /**
-     * Marks the start of a filmed stage; the delivered video keeps only the time between a start
-     * and an end.
-     */
     private static void stageStart(String id) {
         System.out.println("STAGE_START " + System.currentTimeMillis() + " " + id);
     }
@@ -925,10 +868,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         context.waitTicks(HOLD_AFTER_END_TICKS);
     }
 
-    /**
-     * Waits until the client holds every chunk in the circle two chunks inside the render distance
-     * of the player.
-     */
     private static void waitForChunkWindow(ClientGameTestContext context) {
         context.waitFor(
                 client -> {
@@ -957,7 +896,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 LOAD_TIMEOUT_TICKS);
     }
 
-    /** Waits until the renderer has had nothing to build for a while. */
     private static void waitForMeshesIdle(ClientGameTestContext context) {
         int idleTicks = 0;
         for (int tick = 0; tick < LOAD_TIMEOUT_TICKS; tick++) {
@@ -973,7 +911,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         throw new AssertionError("The client did not finish building the chunks around the player");
     }
 
-    /** Builds every stage before the player joins, so none of it is built on camera. */
     private static void buildWorld(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
@@ -987,7 +924,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 }
             }
         }
-        // The oak grows from grass in the floor, from a fixed seed so every film has the same tree.
         BlockPos sapling = new BlockPos(TREE_X, STAND_Y, 0);
         overworld.setBlock(
                 sapling.below(), Blocks.GRASS_BLOCK.defaultBlockState(), Block.UPDATE_CLIENTS);
@@ -1014,8 +950,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                             Blocks.STONE.defaultBlockState(),
                             Block.UPDATE_CLIENTS);
                 }
-                // Light blocks are invisible to a player who does not hold one; they light the
-                // platform, which the Nether's sky does not.
                 if (Math.floorMod(x, 4) == 0 && Math.floorMod(z, 4) == 0) {
                     nether.setBlock(
                             cursor.set(x, NETHER_FLOOR_Y + 6, z),
@@ -1037,8 +971,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 Block.UPDATE_CLIENTS);
         emeraldChest(nether, NETHER_BED_FOOT.north().east(2));
 
-        // A bright, still noon with nothing spawning, so only the stages' own mobs and items are
-        // in the picture.
         command(server, "gamerule advance_time false");
         command(server, "gamerule advance_weather false");
         command(server, "gamerule spawn_mobs false");
@@ -1061,7 +993,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         entity.setItem(0, new ItemStack(Items.EMERALD, 64));
     }
 
-    /** A diamond pickaxe that breaks ore in three ticks, with one more enchantment if given. */
     private static ItemStack pickaxe(
             ServerLevel level, ResourceKey<Enchantment> extra, int extraLevel) {
         ItemStack stack = new ItemStack(Items.DIAMOND_PICKAXE);

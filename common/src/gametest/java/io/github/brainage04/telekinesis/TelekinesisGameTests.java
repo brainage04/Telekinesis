@@ -17,11 +17,6 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Loader-neutral server GameTest bodies. Both loaders compile this source set into their GameTest
- * mods: Fabric runs them through {@code @GameTest} methods, NeoForge through registered test
- * functions and {@code test_instance} data.
- */
 public final class TelekinesisGameTests {
     private static final BlockPos DROP_POS = new BlockPos(1, 1, 1);
 

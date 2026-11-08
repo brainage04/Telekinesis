@@ -6,7 +6,6 @@ import java.util.function.Consumer;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 
-/** Loader services required by Telekinesis' shared server implementation. */
 public interface TelekinesisPlatform {
     Path configDirectory();
 
