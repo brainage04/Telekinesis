@@ -649,12 +649,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                             NORTH,
                             0.0F,
                             true);
-                    // A fresh player entity on the client keeps the server's attributes only once
-                    // they are sent again.
-                    player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE)
-                            .setBaseValue(INTERACTION_RANGE - 1.0D);
-                    player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE)
-                            .setBaseValue(INTERACTION_RANGE);
                 });
         context.waitFor(
                 client ->
@@ -667,6 +661,10 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                                         new Vec3(
                                                                 0.5D, NETHER_FLOOR_Y + 1.0D, FAR_Z))
                                         < 0.01D
+                                // The client keeps the range across the teleport: it is told to
+                                // keep all attribute data (ServerPlayer.java:1164,
+                                // ClientboundRespawnPacket.java:19) and copies it into its new
+                                // player (ClientPacketListener.java:1326).
                                 && client.player.blockInteractionRange() >= INTERACTION_RANGE,
                 LOAD_TIMEOUT_TICKS);
         context.runOnClient(
