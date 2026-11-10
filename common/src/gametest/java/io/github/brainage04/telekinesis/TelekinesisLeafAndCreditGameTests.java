@@ -157,10 +157,10 @@ public final class TelekinesisLeafAndCreditGameTests {
                 + player.getInventory().countItem(Items.APPLE);
     }
 
-    /// The room is a force-loaded chunk of the End, clicked once it has loaded: entity-ticking
-    /// status is that point for a forced chunk (ServerLevel.java:1929), and an explosion reaches
-    /// the entities of every loaded chunk, ticking or not (ServerExplosion.java:182,
-    /// Visibility.java:22-30).
+    /// The room is a force-loaded End chunk, clicked once it has loaded: a forced chunk loads to
+    /// entity-ticking status (ChunkMap.java:128), the status the wait checks
+    /// (ServerLevel.java:1929). An explosion reaches the entities of every loaded chunk, ticking or
+    /// not (ServerExplosion.java:182, Visibility.java:22-30).
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
