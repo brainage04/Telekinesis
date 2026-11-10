@@ -36,8 +36,9 @@ public final class TelekinesisLeafAndCreditGameTests {
     private static final BlockPos PLAYER_POS = new BlockPos(1, 1, 1);
     private static final BlockPos LOG_POS = new BlockPos(3, 1, 3);
 
-    /// Rolls of a decaying oak leaf's loot table; with no drop at all in about one leaf of
-    /// thirteen, a count that has to be above zero is in practice.
+    /// Rolls of a decaying oak leaf's loot table. It pays out on only about 7% of leaves (a sapling
+    /// 5%, sticks 2%, an apple 0.5%; `data/minecraft/loot_table/blocks/oak_leaves.json`), so 300
+    /// rolls all empty has probability about 1e-10.
     private static final int LEAF_ROLLS = 300;
 
     private TelekinesisLeafAndCreditGameTests() {}
@@ -156,9 +157,10 @@ public final class TelekinesisLeafAndCreditGameTests {
                 + player.getInventory().countItem(Items.APPLE);
     }
 
-    /// The room is a force-loaded chunk of the End, clicked once it ticks entities: only an
-    /// entity-ticking chunk's entities are in an explosion's reach, as on a real server around a
-    /// player.
+    /// The room is a force-loaded chunk of the End, clicked once it has loaded: entity-ticking
+    /// status is that point for a forced chunk (ServerLevel.java:1929), and an explosion reaches
+    /// the entities of every loaded chunk, ticking or not (ServerExplosion.java:182,
+    /// Visibility.java:22-30).
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
