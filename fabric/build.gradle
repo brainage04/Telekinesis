@@ -7,6 +7,12 @@ workspaceDependencies {
 		coordinate.set("io.github.brainage04:brainagelib-gametest:${rootProject.brainagelib_version}")
 		siblingDirectory.set(rootProject.layout.projectDirectory.dir('../BrainageLib'))
 	}
+	// The player-action helper a client GameTest uses is not released yet: take it from the
+	// conventions checkout beside this one.
+	siblingMaven('MinecraftModConventions') {
+		coordinate.set("io.github.brainage04:minecraftmodconventions:${rootProject.minecraftmodconventions_version}")
+		siblingDirectory.set(rootProject.layout.projectDirectory.dir('../MinecraftModConventions'))
+	}
 }
 
 dependencies {

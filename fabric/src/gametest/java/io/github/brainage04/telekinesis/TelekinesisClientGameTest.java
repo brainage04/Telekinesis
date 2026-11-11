@@ -1,5 +1,6 @@
 package io.github.brainage04.telekinesis;
 
+import io.github.brainage04.minecraftmodconventions.ClientGameTestPlayerActions;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestRecorder;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestServers;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
@@ -8,13 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
 import net.minecraft.client.CameraType;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,18 +30,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
@@ -48,7 +48,6 @@ import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.LightBlock;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
@@ -58,6 +57,17 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+/**
+ * The nine captioned stages of Telekinesis' showcase.
+ *
+ * <p>Every stage plays like a person: the player walks with the movement keys, turns to the block or
+ * entity it acts on, and then mines or uses it with the attack or use key, within vanilla reach. {@link
+ * ClientGameTestPlayerActions} keeps it that way and fails the stage when the crosshair is not on the
+ * target or the target is out of reach.
+ *
+ * <p>Server-side calls only build the scene, spawn the stage's mob, set game rules and place the player
+ * between stages, before that stage is filmed.
+ */
 @SuppressWarnings("UnstableApiUsage")
 public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int FLOOR_Y = 63;
@@ -77,29 +87,36 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int OFF_X = 72;
 
     private static final double NEAR_Z = 4.5D;
-
-    private static final double FAR_Z = 5.5D;
-
-    private static final double TREE_STAND_Z = 7.5D;
+    /** Where the player starts the tree stage, before walking up to the oak. */
+    private static final double TREE_START_Z = 6.5D;
+    /** Where the player starts the TNT stage, before walking up to the TNT. */
+    private static final double TNT_START_Z = 0.5D;
+    /** How close the player walks to the TNT before lighting it: inside reach, back from the blast. */
+    private static final double TNT_LIGHT_DISTANCE = 3.0D;
+    /** How far the player steps back from the lit TNT, outside a power-4 blast's damage. */
+    private static final double TNT_SAFE_DISTANCE = 7.0D;
+    /** Where the player stands to use the anchor and the Nether bed: the far edge of vanilla reach. */
+    private static final double BLAST_STAND_Z = -1.0D;
+    /** The tick a lit TNT is given, so the player can step back before it blows. */
+    private static final int TNT_FUSE_TICKS = 60;
 
     private static final int NETHER_FLOOR_Y = 200;
-
     private static final BlockPos NETHER_BED_FOOT = new BlockPos(0, NETHER_FLOOR_Y + 1, -6);
+    /** The longest oak the tree stage can fell: its top log has to be inside vanilla reach. */
+    private static final int MAX_TREE_LOGS = 7;
 
     private static final float NORTH = 180.0F;
     private static final int RENDER_DISTANCE = 12;
-    private static final int GUI_SCALE = 3;
     private static final int NORMAL_FOV = 70;
-
     private static final int BLAST_FOV = 45;
-
-    private static final double INTERACTION_RANGE = 16.0D;
+    /** Ticks the blast stages' resistance lasts, which a real player's armour would have bought. */
+    private static final int BLAST_RESISTANCE_TICKS = 20 * 60;
+    private static final int BLAST_RESISTANCE_AMPLIFIER = 3;
 
     private static final int LEAF_DECAY_TICK_SPEED = 300;
     private static final int SETTLE_TICKS = 15;
     private static final int CAPTION_LEAD_TICKS = 6;
     private static final int HOLD_AFTER_END_TICKS = 6;
-
     private static final int STEP_BACK_TICKS = 7;
 
     private static final int LOAD_TIMEOUT_TICKS = 2400;
@@ -125,11 +142,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                                 boolean enabled =
                                                         TelekinesisConfigManager.config().enabled();
                                                 TelekinesisConfigManager.setEnabled(true);
-                                                ServerPlayer player = player(minecraftServer);
-                                                TelekinesisPlayerSettings.setEnabled(player, true);
-                                                player.getAttribute(
-                                                                Attributes.BLOCK_INTERACTION_RANGE)
-                                                        .setBaseValue(INTERACTION_RANGE);
+                                                TelekinesisPlayerSettings.setEnabled(
+                                                        player(minecraftServer), true);
                                                 return enabled;
                                             });
                             ClientGameTestServers.assertClientWorldAndPlayerAvailable(context);
@@ -146,7 +160,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                         // Without occlusion culling every section in range is
                                         // drawn, so none blinks out when the player moves.
                                         client.smartCull = false;
-                                        client.options.guiScale().set(GUI_SCALE);
                                         // A new item in the hand shows its name for a while;
                                         // the shortest setting has it gone before each stage.
                                         client.options.notificationDisplayTime().set(0.5D);
@@ -206,7 +219,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     player.getInventory()
                             .setItem(0, pickaxe(player.level(), Enchantments.FORTUNE, 3));
                 });
-        aim(context, Vec3.atCenterOf(ore));
         String id = "telekinesis.mining";
         caption(
                 context,
@@ -215,7 +227,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "The ore's diamonds (Fortune III) and its experience go straight to you");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        mine(context, server, ore);
+        ClientGameTestPlayerActions.lookAtBlock(context, ore);
+        ClientGameTestPlayerActions.mine(context, ore);
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -256,7 +269,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     }
                     player.getInventory().setItem(0, axe(level));
                 });
-        aim(context, Vec3.atCenterOf(chest));
         String id = "telekinesis.chest";
         caption(
                 context,
@@ -265,7 +277,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "The chest and every stack inside it go straight to your inventory");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        mine(context, server, chest);
+        ClientGameTestPlayerActions.lookAtBlock(context, chest);
+        ClientGameTestPlayerActions.mine(context, chest);
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -291,17 +304,25 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                 found.add(cursor.immutable());
                                 cursor.move(Direction.UP);
                             }
-                            return List.copyOf(found.reversed());
+                            return List.copyOf(found);
                         });
         check(logs.size() >= 4, "The tree stage needs an oak of at least four logs, got " + logs);
+        check(
+                logs.size() <= MAX_TREE_LOGS,
+                "The tree stage's oak must be at most "
+                        + MAX_TREE_LOGS
+                        + " logs tall so its top log is inside vanilla reach, got "
+                        + logs.size()
+                        + ": "
+                        + logs);
         prepare(
                 context,
                 server,
                 TREE_X,
-                TREE_STAND_Z,
+                TREE_START_Z,
                 NORMAL_FOV,
                 player -> player.getInventory().setItem(0, axe(player.level())));
-        aim(context, new Vec3(TREE_X + 0.5D, STAND_Y + 3.0D, 0.5D));
+        Vec3 trunkFoot = new Vec3(TREE_X + 0.5D, STAND_Y, 0.5D);
         String id = "telekinesis.tree";
         caption(
                 context,
@@ -310,27 +331,18 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "Logs, then the drops of the decaying leaves, go to the feller");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        for (BlockPos log : logs) {
-            server.runOnServer(
-                    minecraftServer -> {
-                        ServerPlayer player = player(minecraftServer);
-                        check(
-                                player.gameMode.destroyBlock(log),
-                                "The player must be able to break the log at " + log);
-                    });
-            context.runOnClient(
-                    client -> {
-                        client.player.swing(
-                                InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, true);
-                        // The server tells every player but the breaker; the breaker's own
-                        // client draws the particles and plays the sound itself.
-                        client.level.levelEvent(
-                                null,
-                                LevelEvent.PARTICLES_DESTROY_BLOCK,
-                                log,
-                                Block.getId(Blocks.OAK_LOG.defaultBlockState()));
-                    });
-            context.waitTicks(5);
+        ClientGameTestPlayerActions.walkWithinReach(context, trunkFoot);
+        ClientGameTestPlayerActions.lookAtBlock(context, logs.get(0));
+        ClientGameTestPlayerActions.mine(context, logs.get(0));
+        ClientGameTestPlayerActions.lookAtBlock(context, logs.get(1));
+        ClientGameTestPlayerActions.mine(context, logs.get(1));
+        // Step into the two-log gap under the rest of the trunk and look straight up, the way a
+        // player fells a tree.
+        ClientGameTestPlayerActions.walkTo(context, trunkFoot, 0.3D);
+        ClientGameTestPlayerActions.lookStraightUp(context);
+        for (BlockPos log : logs.subList(2, logs.size())) {
+            context.waitTicks(2);
+            ClientGameTestPlayerActions.mine(context, log);
         }
         server.runOnServer(
                 minecraftServer ->
@@ -368,6 +380,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
 
     private static void mobKill(ClientGameTestContext context, TestDedicatedServerContext server) {
         Vec3 huskAt = new Vec3(MOB_X + 0.5D, STAND_Y, 2.5D);
+        AtomicInteger huskId = new AtomicInteger();
         prepare(
                 context,
                 server,
@@ -387,12 +400,12 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     husk.setDropChance(EquipmentSlot.MAINHAND, 2.0F);
                     husk.setHealth(1.0F);
                     level.addFreshEntity(husk);
+                    huskId.set(husk.getId());
                     player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
                 });
         context.waitFor(
                 client -> !client.level.getEntitiesOfClass(Husk.class, siteBox(MOB_X)).isEmpty(),
                 LOAD_TIMEOUT_TICKS);
-        aim(context, huskAt.add(0.0D, 1.1D, 0.0D));
         String id = "telekinesis.mob";
         caption(
                 context,
@@ -401,7 +414,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "The husk's loot, sword and experience go straight to its killer");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        context.getInput().pressKey(options -> options.keyAttack);
+        ClientGameTestPlayerActions.lookAt(context, huskAt.add(0.0D, 1.1D, 0.0D));
+        ClientGameTestPlayerActions.attackEntity(context, huskId.get());
         context.waitFor(
                 client ->
                         client.level.getEntitiesOfClass(Husk.class, siteBox(MOB_X)).stream()
@@ -423,11 +437,12 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static void tnt(ClientGameTestContext context, TestDedicatedServerContext server) {
         BlockPos tnt = new BlockPos(TNT_X, STAND_Y, -6);
         BlockPos chest = tnt.east();
+        Vec3 tntAt = Vec3.atCenterOf(tnt);
         prepare(
                 context,
                 server,
                 TNT_X,
-                FAR_Z,
+                TNT_START_Z,
                 BLAST_FOV,
                 player -> {
                     ServerLevel level = player.level();
@@ -435,7 +450,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     emeraldChest(level, chest);
                     player.getInventory().setItem(0, new ItemStack(Items.FLINT_AND_STEEL));
                 });
-        aim(context, Vec3.atCenterOf(tnt));
         String id = "telekinesis.tnt";
         caption(
                 context,
@@ -444,7 +458,9 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "Blast drops and the chest's 64 emeralds go to the player who lit it");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        context.getInput().pressKey(options -> options.keyUse);
+        ClientGameTestPlayerActions.walkTo(context, tntAt, TNT_LIGHT_DISTANCE);
+        ClientGameTestPlayerActions.lookAtBlock(context, tnt);
+        ClientGameTestPlayerActions.useOnBlock(context, tnt);
         waitForServer(
                 context,
                 server,
@@ -453,9 +469,11 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                             minecraftServer
                                     .overworld()
                                     .getEntitiesOfClass(PrimedTnt.class, siteBox(TNT_X));
-                    primed.forEach(entity -> entity.setFuse(Math.min(entity.getFuse(), 30)));
+                    primed.forEach(entity -> entity.setFuse(Math.min(entity.getFuse(), TNT_FUSE_TICKS)));
                     return !primed.isEmpty();
                 });
+        // Back away from the blast while the fuse burns down.
+        ClientGameTestPlayerActions.walkAwayFrom(context, tntAt, TNT_SAFE_DISTANCE);
         waitForServer(
                 context,
                 server,
@@ -483,7 +501,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 context,
                 server,
                 ANCHOR_X,
-                FAR_Z,
+                BLAST_STAND_Z,
                 BLAST_FOV,
                 player -> {
                     ServerLevel level = player.level();
@@ -493,9 +511,19 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                     .defaultBlockState()
                                     .setValue(RespawnAnchorBlock.CHARGE, 4));
                     emeraldChest(level, chest);
+                    // The anchor's blast at arm's length would kill an unarmoured player; a player
+                    // wearing armour would live, and this keeps the stage on camera without plating
+                    // the player.
+                    player.addEffect(
+                            new MobEffectInstance(
+                                    MobEffects.RESISTANCE,
+                                    BLAST_RESISTANCE_TICKS,
+                                    BLAST_RESISTANCE_AMPLIFIER,
+                                    false,
+                                    false,
+                                    false));
                 });
         emptyHand(context);
-        aim(context, Vec3.atCenterOf(anchor));
         String id = "telekinesis.respawn_anchor";
         caption(
                 context,
@@ -504,7 +532,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "The game names no cause; Telekinesis credits the player who used it");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        context.getInput().pressKey(options -> options.keyUse);
+        ClientGameTestPlayerActions.lookAtBlock(context, anchor);
+        ClientGameTestPlayerActions.useOnBlock(context, anchor);
         waitForServer(
                 context,
                 server,
@@ -535,7 +564,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                         player.getInventory().setItem(slot, new ItemStack(Items.COBBLESTONE, 64));
                     }
                 });
-        aim(context, Vec3.atCenterOf(ore));
         String id = "telekinesis.full_inventory";
         caption(
                 context,
@@ -544,7 +572,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "What does not fit is put at your feet, not left at the block");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        mine(context, server, ore);
+        ClientGameTestPlayerActions.lookAtBlock(context, ore);
+        ClientGameTestPlayerActions.mine(context, ore);
         waitForServer(
                 context,
                 server,
@@ -585,7 +614,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     player.level().setBlockAndUpdate(ore, Blocks.DIAMOND_ORE.defaultBlockState());
                     player.getInventory().setItem(0, pickaxe(player.level(), null, 0));
                 });
-        aim(context, Vec3.atCenterOf(ore));
         String id = "telekinesis.off";
         caption(
                 context,
@@ -600,7 +628,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 server,
                 minecraftServer -> !TelekinesisPlayerSettings.isEffective(player(minecraftServer)));
         holdFor(context, BEFORE_MILLIS);
-        mine(context, server, ore);
+        ClientGameTestPlayerActions.lookAtBlock(context, ore);
+        ClientGameTestPlayerActions.mine(context, ore);
         waitForServer(
                 context,
                 server,
@@ -634,17 +663,26 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static void netherBed(
             ClientGameTestContext context, TestDedicatedServerContext server) {
         BlockPos chest = NETHER_BED_FOOT.north().east(2);
+        Vec3 stand = new Vec3(0.5D, NETHER_FLOOR_Y + 1.0D, BLAST_STAND_Z);
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
                     ServerLevel nether = minecraftServer.getLevel(Level.NETHER);
                     check(nether != null, "The test server must have a Nether");
                     resetPlayer(player);
+                    player.addEffect(
+                            new MobEffectInstance(
+                                    MobEffects.RESISTANCE,
+                                    BLAST_RESISTANCE_TICKS,
+                                    BLAST_RESISTANCE_AMPLIFIER,
+                                    false,
+                                    false,
+                                    false));
                     player.teleportTo(
                             nether,
-                            0.5D,
-                            NETHER_FLOOR_Y + 1.0D,
-                            FAR_Z,
+                            stand.x,
+                            stand.y,
+                            stand.z,
                             Set.of(),
                             NORTH,
                             0.0F,
@@ -655,17 +693,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                         client.level != null
                                 && client.level.dimension() == Level.NETHER
                                 && client.gui.screen() == null
-                                && client.player
-                                                .position()
-                                                .distanceTo(
-                                                        new Vec3(
-                                                                0.5D, NETHER_FLOOR_Y + 1.0D, FAR_Z))
-                                        < 0.01D
-                                // The client keeps the range across the teleport: it is told to
-                                // keep all attribute data (ServerPlayer.java:1164,
-                                // ClientboundRespawnPacket.java:19) and copies it into its new
-                                // player (ClientPacketListener.java:1326).
-                                && client.player.blockInteractionRange() >= INTERACTION_RANGE,
+                                && client.player.position().distanceTo(stand) < 0.01D,
                 LOAD_TIMEOUT_TICKS);
         context.runOnClient(
                 client -> {
@@ -675,7 +703,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         waitForChunkWindow(context);
         waitForMeshesIdle(context);
         emptyHand(context);
-        aim(context, Vec3.atCenterOf(NETHER_BED_FOOT));
         String id = "telekinesis.nether_bed";
         caption(
                 context,
@@ -684,7 +711,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "Vanilla names no cause; the drops go to the player who used the bed");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        context.getInput().pressKey(options -> options.keyUse);
+        ClientGameTestPlayerActions.lookAtBlock(context, NETHER_BED_FOOT);
+        ClientGameTestPlayerActions.useOnBlock(context, NETHER_BED_FOOT);
         waitForServer(
                 context,
                 server,
@@ -783,53 +811,13 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         player.getFoodData().setSaturation(20.0F);
         player.setDeltaMovement(Vec3.ZERO);
         player.clearFire();
-    }
-
-    private static void aim(ClientGameTestContext context, Vec3 target) {
-        context.runOnClient(client -> lookAt(client.player, target));
-        context.waitTicks(SETTLE_TICKS);
-    }
-
-    private static void lookAt(LocalPlayer player, Vec3 target) {
-        Vec3 eye = player.getEyePosition();
-        double dx = target.x - eye.x;
-        double dy = target.y - eye.y;
-        double dz = target.z - eye.z;
-        float yaw = (float) Math.toDegrees(Math.atan2(dz, dx)) - 90.0F;
-        float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
-        player.setYRot(yaw);
-        player.setXRot(pitch);
-        player.yRotO = yaw;
-        player.xRotO = pitch;
-        player.setYHeadRot(yaw);
-        player.yHeadRotO = yaw;
-        player.setYBodyRot(yaw);
-        player.yBodyRotO = yaw;
+        player.removeAllEffects();
     }
 
     private static void caption(
             ClientGameTestContext context, String id, String title, String subtitle) {
         ClientGameTestRecorder.showStep(context, id, title, subtitle);
         context.waitTicks(CAPTION_LEAD_TICKS);
-    }
-
-    /**
-     * The client removes the block before the server confirms, and the drops are only handed out
-     * on the server.
-     */
-    private static void mine(
-            ClientGameTestContext context, TestDedicatedServerContext server, BlockPos pos) {
-        context.getInput().holdKey(options -> options.keyAttack);
-        try {
-            context.waitFor(
-                    client -> client.level.getBlockState(pos).isAir(), ACTION_TIMEOUT_TICKS);
-        } finally {
-            context.getInput().releaseKey(options -> options.keyAttack);
-        }
-        waitForServer(
-                context,
-                server,
-                minecraftServer -> player(minecraftServer).level().getBlockState(pos).isAir());
     }
 
     /** Waits by the clock, as the film runs, not by ticks, which run slower under load. */
