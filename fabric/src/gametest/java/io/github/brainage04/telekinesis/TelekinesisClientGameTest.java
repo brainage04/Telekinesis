@@ -789,7 +789,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     ServerLevel level = player.level();
                     ChestBoat boat = EntityTypes.OAK_CHEST_BOAT.create(level, EntitySpawnReason.COMMAND);
                     check(boat != null, "The boat stage needs its chest boat");
-                    boat.setPersistenceRequired();
                     boat.snapTo(boatAt.x, boatAt.y, boatAt.z, 0.0F, 0.0F);
                     boat.setItem(0, new ItemStack(Items.EMERALD, 3));
                     check(level.addFreshEntity(boat), "The chest boat must spawn");
@@ -835,7 +834,6 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     MinecartChest cart =
                             EntityTypes.CHEST_MINECART.create(level, EntitySpawnReason.COMMAND);
                     check(cart != null, "The cart stage needs its chest minecart");
-                    cart.setPersistenceRequired();
                     cart.snapTo(cartAt.x, cartAt.y, cartAt.z, 0.0F, 0.0F);
                     cart.setItem(0, new ItemStack(Items.EMERALD, 3));
                     check(level.addFreshEntity(cart), "The chest minecart must spawn");
