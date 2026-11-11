@@ -141,9 +141,11 @@ public final class TelekinesisLeafAndCreditGameTests {
                             .isEmpty(),
                     "The top leaf's drops must stay in the world");
         } finally {
+            // The test's own bounds only: the server lays tests out eight to a row, five to six
+            // blocks apart (GameTestServer.java:325, StructureGridSpawner.java:17-18), so a radius
+            // that reaches past them can delete a neighbouring test's drops.
             helper.getLevel()
-                    .getEntitiesOfClass(
-                            ItemEntity.class, new AABB(helper.absolutePos(LOG_POS)).inflate(8.0D))
+                    .getEntitiesOfClass(ItemEntity.class, helper.getBounds())
                     .forEach(ItemEntity::discard);
             first.close();
             last.close();
