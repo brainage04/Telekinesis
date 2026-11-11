@@ -6,6 +6,7 @@ import io.github.brainage04.telekinesis.TelekinesisEntityAndCreditGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
 import io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests;
 import io.github.brainage04.telekinesis.TelekinesisLeafAndCreditGameTests;
+import io.github.brainage04.telekinesis.TelekinesisVehicleGameTests;
 import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -220,6 +221,30 @@ public final class NeoForgeServerGameTests {
                 event,
                 "broken_entity_with_the_setting_off_stays_in_the_world",
                 TelekinesisEntityAndCreditGameTests::brokenEntityWithTheSettingOffStaysInTheWorld);
+        register(
+                event,
+                "kill_credited_to_a_mob_stays_in_the_world",
+                TelekinesisEntityAndCreditGameTests::killCreditedToAMobStaysInTheWorld);
+        register(
+                event,
+                "boats_broken_by_player_send_boat_and_contents",
+                TelekinesisVehicleGameTests::boatsBrokenByPlayerSendBoatAndContents);
+        register(
+                event,
+                "minecarts_broken_by_player_send_cart_and_contents",
+                TelekinesisVehicleGameTests::minecartsBrokenByPlayerSendCartAndContents);
+        register(
+                event,
+                "vehicle_broken_with_the_setting_off_stays_in_the_world",
+                TelekinesisVehicleGameTests::vehicleBrokenWithTheSettingOffStaysInTheWorld);
+        register(
+                event,
+                "creative_break_of_vehicle_stays_in_the_world",
+                TelekinesisVehicleGameTests::creativeBreakOfVehicleStaysInTheWorld);
+        register(
+                event,
+                "vehicle_broken_without_a_player_stays_in_the_world",
+                TelekinesisVehicleGameTests::vehicleBrokenWithoutAPlayerStaysInTheWorld);
     }
 
     private static void register(

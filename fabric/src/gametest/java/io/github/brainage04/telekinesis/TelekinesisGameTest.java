@@ -242,4 +242,34 @@ public class TelekinesisGameTest {
     public void bedExplosionIsCreditedToThePlayerWhoUsedIt(GameTestHelper context) {
         TelekinesisKillAndExplosionGameTests.bedExplosionIsCreditedToThePlayerWhoUsedIt(context);
     }
+
+    @GameTest
+    public void killCreditedToAMobStaysInTheWorld(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.killCreditedToAMobStaysInTheWorld(context);
+    }
+
+    @GameTest
+    public void boatsBrokenByPlayerSendBoatAndContents(GameTestHelper context) {
+        TelekinesisVehicleGameTests.boatsBrokenByPlayerSendBoatAndContents(context);
+    }
+
+    @GameTest
+    public void minecartsBrokenByPlayerSendCartAndContents(GameTestHelper context) {
+        TelekinesisVehicleGameTests.minecartsBrokenByPlayerSendCartAndContents(context);
+    }
+
+    @GameTest
+    public void vehicleBrokenWithTheSettingOffStaysInTheWorld(GameTestHelper context) {
+        TelekinesisVehicleGameTests.vehicleBrokenWithTheSettingOffStaysInTheWorld(context);
+    }
+
+    @GameTest
+    public void creativeBreakOfVehicleStaysInTheWorld(GameTestHelper context) {
+        TelekinesisVehicleGameTests.creativeBreakOfVehicleStaysInTheWorld(context);
+    }
+
+    @GameTest
+    public void vehicleBrokenWithoutAPlayerStaysInTheWorld(GameTestHelper context) {
+        TelekinesisVehicleGameTests.vehicleBrokenWithoutAPlayerStaysInTheWorld(context);
+    }
 }

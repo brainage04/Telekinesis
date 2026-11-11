@@ -230,6 +230,35 @@ public final class TelekinesisEntityAndCreditGameTests {
         helper.succeed();
     }
 
+    /// A death the game credits to a mob is not the player's: the loot stays in the world, as it
+    /// does for a kill nobody is credited with.
+    public static void killCreditedToAMobStaysInTheWorld(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkMobKill", PLAYER_POS);
+        try {
+            ServerPlayer player = fixture.player();
+            ServerLevel level = helper.getLevel();
+            player.getInventory().clearContent();
+            Husk attacker = probeMob(helper, "tk_attacker", new BlockPos(5, 1, 1));
+            Husk victim = probeMob(helper, "tk_victim", MOB_POS);
+            victim.setHealth(20.0F);
+
+            victim.hurtServer(level, level.damageSources().mobAttack(attacker), 1.0F);
+            check(!victim.isDeadOrDying(), "One husk's blow must not kill the other");
+            check(victim.getKillCredit() == attacker, "The game must credit the attacking husk");
+
+            victim.hurtServer(level, level.damageSources().lava(), 100.0F);
+
+            check(victim.isDeadOrDying(), "The lava must kill the victim");
+            checkCount(player, Items.EMERALD, 0, "a kill the game credits to a mob");
+            check(
+                    countNear(level, helper.absolutePos(MOB_POS), Items.EMERALD, 6.0D) == 1,
+                    "A mob's kill loot must stay in the world");
+        } finally {
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
     private static ItemFrame hangingFrame(
             ServerLevel level, BlockPos wall, ItemFrame frame, Item content) {
         level.setBlockAndUpdate(wall, Blocks.STONE.defaultBlockState());
