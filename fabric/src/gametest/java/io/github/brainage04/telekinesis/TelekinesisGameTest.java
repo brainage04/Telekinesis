@@ -141,9 +141,40 @@ public class TelekinesisGameTest {
         TelekinesisKillAndExplosionGameTests.deadKillerLeavesKillLootInWorld(context);
     }
 
-    @GameTest
+    @GameTest(maxTicks = 200)
     public void expiredKillCreditLeavesKillLootInWorld(GameTestHelper context) {
         TelekinesisKillAndExplosionGameTests.expiredKillCreditLeavesKillLootInWorld(context);
+    }
+
+    @GameTest
+    public void killCreditedAfterThePlayersHitGoesToKiller(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.killCreditedAfterThePlayersHitGoesToKiller(context);
+    }
+
+    @GameTest
+    public void killCreditedOnlyByTheLastHurtRecordGoesToKiller(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.killCreditedOnlyByTheLastHurtRecordGoesToKiller(
+                context);
+    }
+
+    @GameTest
+    public void armorStandBrokenByPlayerSendsStandAndEquipment(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.armorStandBrokenByPlayerSendsStandAndEquipment(context);
+    }
+
+    @GameTest
+    public void itemFramesBrokenByPlayerSendFramesAndContents(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.itemFramesBrokenByPlayerSendFramesAndContents(context);
+    }
+
+    @GameTest
+    public void paintingBrokenByPlayerSendsThePainting(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.paintingBrokenByPlayerSendsThePainting(context);
+    }
+
+    @GameTest
+    public void brokenEntityWithTheSettingOffStaysInTheWorld(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.brokenEntityWithTheSettingOffStaysInTheWorld(context);
     }
 
     @GameTest

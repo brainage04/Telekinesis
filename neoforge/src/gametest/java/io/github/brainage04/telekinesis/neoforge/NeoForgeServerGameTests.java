@@ -2,6 +2,7 @@ package io.github.brainage04.telekinesis.neoforge;
 
 import io.github.brainage04.telekinesis.Telekinesis;
 import io.github.brainage04.telekinesis.TelekinesisBehaviorGameTests;
+import io.github.brainage04.telekinesis.TelekinesisEntityAndCreditGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
 import io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests;
 import io.github.brainage04.telekinesis.TelekinesisLeafAndCreditGameTests;
@@ -193,6 +194,32 @@ public final class NeoForgeServerGameTests {
                 event,
                 "bed_explosion_is_credited_to_the_player_who_used_it",
                 TelekinesisKillAndExplosionGameTests::bedExplosionIsCreditedToThePlayerWhoUsedIt);
+        register(
+                event,
+                "kill_credited_after_the_players_hit_goes_to_killer",
+                TelekinesisEntityAndCreditGameTests::killCreditedAfterThePlayersHitGoesToKiller);
+        register(
+                event,
+                "kill_credited_only_by_the_last_hurt_record_goes_to_killer",
+                TelekinesisEntityAndCreditGameTests
+                        ::killCreditedOnlyByTheLastHurtRecordGoesToKiller);
+        register(
+                event,
+                "armor_stand_broken_by_player_sends_stand_and_equipment",
+                TelekinesisEntityAndCreditGameTests
+                        ::armorStandBrokenByPlayerSendsStandAndEquipment);
+        register(
+                event,
+                "item_frames_broken_by_player_send_frames_and_contents",
+                TelekinesisEntityAndCreditGameTests::itemFramesBrokenByPlayerSendFramesAndContents);
+        register(
+                event,
+                "painting_broken_by_player_sends_the_painting",
+                TelekinesisEntityAndCreditGameTests::paintingBrokenByPlayerSendsThePainting);
+        register(
+                event,
+                "broken_entity_with_the_setting_off_stays_in_the_world",
+                TelekinesisEntityAndCreditGameTests::brokenEntityWithTheSettingOffStaysInTheWorld);
     }
 
     private static void register(
