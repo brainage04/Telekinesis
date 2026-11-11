@@ -227,8 +227,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "The ore's diamonds (Fortune III) and its experience go straight to you");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        ClientGameTestPlayerActions.lookAtBlock(context, ore);
-        ClientGameTestPlayerActions.mine(context, ore);
+        mine(context, server, ore);
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -277,8 +276,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "The chest and every stack inside it go straight to your inventory");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        ClientGameTestPlayerActions.lookAtBlock(context, chest);
-        ClientGameTestPlayerActions.mine(context, chest);
+        mine(context, server, chest);
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -332,17 +330,15 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
         ClientGameTestPlayerActions.walkWithinReach(context, trunkFoot);
-        ClientGameTestPlayerActions.lookAtBlock(context, logs.get(0));
-        ClientGameTestPlayerActions.mine(context, logs.get(0));
-        ClientGameTestPlayerActions.lookAtBlock(context, logs.get(1));
-        ClientGameTestPlayerActions.mine(context, logs.get(1));
+        mine(context, server, logs.get(0));
+        mine(context, server, logs.get(1));
         // Step into the two-log gap under the rest of the trunk and look straight up, the way a
         // player fells a tree.
         ClientGameTestPlayerActions.walkTo(context, trunkFoot, 0.3D);
         ClientGameTestPlayerActions.lookStraightUp(context);
         for (BlockPos log : logs.subList(2, logs.size())) {
             context.waitTicks(2);
-            ClientGameTestPlayerActions.mine(context, log);
+            mine(context, server, log);
         }
         server.runOnServer(
                 minecraftServer ->
@@ -572,8 +568,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 "What does not fit is put at your feet, not left at the block");
         stageStart(id);
         holdFor(context, BEFORE_MILLIS);
-        ClientGameTestPlayerActions.lookAtBlock(context, ore);
-        ClientGameTestPlayerActions.mine(context, ore);
+        mine(context, server, ore);
         waitForServer(
                 context,
                 server,
@@ -628,8 +623,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 server,
                 minecraftServer -> !TelekinesisPlayerSettings.isEffective(player(minecraftServer)));
         holdFor(context, BEFORE_MILLIS);
-        ClientGameTestPlayerActions.lookAtBlock(context, ore);
-        ClientGameTestPlayerActions.mine(context, ore);
+        mine(context, server, ore);
         waitForServer(
                 context,
                 server,
@@ -826,6 +820,21 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         while (System.currentTimeMillis() < end) {
             context.waitTick();
         }
+    }
+
+    /**
+     * Mines a block with the player's own attack key and waits for the server to have broken it: the
+     * client removes the block before the server confirms, and the drops are only handed out on the
+     * server.
+     */
+    private static void mine(
+            ClientGameTestContext context, TestDedicatedServerContext server, BlockPos pos) {
+        ClientGameTestPlayerActions.lookAtBlock(context, pos);
+        ClientGameTestPlayerActions.mine(context, pos);
+        waitForServer(
+                context,
+                server,
+                minecraftServer -> player(minecraftServer).level().getBlockState(pos).isAir());
     }
 
     private static void waitForServer(
