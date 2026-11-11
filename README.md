@@ -10,7 +10,7 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 - Handles every item stack produced by one source, including non-guaranteed and multiple unique drops.
 - Inserts as much as the player's inventory can accept. Any remainder is dropped at that player's feet rather than left where it was produced. Mined blocks already behaved this way, and mob kills and explosions do the same.
 - Credits the experience from the same source directly to that player, repairing Mending items first as an experience orb would.
-- There is no separate switch per source: the server-wide and personal settings below cover all of them.
+- The server-wide and personal settings below cover every source; there is no separate switch per source.
 
 ### Which drops count
 

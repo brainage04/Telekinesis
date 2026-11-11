@@ -1,8 +1,8 @@
 # Telekinesis icon
 
-## What this is
+## The icon file
 
-`docs/icon/icon.png` — the mod's icon: 1024x1024 PNG, 8-bit RGBA, non-interlaced,
+`docs/icon/icon.png` is the mod's icon: 1024x1024 PNG, 8-bit RGBA, non-interlaced,
 1,399,287 bytes, sha256
 `ce455da29766644688936df069b6eef0144121ed2871b9618bc8633b8b299b81`.
 
@@ -22,8 +22,8 @@ entity/item models, and it is the only input to the render:
 - 36 image assets (vanilla block/entity/item textures) are packed inside
   `approved-source.blend`, so no client jar is needed to re-render it.
 
-The displayed tableau — Steve on the left, a zombie and a skeleton behind him, three XP
-orbs, an item and an arrow — is a **staged illustrative scene**, not an in-game screenshot.
+The displayed tableau (Steve on the left, a zombie and a skeleton behind him, three XP
+orbs, an item and an arrow) is a **staged illustrative scene**, not an in-game screenshot.
 There is no Minecraft shader pack: the lighting, materials and world are the ones authored
 in the approved scene, rendered by Blender Cycles.
 
@@ -73,7 +73,7 @@ It rewrites `telekinesis/02-right-sweep.{blend,png}`, `-metadata.json` and
 ## Notes
 
 - Deliberately not copied from the round-3 tree: the three non-selected camera candidates
-  (`01-left-sweep`, `03-higher`, `04-wider` — scripts, packed scenes, PNGs, metadata,
+  (`01-left-sweep`, `03-higher`, `04-wider`: scripts, packed scenes, PNGs, metadata,
   verification) and the two ~3 MB non-camera payload dumps
   (`02-right-sweep-non-camera.json`, `02-right-sweep-saved-non-camera.json`); their hashes
   are recorded in the metadata and verification files above.
