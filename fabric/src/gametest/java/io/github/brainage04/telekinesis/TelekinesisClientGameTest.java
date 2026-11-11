@@ -37,6 +37,7 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.Cushion;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.decoration.painting.Painting;
 import net.minecraft.world.entity.decoration.painting.PaintingVariants;
@@ -45,6 +46,7 @@ import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.entity.vehicle.boat.ChestBoat;
 import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -80,7 +82,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int FLOOR_Y = 63;
     private static final int STAND_Y = FLOOR_Y + 1;
     private static final int STAGE_MIN_X = -110;
-    private static final int STAGE_MAX_X = 254;
+    private static final int STAGE_MAX_X = 278;
     private static final int STAGE_MIN_Z = -16;
     private static final int STAGE_MAX_Z = 8;
 
@@ -99,6 +101,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int PAINTING_X = 192;
     private static final int BOAT_X = 216;
     private static final int CART_X = 240;
+    private static final int CUSHION_X = 264;
 
     private static final double NEAR_Z = 4.5D;
 
@@ -214,6 +217,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                 itemFrame(context, server);
                                 armourStand(context, server);
                                 painting(context, server);
+                                cushion(context, server);
                                 chestBoat(context, server);
                                 chestMinecart(context, server);
                                 tnt(context, server);
@@ -522,15 +526,17 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 player -> {
                     ServerLevel level = player.level();
-                    // Lava in the floor, one block deep, so the punch's knockback drops the husk in.
-                    for (int z = 0; z >= -2; z--) {
-                        level.setBlockAndUpdate(
-                                new BlockPos(CREDITED_X, FLOOR_Y, z),
-                                Blocks.LAVA.defaultBlockState());
+                    // A lava pool cut into the floor behind the husk, three blocks deep and three
+                    // wide, so the punch's knockback drops it in.
+                    for (int x = CREDITED_X - 1; x <= CREDITED_X + 1; x++) {
+                        for (int z = -2; z <= 0; z++) {
+                            level.setBlockAndUpdate(
+                                    new BlockPos(x, FLOOR_Y, z), Blocks.LAVA.defaultBlockState());
+                        }
                     }
                     Husk husk = spawnHusk(level, huskAt, Items.DIAMOND_SWORD, 20.0F);
                     huskId.set(husk.getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                    player.getInventory().setItem(0, knockbackSword(level));
                 });
         context.waitFor(
                 client -> !client.level.getEntitiesOfClass(Husk.class, siteBox(CREDITED_X))
@@ -769,6 +775,48 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                     ServerPlayer player = player(minecraftServer);
                     checkCount(player, Items.PAINTING, 1);
                     checkNoItemsAt(player.level(), PAINTING_X);
+                });
+        holdFor(context, AFTER_MILLIS);
+        stageEnd(context, id);
+    }
+
+    private static void cushion(ClientGameTestContext context, TestDedicatedServerContext server) {
+        Vec3 cushionAt = new Vec3(CUSHION_X + 0.5D, STAND_Y, 2.5D);
+        Vec3 cushionLook = cushionAt.add(0.0D, 0.25D, 0.0D);
+        AtomicInteger cushionId = new AtomicInteger();
+        prepare(
+                context,
+                server,
+                CUSHION_X,
+                NEAR_Z - 0.5D,
+                NORMAL_FOV,
+                cushionLook,
+                player -> {
+                    ServerLevel level = player.level();
+                    Cushion cushion = EntityTypes.CUSHION.create(level, EntitySpawnReason.COMMAND);
+                    check(cushion != null, "The cushion stage needs its cushion");
+                    cushion.setColor(DyeColor.LIGHT_BLUE);
+                    cushion.snapTo(cushionAt.x, cushionAt.y, cushionAt.z, 0.0F, 0.0F);
+                    check(level.addFreshEntity(cushion), "The cushion must spawn");
+                    cushionId.set(cushion.getId());
+                    player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+                });
+        context.waitFor(
+                client -> client.level.getEntity(cushionId.get()) != null, LOAD_TIMEOUT_TICKS);
+        String id = "telekinesis.cushion";
+        caption(
+                context,
+                id,
+                "Breaking a cushion",
+                "The cushion goes to the player who punched it");
+        stageStart(id);
+        holdFor(context, BEFORE_MILLIS);
+        punchUntilGone(context, cushionLook, cushionId.get());
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    checkCount(player, Items.CUSHION.pick(DyeColor.LIGHT_BLUE), 1);
+                    checkNoItemsAt(player.level(), CUSHION_X);
                 });
         holdFor(context, AFTER_MILLIS);
         stageEnd(context, id);
@@ -1484,6 +1532,13 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static ItemStack axe(ServerLevel level) {
         ItemStack stack = new ItemStack(Items.DIAMOND_AXE);
         stack.enchant(enchantment(level, Enchantments.EFFICIENCY), 5);
+        return stack;
+    }
+
+    /** A player's sword with Knockback II, so one punch throws the husk into the lava. */
+    private static ItemStack knockbackSword(ServerLevel level) {
+        ItemStack stack = new ItemStack(Items.DIAMOND_SWORD);
+        stack.enchant(enchantment(level, Enchantments.KNOCKBACK), 2);
         return stack;
     }
 
