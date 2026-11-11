@@ -60,13 +60,13 @@ import net.minecraft.world.phys.Vec3;
 /**
  * The nine captioned stages of Telekinesis' showcase.
  *
- * <p>Every stage plays like a person: the player walks with the movement keys, turns to the block or
- * entity it acts on, and then mines or uses it with the attack or use key, within vanilla reach. {@link
- * ClientGameTestPlayerActions} keeps it that way and fails the stage when the crosshair is not on the
- * target or the target is out of reach.
+ * <p>Every stage plays like a person: the player walks with the movement keys, turns to the block
+ * or entity it acts on, and then mines or uses it with the attack or use key, within vanilla reach.
+ * {@link ClientGameTestPlayerActions} keeps it that way and fails the stage when the crosshair is
+ * not on the target or the target is out of reach.
  *
- * <p>Server-side calls only build the scene, spawn the stage's mob, set game rules and place the player
- * between stages, before that stage is filmed.
+ * <p>Server-side calls only build the scene, spawn the stage's mob, set game rules and place the
+ * player between stages, before that stage is filmed.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class TelekinesisClientGameTest implements FabricClientGameTest {
@@ -87,21 +87,32 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int OFF_X = 72;
 
     private static final double NEAR_Z = 4.5D;
+
     /** Where the player starts the tree stage, before walking up to the oak. */
     private static final double TREE_START_Z = 6.5D;
+
     /** Where the player starts the TNT stage, before walking up to the TNT. */
     private static final double TNT_START_Z = 0.5D;
-    /** How close the player walks to the TNT before lighting it: inside reach, back from the blast. */
+
+    /**
+     * How close the player walks to the TNT before lighting it: inside reach, back from the blast.
+     */
     private static final double TNT_LIGHT_DISTANCE = 3.0D;
+
     /** How far the player steps back from the lit TNT, outside a power-4 blast's damage. */
     private static final double TNT_SAFE_DISTANCE = 7.0D;
-    /** Where the player stands to use the anchor and the Nether bed: the far edge of vanilla reach. */
+
+    /**
+     * Where the player stands to use the anchor and the Nether bed: the far edge of vanilla reach.
+     */
     private static final double BLAST_STAND_Z = -1.0D;
+
     /** The tick a lit TNT is given, so the player can step back before it blows. */
     private static final int TNT_FUSE_TICKS = 60;
 
     private static final int NETHER_FLOOR_Y = 200;
     private static final BlockPos NETHER_BED_FOOT = new BlockPos(0, NETHER_FLOOR_Y + 1, -6);
+
     /** The longest oak the tree stage can fell: its top log has to be inside vanilla reach. */
     private static final int MAX_TREE_LOGS = 7;
 
@@ -109,8 +120,10 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     private static final int RENDER_DISTANCE = 12;
     private static final int NORMAL_FOV = 70;
     private static final int BLAST_FOV = 45;
+
     /** Ticks the blast stages' resistance lasts, which a real player's armour would have bought. */
     private static final int BLAST_RESISTANCE_TICKS = 20 * 60;
+
     private static final int BLAST_RESISTANCE_AMPLIFIER = 3;
 
     private static final int LEAF_DECAY_TICK_SPEED = 300;
@@ -343,8 +356,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
         // Step back out of the felled trunk and watch the canopy come down, so the leaf drops are
         // seen flying to the player instead of an empty sky.
         ClientGameTestPlayerActions.walkAwayFrom(context, trunkFoot, 3.0D);
-        ClientGameTestPlayerActions.lookAt(
-                context, new Vec3(TREE_X + 0.5D, STAND_Y + 5.0D, 0.5D));
+        ClientGameTestPlayerActions.lookAt(context, new Vec3(TREE_X + 0.5D, STAND_Y + 5.0D, 0.5D));
         server.runOnServer(
                 minecraftServer ->
                         command(
@@ -470,7 +482,8 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                             minecraftServer
                                     .overworld()
                                     .getEntitiesOfClass(PrimedTnt.class, siteBox(TNT_X));
-                    primed.forEach(entity -> entity.setFuse(Math.min(entity.getFuse(), TNT_FUSE_TICKS)));
+                    primed.forEach(
+                            entity -> entity.setFuse(Math.min(entity.getFuse(), TNT_FUSE_TICKS)));
                     return !primed.isEmpty();
                 });
         // Back away from the blast while the fuse burns down.
@@ -678,14 +691,7 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
                                     false,
                                     false));
                     player.teleportTo(
-                            nether,
-                            stand.x,
-                            stand.y,
-                            stand.z,
-                            Set.of(),
-                            NORTH,
-                            0.0F,
-                            true);
+                            nether, stand.x, stand.y, stand.z, Set.of(), NORTH, 0.0F, true);
                 });
         context.waitFor(
                 client ->
@@ -828,9 +834,9 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
     }
 
     /**
-     * Mines a block with the player's own attack key and waits for the server to have broken it: the
-     * client removes the block before the server confirms, and the drops are only handed out on the
-     * server.
+     * Mines a block with the player's own attack key and waits for the server to have broken it:
+     * the client removes the block before the server confirms, and the drops are only handed out on
+     * the server.
      */
     private static void mine(
             ClientGameTestContext context, TestDedicatedServerContext server, BlockPos pos) {
