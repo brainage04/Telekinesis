@@ -340,6 +340,11 @@ public final class TelekinesisClientGameTest implements FabricClientGameTest {
             context.waitTicks(2);
             mine(context, server, log);
         }
+        // Step back out of the felled trunk and watch the canopy come down, so the leaf drops are
+        // seen flying to the player instead of an empty sky.
+        ClientGameTestPlayerActions.walkAwayFrom(context, trunkFoot, 3.0D);
+        ClientGameTestPlayerActions.lookAt(
+                context, new Vec3(TREE_X + 0.5D, STAND_Y + 5.0D, 0.5D));
         server.runOnServer(
                 minecraftServer ->
                         command(
