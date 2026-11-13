@@ -33,7 +33,7 @@ Telekinesis is enabled for each player by default. Preferences are stored by UUI
 
 - Minecraft 26.3
 - Fabric Loader 0.19.5 or newer with Fabric API, or NeoForge 26.3.0.99 or newer
-- BrainageLib 2.0.0 or newer for the matching loader
+- BrainageLib 2.0.0 or newer, below 3.0.0, for the matching loader
 - Java 25 or newer
 - Install Telekinesis and its dependencies on the server.
 
