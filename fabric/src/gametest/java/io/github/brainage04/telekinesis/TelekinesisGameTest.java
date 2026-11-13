@@ -178,6 +178,43 @@ public class TelekinesisGameTest {
     }
 
     @GameTest
+    public void golemKillAfterThePlayersHitGoesToThePlayer(GameTestHelper context) {
+        TelekinesisCompanionKillGameTests.golemKillAfterThePlayersHitGoesToThePlayer(context);
+    }
+
+    @GameTest
+    public void villageGolemKillAfterThePlayersHitGoesToThePlayer(GameTestHelper context) {
+        TelekinesisCompanionKillGameTests.villageGolemKillAfterThePlayersHitGoesToThePlayer(
+                context);
+    }
+
+    @GameTest
+    public void golemKillOfAMobThatHitThePlayerStaysInTheWorld(GameTestHelper context) {
+        TelekinesisCompanionKillGameTests.golemKillOfAMobThatHitThePlayerStaysInTheWorld(context);
+    }
+
+    @GameTest
+    public void snowballFinishingABlazeThePlayerHitGoesToThePlayer(GameTestHelper context) {
+        TelekinesisCompanionKillGameTests.snowballFinishingABlazeThePlayerHitGoesToThePlayer(
+                context);
+    }
+
+    @GameTest
+    public void snowGolemKillOfABlazeNobodyHitLeavesNothing(GameTestHelper context) {
+        TelekinesisCompanionKillGameTests.snowGolemKillOfABlazeNobodyHitLeavesNothing(context);
+    }
+
+    @GameTest
+    public void wolfKillOfAMobThatHitTheOwnerGoesToOwner(GameTestHelper context) {
+        TelekinesisCompanionKillGameTests.wolfKillOfAMobThatHitTheOwnerGoesToOwner(context);
+    }
+
+    @GameTest
+    public void anotherPlayersWolfKillGoesToThatPlayer(GameTestHelper context) {
+        TelekinesisCompanionKillGameTests.anotherPlayersWolfKillGoesToThatPlayer(context);
+    }
+
+    @GameTest
     public void brokenEntityWithTheSettingOffStaysInTheWorld(GameTestHelper context) {
         TelekinesisEntityAndCreditGameTests.brokenEntityWithTheSettingOffStaysInTheWorld(context);
     }

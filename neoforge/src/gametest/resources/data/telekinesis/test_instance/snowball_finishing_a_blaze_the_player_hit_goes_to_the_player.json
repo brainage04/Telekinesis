@@ -1,0 +1,7 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 100,
+  "type": "minecraft:function",
+  "function": "telekinesis:snowball_finishing_a_blaze_the_player_hit_goes_to_the_player"
+}

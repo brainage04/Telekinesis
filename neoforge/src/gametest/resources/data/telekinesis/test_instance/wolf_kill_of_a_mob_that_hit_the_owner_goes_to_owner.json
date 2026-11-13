@@ -1,0 +1,7 @@
+{
+  "environment": "minecraft:default",
+  "structure":"minecraftmodconventions:empty",
+  "max_ticks": 100,
+  "type": "minecraft:function",
+  "function": "telekinesis:wolf_kill_of_a_mob_that_hit_the_owner_goes_to_owner"
+}

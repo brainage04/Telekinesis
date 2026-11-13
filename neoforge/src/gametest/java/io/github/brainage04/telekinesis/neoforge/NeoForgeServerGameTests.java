@@ -2,6 +2,7 @@ package io.github.brainage04.telekinesis.neoforge;
 
 import io.github.brainage04.telekinesis.Telekinesis;
 import io.github.brainage04.telekinesis.TelekinesisBehaviorGameTests;
+import io.github.brainage04.telekinesis.TelekinesisCompanionKillGameTests;
 import io.github.brainage04.telekinesis.TelekinesisEntityAndCreditGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
 import io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests;
@@ -221,6 +222,36 @@ public final class NeoForgeServerGameTests {
                 event,
                 "cushion_broken_by_player_sends_the_cushion",
                 TelekinesisEntityAndCreditGameTests::cushionBrokenByPlayerSendsTheCushion);
+        register(
+                event,
+                "golem_kill_after_the_players_hit_goes_to_the_player",
+                TelekinesisCompanionKillGameTests::golemKillAfterThePlayersHitGoesToThePlayer);
+        register(
+                event,
+                "village_golem_kill_after_the_players_hit_goes_to_the_player",
+                TelekinesisCompanionKillGameTests
+                        ::villageGolemKillAfterThePlayersHitGoesToThePlayer);
+        register(
+                event,
+                "golem_kill_of_a_mob_that_hit_the_player_stays_in_the_world",
+                TelekinesisCompanionKillGameTests::golemKillOfAMobThatHitThePlayerStaysInTheWorld);
+        register(
+                event,
+                "snowball_finishing_a_blaze_the_player_hit_goes_to_the_player",
+                TelekinesisCompanionKillGameTests
+                        ::snowballFinishingABlazeThePlayerHitGoesToThePlayer);
+        register(
+                event,
+                "snow_golem_kill_of_a_blaze_nobody_hit_leaves_nothing",
+                TelekinesisCompanionKillGameTests::snowGolemKillOfABlazeNobodyHitLeavesNothing);
+        register(
+                event,
+                "wolf_kill_of_a_mob_that_hit_the_owner_goes_to_owner",
+                TelekinesisCompanionKillGameTests::wolfKillOfAMobThatHitTheOwnerGoesToOwner);
+        register(
+                event,
+                "another_players_wolf_kill_goes_to_that_player",
+                TelekinesisCompanionKillGameTests::anotherPlayersWolfKillGoesToThatPlayer);
         register(
                 event,
                 "broken_entity_with_the_setting_off_stays_in_the_world",
