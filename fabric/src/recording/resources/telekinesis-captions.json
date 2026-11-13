@@ -1,70 +1,146 @@
 {
-  "telekinesis.mining": {
-    "title": "Mining a block",
+  "telekinesis.mining.off": {
+    "title": "Mining, Telekinesis off",
+    "subtitle": "The diamonds and XP drop at the ore"
+  },
+  "telekinesis.mining.on": {
+    "title": "Mining, Telekinesis on",
     "subtitle": "Diamonds (Fortune III) and XP go straight to you"
   },
-  "telekinesis.chest": {
-    "title": "Breaking a chest",
+  "telekinesis.chest.off": {
+    "title": "Breaking a chest, Telekinesis off",
+    "subtitle": "The chest and its stacks spill on the floor"
+  },
+  "telekinesis.chest.on": {
+    "title": "Breaking a chest, Telekinesis on",
     "subtitle": "The chest and its stacks go straight to you"
   },
-  "telekinesis.tree": {
-    "title": "Felling a tree",
+  "telekinesis.tree.off": {
+    "title": "Felling a tree, Telekinesis off",
+    "subtitle": "The logs drop at the trunk"
+  },
+  "telekinesis.tree.on": {
+    "title": "Felling a tree, Telekinesis on",
     "subtitle": "Logs, then the leaf drops, go to the feller"
   },
-  "telekinesis.mob": {
-    "title": "Killing a mob",
+  "telekinesis.mob.off": {
+    "title": "Killing a mob, Telekinesis off",
+    "subtitle": "The husk's loot, sword and XP drop where it dies"
+  },
+  "telekinesis.mob.on": {
+    "title": "Killing a mob, Telekinesis on",
     "subtitle": "The husk's loot, sword and XP go to its killer"
   },
-  "telekinesis.credited_kill": {
-    "title": "Killed after your hit",
-    "subtitle": "Lava finishes it; the game credits your hit"
+  "telekinesis.lava.off": {
+    "title": "Lava kills a husk nobody hit",
+    "subtitle": "Nobody gets the kill, so the loot stays"
   },
-  "telekinesis.uncredited_kill": {
-    "title": "Killed by a mob, not you",
+  "telekinesis.lava.on": {
+    "title": "Lava kills a husk you hit",
+    "subtitle": "The game credits your hit, so the loot is yours"
+  },
+  "telekinesis.golem.off": {
+    "title": "Iron golem kills a husk that hit you",
     "subtitle": "The game credits the golem, so the loot stays"
   },
-  "telekinesis.item_frame": {
-    "title": "Breaking an item frame",
+  "telekinesis.golem.on": {
+    "title": "Iron golem finishes a husk you hit",
+    "subtitle": "Your hit counts, so the loot and XP come to you"
+  },
+  "telekinesis.snow_golem.off": {
+    "title": "Snow golem kills a blaze nobody hit",
+    "subtitle": "The game credits the snow golem: no rod, no XP"
+  },
+  "telekinesis.snow_golem.on": {
+    "title": "Snow golem finishes a blaze you hit",
+    "subtitle": "Your hit counts, so the rod and XP come to you"
+  },
+  "telekinesis.wolf.off": {
+    "title": "Your wolf's kill, Telekinesis off",
+    "subtitle": "The husk's loot and XP drop where it dies"
+  },
+  "telekinesis.wolf.on": {
+    "title": "Your wolf's kill, Telekinesis on",
+    "subtitle": "You get your wolf's kill: loot and XP come to you"
+  },
+  "telekinesis.item_frame.off": {
+    "title": "Breaking an item frame, Telekinesis off",
+    "subtitle": "The diamond and the frame drop at the wall"
+  },
+  "telekinesis.item_frame.on": {
+    "title": "Breaking an item frame, Telekinesis on",
     "subtitle": "The diamond, then the frame, come to you"
   },
-  "telekinesis.armour_stand": {
-    "title": "Breaking an armour stand",
+  "telekinesis.armour_stand.off": {
+    "title": "Breaking an armour stand, Telekinesis off",
+    "subtitle": "The stand, helmet and sword drop on the floor"
+  },
+  "telekinesis.armour_stand.on": {
+    "title": "Breaking an armour stand, Telekinesis on",
     "subtitle": "The stand, helmet and sword come to you"
   },
-  "telekinesis.painting": {
-    "title": "Breaking a painting",
+  "telekinesis.painting.off": {
+    "title": "Breaking a painting, Telekinesis off",
+    "subtitle": "The painting drops at the wall"
+  },
+  "telekinesis.painting.on": {
+    "title": "Breaking a painting, Telekinesis on",
     "subtitle": "The painting comes to the player who punched it"
   },
-  "telekinesis.cushion": {
-    "title": "Breaking a cushion",
+  "telekinesis.cushion.off": {
+    "title": "Breaking a cushion, Telekinesis off",
+    "subtitle": "The cushion drops on the floor"
+  },
+  "telekinesis.cushion.on": {
+    "title": "Breaking a cushion, Telekinesis on",
     "subtitle": "The cushion comes to the player who punched it"
   },
-  "telekinesis.chest_boat": {
-    "title": "Breaking a chest boat",
+  "telekinesis.chest_boat.off": {
+    "title": "Breaking a chest boat, Telekinesis off",
+    "subtitle": "The boat and its 3 emeralds drop on the floor"
+  },
+  "telekinesis.chest_boat.on": {
+    "title": "Breaking a chest boat, Telekinesis on",
     "subtitle": "The boat and its 3 emeralds come to you"
   },
-  "telekinesis.chest_cart": {
-    "title": "Breaking a chest minecart",
+  "telekinesis.chest_cart.off": {
+    "title": "Breaking a chest minecart, Telekinesis off",
+    "subtitle": "The cart and its 3 emeralds drop on the floor"
+  },
+  "telekinesis.chest_cart.on": {
+    "title": "Breaking a chest minecart, Telekinesis on",
     "subtitle": "The cart and its 3 emeralds come to you"
   },
-  "telekinesis.tnt": {
-    "title": "TNT the player lit",
+  "telekinesis.tnt.off": {
+    "title": "TNT the player lit, Telekinesis off",
+    "subtitle": "The blast drops and 64 emeralds scatter"
+  },
+  "telekinesis.tnt.on": {
+    "title": "TNT the player lit, Telekinesis on",
     "subtitle": "Blast drops and the chest's 64 emeralds are yours"
   },
-  "telekinesis.respawn_anchor": {
-    "title": "Respawn anchor outside the Nether",
-    "subtitle": "The game names no cause; the user is credited"
+  "telekinesis.respawn_anchor.off": {
+    "title": "Respawn anchor, Telekinesis off",
+    "subtitle": "The blast drops scatter"
   },
-  "telekinesis.full_inventory": {
-    "title": "Full inventory",
+  "telekinesis.respawn_anchor.on": {
+    "title": "Respawn anchor, Telekinesis on",
+    "subtitle": "The game names no cause, so the user is credited"
+  },
+  "telekinesis.full_inventory.off": {
+    "title": "Full inventory, Telekinesis off",
+    "subtitle": "Everything drops at the ore"
+  },
+  "telekinesis.full_inventory.on": {
+    "title": "Full inventory, Telekinesis on",
     "subtitle": "What does not fit is put at your feet"
   },
-  "telekinesis.off": {
-    "title": "Telekinesis turned off",
-    "subtitle": "Off: the chest, its emeralds and the loot stay"
+  "telekinesis.nether_bed.off": {
+    "title": "Bed in the Nether, Telekinesis off",
+    "subtitle": "The blast drops scatter"
   },
-  "telekinesis.nether_bed": {
-    "title": "Bed in the Nether",
-    "subtitle": "Vanilla names no cause; the user is credited"
+  "telekinesis.nether_bed.on": {
+    "title": "Bed in the Nether, Telekinesis on",
+    "subtitle": "The game names no cause, so the user is credited"
   }
 }
