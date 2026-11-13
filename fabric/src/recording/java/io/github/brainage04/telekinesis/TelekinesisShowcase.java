@@ -710,7 +710,9 @@ public final class TelekinesisShowcase {
                 });
         int huskId = server.computeOnServer(minecraftServer -> husk.get().getId());
         waitForClientEntity(context, huskId);
-        ClientGameTestPlayerActions.requireLookingAtEntity(context, huskId);
+        // No crosshair guard here: the client's hit result lags its entity list, so it can still be
+        // the wall behind the husk. The hit take's attackEntity guards the crosshair once the hold
+        // has let the client catch up, and the off take never attacks.
         String id = takeId("lava", hit);
         caption(context, id);
         ClientGameTestStages.markStage(id);
