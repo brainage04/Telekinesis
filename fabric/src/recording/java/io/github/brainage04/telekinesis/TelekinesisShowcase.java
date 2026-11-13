@@ -140,7 +140,28 @@ public final class TelekinesisShowcase {
     private static final int STAGE_MIN_X = bayX(0, false) - 14;
     private static final int STAGE_MAX_X = bayX(OVERWORLD_SCENARIOS - 1, true) + 14;
 
-    private static final double NEAR_Z = 4.5D;
+    /**
+     * How far the player stands from what it punches. The game hands a drop to the player once its
+     * ten-tick pickup delay is over if it lies within 1.425 blocks of the player's centre: the
+     * player's own box grown by a block (Player.java:459-487) against an item's 0.25 box
+     * (EntityTypes.java:576-580). A dropped item also starts with up to 0.1 blocks a tick sideways
+     * (ItemEntity.java:66), which carries it about a block before it rests, so 2.5 blocks keep a
+     * take's loot out of the player's hands; the rest is slack under vanilla's three-block entity
+     * reach, which no take may leave.
+     */
+    private static final double PUNCH_STANDOFF = 2.75D;
+
+    /**
+     * Where the player stands to punch a hanging decoration. Its box hangs 0.46875 blocks in front
+     * of its block's centre (ItemFrame.java:114-124) and the drop it leaves starts there, so the
+     * three-block entity reach caps this standoff below {@link #PUNCH_STANDOFF}.
+     */
+    private static final double HANGING_STAND_Z = 4.8D;
+
+    /** The z the player stands at to punch something whose loot starts at {@code targetZ}. */
+    private static double standZ(double targetZ) {
+        return targetZ + PUNCH_STANDOFF;
+    }
 
     /**
      * Where a broken chest stands, and where the player stands to break it: far enough apart that
@@ -404,7 +425,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(ore.getZ() + 0.5D),
                 NORMAL_FOV,
                 Vec3.atCenterOf(ore),
                 true,
@@ -640,7 +661,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(huskAt.z),
                 NORMAL_FOV,
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 on,
@@ -682,7 +703,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(huskAt.z),
                 NORMAL_FOV,
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 true,
@@ -779,7 +800,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(huskAt.z),
                 NORMAL_FOV,
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 true,
@@ -807,8 +828,8 @@ public final class TelekinesisShowcase {
             ClientGameTestPlayerActions.attackEntity(context, huskId);
             wake(server, golem.get());
         } else {
-            wake(server, husk.get(), golem.get());
-            awaitHitAndBackOff(context, server, husk);
+            wake(server, husk.get());
+            awaitHitThenBackOff(context, server, husk, golem.get());
         }
         waitForDeath(context, server, huskId);
         server.runOnServer(
@@ -831,6 +852,7 @@ public final class TelekinesisShowcase {
                         check(
                                 onGround(player.level(), siteX, Items.IRON_SWORD) == 1,
                                 "The husk's sword must stay where it fell");
+                        checkDropsOutOfPickupRange(player, siteX);
                         check(
                                 orbsAt(player.level(), siteX) == 0,
                                 "A kill the game credits to the golem drops no experience");
@@ -856,7 +878,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(blazeAt.z),
                 NORMAL_FOV,
                 blazeAt.add(0.0D, 0.9D, 0.0D),
                 true,
@@ -922,14 +944,14 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(WOLF, on);
         Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, ATTACKER_Z);
-        Vec3 wolfAt = new Vec3(siteX + 1.5D, STAND_Y, NEAR_Z);
+        Vec3 wolfAt = new Vec3(siteX + 1.5D, STAND_Y, standZ(huskAt.z));
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<Wolf> wolf = new AtomicReference<>();
         prepare(
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(huskAt.z),
                 NORMAL_FOV,
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 on,
@@ -956,8 +978,8 @@ public final class TelekinesisShowcase {
         String id = takeId("wolf", on);
         caption(context, id);
         ClientGameTestStages.markStage(id);
-        wake(server, husk.get(), wolf.get());
-        awaitHitAndBackOff(context, server, husk);
+        wake(server, husk.get());
+        awaitHitThenBackOff(context, server, husk, wolf.get());
         waitForDeath(context, server, huskId);
         server.runOnServer(
                 minecraftServer -> {
@@ -973,13 +995,16 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * Waits for the husk's hit to land on the player, then backs the player off, as a player would,
-     * so the drops of the husk's death land out of the player's pickup range.
+     * Waits for the husk's hit to land on the player, then frees {@code finishers} and backs the
+     * player off, as a player would. The mob that finishes the husk stays asleep until the hit is
+     * in, so a slow host cannot let it kill the husk first, and the husk stops chasing so its loot
+     * lands where it died, out of the player's pickup range.
      */
-    private static void awaitHitAndBackOff(
+    private static void awaitHitThenBackOff(
             ClientGameTestContext context,
             TestDedicatedServerContext server,
-            AtomicReference<Husk> husk) {
+            AtomicReference<Husk> husk,
+            Mob... finishers) {
         ClientGameTestWaits.waitForServer(
                 context,
                 server,
@@ -991,6 +1016,12 @@ public final class TelekinesisShowcase {
                 },
                 ACTION_TIMEOUT_TICKS,
                 "the husk's hit lands on the player");
+        wake(server, finishers);
+        server.runOnServer(
+                minecraftServer -> {
+                    husk.get().setNoAi(true);
+                    husk.get().getNavigation().stop();
+                });
         Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
         ClientGameTestPlayerActions.walkAwayFrom(context, hitFrom, BACK_OFF_DISTANCE);
     }
@@ -1005,7 +1036,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                HANGING_STAND_Z,
                 NORMAL_FOV,
                 frameLook,
                 on,
@@ -1047,7 +1078,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(standAt.z),
                 NORMAL_FOV,
                 standAt.add(0.0D, 1.0D, 0.0D),
                 on,
@@ -1098,7 +1129,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                HANGING_STAND_Z,
                 NORMAL_FOV,
                 paintingLook,
                 on,
@@ -1143,9 +1174,11 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(cushionAt.z),
                 NORMAL_FOV,
-                cushionAt.add(0.0D, 0.25D, 0.0D),
+                // The middle of the cushion's 0.25-high box: its top edge is out of the
+                // three-block aim from the take's standoff.
+                cushionAt.add(0.0D, 0.125D, 0.0D),
                 on,
                 player -> {
                     ServerLevel level = player.level();
@@ -1184,7 +1217,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(boatAt.z),
                 NORMAL_FOV,
                 boatAt.add(0.0D, 0.3D, 0.0D),
                 on,
@@ -1228,7 +1261,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(cartAt.z),
                 NORMAL_FOV,
                 cartAt.add(0.0D, 0.35D, 0.0D),
                 on,
@@ -1356,7 +1389,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 siteX,
-                NEAR_Z,
+                standZ(ore.getZ() + 0.5D),
                 NORMAL_FOV,
                 Vec3.atCenterOf(ore),
                 on,
@@ -2020,15 +2053,16 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * Fails when a drop lies in the player's pickup area, where the game hands it to the player once
-     * the item's pickup delay is over ({@code Player.touch}, Player.java:459-487). A take may only
-     * claim that its loot stayed in the world if the player could not have taken it, so the check
-     * cannot pass by running before that delay has elapsed: the area is the player's own box grown
-     * by a block, against a dropped item's 0.25 box (EntityTypes.java:576-580).
+     * Fails when a drop lies in the player's pickup area, where the game hands it to the player
+     * once the item's pickup delay is over ({@code Player.touch}, Player.java:459-487). A take may
+     * only claim that its loot stayed in the world if the player could not have taken it, so the
+     * check cannot pass by running before that delay has elapsed: the area is the player's own box
+     * grown by a block, against a dropped item's 0.25 box (EntityTypes.java:576-580).
      */
     private static void checkDropsOutOfPickupRange(ServerPlayer player, int siteX) {
         AABB pickupArea = player.getBoundingBox().inflate(1.0D, 0.5D, 1.0D);
-        for (ItemEntity drop : player.level().getEntitiesOfClass(ItemEntity.class, siteBox(siteX))) {
+        for (ItemEntity drop :
+                player.level().getEntitiesOfClass(ItemEntity.class, siteBox(siteX))) {
             AABB dropBox = drop.getBoundingBox();
             check(
                     !pickupArea.intersects(dropBox),
