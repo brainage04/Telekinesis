@@ -235,9 +235,10 @@ public final class TelekinesisShowcase {
     private static final int STEP_BACK_TICKS = 7;
 
     /**
-     * Built on the server thread, not in a static field: an {@link ItemStack} reads its item's
-     * components (ItemStack.java:255-257), and a built-in item holder throws "Components not bound
-     * yet" (Holder.java:268) until the registries are bootstrapped.
+     * Built on the server thread, not in a static field: an {@link ItemStack} reads its item's components
+     * (ItemStack.java:248-250), which are bound when the server loads its registries
+     * (DataComponentInitializers.java:103), and a built-in item holder throws "Components not bound yet" until
+     * then (Holder.java:268).
      */
     private static List<ItemStack> chestContents() {
         return List.of(
