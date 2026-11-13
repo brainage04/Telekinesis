@@ -689,7 +689,12 @@ public final class TelekinesisShowcase {
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 true,
                 player -> player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD)));
-        // The lava starts burning the husk as it spawns, so it spawns last, once the bay is drawn.
+        String id = takeId("lava", hit);
+        caption(context, id);
+        ClientGameTestStages.markStage(id);
+        // The husk burns from the moment it spawns and survives about a second and a half of lava, so it spawns
+        // here, once the bay is drawn and the take has begun: spawned beside the caption instead, a busy host
+        // took longer than that to show it, and the husk was already dead when the take aimed at it.
         AtomicReference<Husk> husk = new AtomicReference<>();
         server.runOnServer(
                 minecraftServer -> {
@@ -703,9 +708,6 @@ public final class TelekinesisShowcase {
         int huskId = server.computeOnServer(minecraftServer -> husk.get().getId());
         waitForClientEntity(context, huskId);
         ClientGameTestPlayerActions.requireLookingAtEntity(context, huskId);
-        String id = takeId("lava", hit);
-        caption(context, id);
-        ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         if (hit) {
             ClientGameTestPlayerActions.attackEntity(context, huskId);
