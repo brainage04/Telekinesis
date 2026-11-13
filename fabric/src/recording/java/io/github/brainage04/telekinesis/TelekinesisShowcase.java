@@ -2014,6 +2014,31 @@ public final class TelekinesisShowcase {
         }
         if (on) {
             checkNoItemsAt(player.level(), siteX);
+        } else {
+            checkDropsOutOfPickupRange(player, siteX);
+        }
+    }
+
+    /**
+     * Fails when a drop lies in the player's pickup area, where the game hands it to the player once
+     * the item's pickup delay is over ({@code Player.touch}, Player.java:459-487). A take may only
+     * claim that its loot stayed in the world if the player could not have taken it, so the check
+     * cannot pass by running before that delay has elapsed: the area is the player's own box grown
+     * by a block, against a dropped item's 0.25 box (EntityTypes.java:576-580).
+     */
+    private static void checkDropsOutOfPickupRange(ServerPlayer player, int siteX) {
+        AABB pickupArea = player.getBoundingBox().inflate(1.0D, 0.5D, 1.0D);
+        for (ItemEntity drop : player.level().getEntitiesOfClass(ItemEntity.class, siteBox(siteX))) {
+            AABB dropBox = drop.getBoundingBox();
+            check(
+                    !pickupArea.intersects(dropBox),
+                    "The "
+                            + drop.getItem()
+                            + " at "
+                            + drop.position()
+                            + " lies in the player's pickup area "
+                            + pickupArea
+                            + ", so the game would hand it over once its pickup delay is over");
         }
     }
 
