@@ -1,6 +1,6 @@
 # Telekinesis
 
-Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.3 that places drops and experience directly into a player's inventory and experience total: from blocks the player mines, the leaves of trees the player cuts, mobs the game credits the player with killing, the item frames, glow item frames, paintings and armour stands the player breaks, the boats and minecarts the player breaks with their contents, and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.
+Telekinesis is a server-side Fabric and NeoForge mod for Minecraft 26.3 that places drops and experience directly into a player's inventory and experience total: from blocks the player mines, the leaves of trees the player cuts, mobs the game credits the player with killing, the item frames, glow item frames, paintings, cushions and armour stands the player breaks, the boats and minecarts the player breaks with their contents, and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.
 
 Telekinesis is enabled for each player by default. Preferences are stored by UUID in `telekinesis-players.json` in the current world's directory and survive restarts.
 
