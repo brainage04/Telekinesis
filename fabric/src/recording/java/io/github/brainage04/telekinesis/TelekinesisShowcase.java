@@ -235,10 +235,10 @@ public final class TelekinesisShowcase {
     private static final int STEP_BACK_TICKS = 7;
 
     /**
-     * Built on the server thread, not in a static field: an {@link ItemStack} reads its item's components
-     * (ItemStack.java:248-250), which are bound when the server loads its registries
-     * (DataComponentInitializers.java:103), and a built-in item holder throws "Components not bound yet" until
-     * then (Holder.java:268).
+     * Built on the server thread, not in a static field: an {@link ItemStack} reads its item's
+     * components (ItemStack.java:248-250), which are bound when the server loads its registries
+     * (DataComponentInitializers.java:103), and a built-in item holder throws "Components not bound
+     * yet" until then (Holder.java:268).
      */
     private static List<ItemStack> chestContents() {
         return List.of(
@@ -689,25 +689,35 @@ public final class TelekinesisShowcase {
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 true,
                 player -> player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD)));
-        String id = takeId("lava", hit);
-        caption(context, id);
-        ClientGameTestStages.markStage(id);
-        // The husk burns from the moment it spawns and survives about a second and a half of lava, so it spawns
-        // here, once the bay is drawn and the take has begun: spawned beside the caption instead, a busy host
-        // took longer than that to show it, and the husk was already dead when the take aimed at it.
+        // The lava starts burning the husk as it spawns, and the off take's husk survives about a second and a
+        // half of it, so the husk is fire-immune until the take starts: on a busy host the client took seconds
+        // to show the husk, and the take found a husk the lava had already killed.
         AtomicReference<Husk> husk = new AtomicReference<>();
         server.runOnServer(
                 minecraftServer -> {
-                    husk.set(
+                    Husk spawned =
                             spawnHusk(
                                     minecraftServer.overworld(),
                                     huskAt,
                                     Items.NETHERITE_SWORD,
-                                    hit ? LAVA_HIT_HEALTH : LAVA_UNHIT_HEALTH));
+                                    hit ? LAVA_HIT_HEALTH : LAVA_UNHIT_HEALTH);
+                    spawned.addEffect(
+                            new MobEffectInstance(
+                                    MobEffects.FIRE_RESISTANCE,
+                                    LOAD_TIMEOUT_TICKS,
+                                    0,
+                                    false,
+                                    false));
+                    husk.set(spawned);
                 });
         int huskId = server.computeOnServer(minecraftServer -> husk.get().getId());
         waitForClientEntity(context, huskId);
         ClientGameTestPlayerActions.requireLookingAtEntity(context, huskId);
+        String id = takeId("lava", hit);
+        caption(context, id);
+        ClientGameTestStages.markStage(id);
+        // The burn begins with the take, so every host films the same one.
+        server.runOnServer(minecraftServer -> husk.get().removeEffect(MobEffects.FIRE_RESISTANCE));
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         if (hit) {
             ClientGameTestPlayerActions.attackEntity(context, huskId);
