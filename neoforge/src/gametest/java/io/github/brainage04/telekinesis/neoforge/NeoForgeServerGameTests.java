@@ -219,6 +219,10 @@ public final class NeoForgeServerGameTests {
                 TelekinesisEntityAndCreditGameTests::paintingBrokenByPlayerSendsThePainting);
         register(
                 event,
+                "cushion_broken_by_player_sends_the_cushion",
+                TelekinesisEntityAndCreditGameTests::cushionBrokenByPlayerSendsTheCushion);
+        register(
+                event,
                 "broken_entity_with_the_setting_off_stays_in_the_world",
                 TelekinesisEntityAndCreditGameTests::brokenEntityWithTheSettingOffStaysInTheWorld);
         register(

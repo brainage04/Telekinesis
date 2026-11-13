@@ -173,6 +173,11 @@ public class TelekinesisGameTest {
     }
 
     @GameTest
+    public void cushionBrokenByPlayerSendsTheCushion(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.cushionBrokenByPlayerSendsTheCushion(context);
+    }
+
+    @GameTest
     public void brokenEntityWithTheSettingOffStaysInTheWorld(GameTestHelper context) {
         TelekinesisEntityAndCreditGameTests.brokenEntityWithTheSettingOffStaysInTheWorld(context);
     }

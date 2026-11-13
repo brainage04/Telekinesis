@@ -14,14 +14,17 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.Cushion;
 import net.minecraft.world.entity.decoration.GlowItemFrame;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.decoration.painting.Painting;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.entity.variant.VariantUtils;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -138,6 +141,31 @@ public final class TelekinesisEntityAndCreditGameTests {
             check(
                     countNear(level, wall.north(), Items.PAINTING, 6.0D) == 0,
                     "A broken painting may not stay in the world");
+        } finally {
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
+    public static void cushionBrokenByPlayerSendsTheCushion(GameTestHelper helper) {
+        GameTestPlayer fixture = enabledPlayer(helper, "TkCushion", PLAYER_POS);
+        try {
+            ServerPlayer player = fixture.player();
+            ServerLevel level = helper.getLevel();
+            BlockPos at = helper.absolutePos(STAND_POS);
+            Cushion cushion = new Cushion(EntityTypes.CUSHION, level);
+            cushion.setColor(DyeColor.LIGHT_BLUE);
+            cushion.setPos(at.getX() + 0.5D, at.getY(), at.getZ() + 0.5D);
+            check(level.addFreshEntity(cushion), "The cushion must spawn");
+            Item dyedCushion = Items.CUSHION.pick(DyeColor.LIGHT_BLUE);
+
+            player.attack(cushion);
+
+            check(cushion.isRemoved(), "The punch must break the cushion");
+            checkCount(player, dyedCushion, 1, "the cushion a player broke");
+            check(
+                    countNear(level, at, dyedCushion, 6.0D) == 0,
+                    "A broken cushion may not stay in the world");
         } finally {
             fixture.close();
         }
