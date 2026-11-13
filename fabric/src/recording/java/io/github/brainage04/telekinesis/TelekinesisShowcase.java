@@ -234,13 +234,19 @@ public final class TelekinesisShowcase {
     private static final int HOLD_AFTER_END_TICKS = 6;
     private static final int STEP_BACK_TICKS = 7;
 
-    private static final List<ItemStack> CHEST_CONTENTS =
-            List.of(
-                    new ItemStack(Items.DIAMOND, 3),
-                    new ItemStack(Items.EMERALD, 12),
-                    new ItemStack(Items.IRON_INGOT, 16),
-                    new ItemStack(Items.GOLD_INGOT, 5),
-                    new ItemStack(Items.GOLDEN_APPLE, 1));
+    /**
+     * Built on the server thread, not in a static field: an {@link ItemStack} reads its item's
+     * components (ItemStack.java:255-257), and a built-in item holder throws "Components not bound
+     * yet" (Holder.java:268) until the registries are bootstrapped.
+     */
+    private static List<ItemStack> chestContents() {
+        return List.of(
+                new ItemStack(Items.DIAMOND, 3),
+                new ItemStack(Items.EMERALD, 12),
+                new ItemStack(Items.IRON_INGOT, 16),
+                new ItemStack(Items.GOLD_INGOT, 5),
+                new ItemStack(Items.GOLDEN_APPLE, 1));
+    }
 
     private static final Map<String, String[]> CAPTIONS = loadCaptions();
 
@@ -465,7 +471,7 @@ public final class TelekinesisShowcase {
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
-                    List<ItemStack> expected = new ArrayList<>(CHEST_CONTENTS);
+                    List<ItemStack> expected = new ArrayList<>(chestContents());
                     expected.add(new ItemStack(Items.CHEST));
                     checkDelivered(player, siteX, on, expected);
                 });
@@ -1860,8 +1866,9 @@ public final class TelekinesisShowcase {
                 Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, Direction.SOUTH));
         ChestBlockEntity chestEntity = (ChestBlockEntity) level.getBlockEntity(chest);
         check(chestEntity != null, "The chest scenario needs its chest");
-        for (int slot = 0; slot < CHEST_CONTENTS.size(); slot++) {
-            chestEntity.setItem(slot * 3, CHEST_CONTENTS.get(slot).copy());
+        List<ItemStack> contents = chestContents();
+        for (int slot = 0; slot < contents.size(); slot++) {
+            chestEntity.setItem(slot * 3, contents.get(slot).copy());
         }
 
         BlockPos sapling = new BlockPos(bayX(TREE, on), STAND_Y, 0);
