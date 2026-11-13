@@ -234,12 +234,10 @@ public final class TelekinesisShowcase {
     private static final int HOLD_AFTER_END_TICKS = 6;
     private static final int STEP_BACK_TICKS = 7;
 
-    /**
-     * Built on the server thread, not in a static field: an {@link ItemStack} reads its item's
-     * components (ItemStack.java:248-250), which are bound when the server loads its registries
-     * (DataComponentInitializers.java:103), and a built-in item holder throws "Components not bound
-     * yet" until then (Holder.java:268).
-     */
+    // Built on the server thread, not in a static field: an ItemStack reads its item's components
+    // (ItemStack.java:248-250), which are bound when the server loads its registries
+    // (DataComponentInitializers.java:103), and a built-in item holder throws "Components not bound
+    // yet" until then (Holder.java:268).
     private static List<ItemStack> chestContents() {
         return List.of(
                 new ItemStack(Items.DIAMOND, 3),
@@ -689,9 +687,9 @@ public final class TelekinesisShowcase {
                 huskAt.add(0.0D, 1.1D, 0.0D),
                 true,
                 player -> player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD)));
-        // The lava starts burning the husk as it spawns, and the off take's husk survives about a second and a
-        // half of it, so the husk is fire-immune until the take starts: on a busy host the client took seconds
-        // to show the husk, and the take found a husk the lava had already killed.
+        // The lava burns the husk from the spawn, and the off take's husk dies in about 1.5 s
+        // of it, so the husk is fire-immune until the take starts: a slow host's client then
+        // never shows the take a husk the lava has already killed.
         AtomicReference<Husk> husk = new AtomicReference<>();
         server.runOnServer(
                 minecraftServer -> {
