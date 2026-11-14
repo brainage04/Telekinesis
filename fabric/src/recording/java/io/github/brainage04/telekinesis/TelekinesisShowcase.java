@@ -304,6 +304,14 @@ public final class TelekinesisShowcase {
     private static final float BLAZE_HEALTH = 3.0F;
 
     /**
+     * Game ticks a tamed wolf still takes on whatever hurt its owner: OwnerHurtByTargetGoal reads
+     * the owner's damage of the last 100 ticks (OwnerHurtByTargetGoal.java:29) and its attacker,
+     * which the owner forgets after 100 ticks (LivingEntity.java:498). The goal has the number
+     * inline, so it is copied here.
+     */
+    private static final int OWNER_HURT_MEMORY_TICKS = 100;
+
+    /**
      * A lava victim's health: the "off" husk burns in about a second and a half, the "on" husk
      * outlives the lava until the player's hit and dies soon after it.
      */
@@ -1074,7 +1082,20 @@ public final class TelekinesisShowcase {
         caption(context, id);
         ClientGameTestStages.markStage(id);
         wake(server, husk.get());
-        awaitHitThenBackOff(context, server, husk, wolf.get());
+        awaitHitThenBackOff(context, server, husk);
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    check(
+                            player.getLastDamageSource(OWNER_HURT_MEMORY_TICKS) != null
+                                    && player.getLastHurtByMob() == husk.get(),
+                            "The back-off outlasted the "
+                                    + OWNER_HURT_MEMORY_TICKS
+                                    + " ticks a wolf takes on its owner's attacker for, so the"
+                                    + " wolf will never attack the husk: the client runs too"
+                                    + " slowly");
+                });
+        wake(server, wolf.get());
         waitForDeath(context, server, huskId);
         server.runOnServer(
                 minecraftServer -> {
