@@ -29,8 +29,9 @@ public final class Telekinesis {
                 new ServerModHelpEntry(
                         MOD_ID,
                         MOD_NAME,
-                        "Sends drops and experience from blocks you mine, mobs you kill and explosions you"
-                                + " cause straight to you, and pays you for the leaves of a tree you felled.",
+                        "Sends drops and experience from blocks you mine, mobs you kill, decorations,"
+                                + " armour stands and vehicles you break, and explosions you cause"
+                                + " straight to you, and pays you for the leaves of a tree you felled.",
                         "/telekinesis help",
                         "/telekinesis config"));
         LOGGER.info("{} initialised.", MOD_NAME);
