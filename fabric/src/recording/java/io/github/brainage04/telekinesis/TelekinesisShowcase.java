@@ -19,13 +19,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.client.CameraType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -354,6 +357,22 @@ public final class TelekinesisShowcase {
 
     /** The pause after the caption before the TNT take's right click: about half a second in. */
     private static final long TNT_USE_DELAY_MILLIS = 400L;
+
+    /**
+     * The kill credit each mob died with, by entity id. The game reads the credit in the death tick
+     * (LivingEntity.java:1461) and decides the loot by it, but a dying mob keeps ticking for 20
+     * ticks and forgets a player's hit 100 ticks after it (LivingEntity.java:480-488), so a credit
+     * read after the death can already name the mob that finished it.
+     */
+    private static final Map<Integer, Optional<LivingEntity>> CREDIT_AT_DEATH =
+            new ConcurrentHashMap<>();
+
+    static {
+        ServerLivingEntityEvents.AFTER_DEATH.register(
+                (entity, source) ->
+                        CREDIT_AT_DEATH.put(
+                                entity.getId(), Optional.ofNullable(entity.getKillCredit())));
+    }
 
     private TelekinesisShowcase() {}
 
@@ -840,7 +859,7 @@ public final class TelekinesisShowcase {
             ClientGameTestPlayerActions.attackEntity(context, huskId);
             awaitPlayerHit(context, server, husk.get());
         }
-        waitForDeath(context, server, huskId);
+        LivingEntity credit = waitForDeath(context, server, huskId);
         if (!hit) {
             awaitSettledDrops(context, server, siteX);
         }
@@ -848,9 +867,7 @@ public final class TelekinesisShowcase {
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
                     if (hit) {
-                        check(
-                                husk.get().getKillCredit() == player,
-                                "The game must credit the player's hit");
+                        check(credit == player, "The game must credit the player's hit");
                         checkCount(player, Items.NETHERITE_SWORD, 1);
                         check(
                                 player.totalExperience > 0,
@@ -858,9 +875,7 @@ public final class TelekinesisShowcase {
                                         + " experience");
                         checkNoItemsAt(player.level(), siteX);
                     } else {
-                        check(
-                                husk.get().getKillCredit() == null,
-                                "The game must credit nobody with the lava's kill");
+                        check(credit == null, "The game must credit nobody with the lava's kill");
                         checkCount(player, Items.NETHERITE_SWORD, 0);
                         check(
                                 onGround(player.level(), siteX, Items.NETHERITE_SWORD) == 1,
@@ -928,7 +943,7 @@ public final class TelekinesisShowcase {
             wake(server, husk.get());
             awaitHitThenBackOff(context, server, husk, golem.get());
         }
-        waitForDeath(context, server, huskId);
+        LivingEntity credit = waitForDeath(context, server, huskId);
         if (!hit) {
             awaitSettledDrops(context, server, siteX);
         }
@@ -937,7 +952,7 @@ public final class TelekinesisShowcase {
                     ServerPlayer player = player(minecraftServer);
                     if (hit) {
                         check(
-                                husk.get().getKillCredit() == player,
+                                credit == player,
                                 "The game must credit the player's hit, not the golem's blow");
                         checkCount(player, Items.IRON_SWORD, 1);
                         check(
@@ -945,9 +960,7 @@ public final class TelekinesisShowcase {
                                 "The golem's kill after the player's hit pays its experience");
                         checkNoItemsAt(player.level(), siteX);
                     } else {
-                        check(
-                                husk.get().getKillCredit() == golem.get(),
-                                "The game must credit the golem");
+                        check(credit == golem.get(), "The game must credit the golem");
                         checkCount(player, Items.IRON_SWORD, 0);
                         check(
                                 onGround(player.level(), siteX, Items.IRON_SWORD) == 1,
@@ -1008,24 +1021,20 @@ public final class TelekinesisShowcase {
             awaitPlayerHit(context, server, blaze.get());
         }
         wake(server, snowGolem.get());
-        waitForDeath(context, server, blazeId);
+        LivingEntity credit = waitForDeath(context, server, blazeId);
         context.waitTicks(PICKUP_DELAY_TICKS);
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
                     if (hit) {
-                        check(
-                                blaze.get().getKillCredit() == player,
-                                "The game must credit the player's punch");
+                        check(credit == player, "The game must credit the player's punch");
                         checkCount(player, Items.BLAZE_ROD, 1);
                         check(
                                 player.totalExperience > 0,
                                 "The blaze's experience must go to the player");
                         checkNoItemsAt(player.level(), siteX);
                     } else {
-                        check(
-                                blaze.get().getKillCredit() == snowGolem.get(),
-                                "The game must credit the snow golem");
+                        check(credit == snowGolem.get(), "The game must credit the snow golem");
                         checkNoItemsAt(player.level(), siteX);
                         check(
                                 orbsAt(player.level(), siteX) == 0,
@@ -1104,13 +1113,11 @@ public final class TelekinesisShowcase {
                 },
                 ACTION_TIMEOUT_TICKS,
                 "the wolf takes on the husk");
-        waitForDeath(context, server, huskId);
+        LivingEntity credit = waitForDeath(context, server, huskId);
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
-                    check(
-                            husk.get().getKillCredit() == player,
-                            "The game must credit the wolf's kill to its owner");
+                    check(credit == player, "The game must credit the wolf's kill to its owner");
                     checkExperience(player, siteX, on);
                 });
         if (!on) {
@@ -1937,7 +1944,8 @@ public final class TelekinesisShowcase {
         context.waitFor(client -> client.level.getEntity(entityId) != null, LOAD_TIMEOUT_TICKS);
     }
 
-    private static void waitForDeath(
+    /** Waits for the take's mob to die and returns the kill credit it died with, or null. */
+    private static LivingEntity waitForDeath(
             ClientGameTestContext context, TestDedicatedServerContext server, int entityId) {
         ClientGameTestWaits.waitForServer(
                 context,
@@ -1949,6 +1957,12 @@ public final class TelekinesisShowcase {
                 },
                 BREAK_TIMEOUT_TICKS,
                 "the take's mob dies");
+        return server.computeOnServer(
+                minecraftServer -> {
+                    Optional<LivingEntity> credit = CREDIT_AT_DEATH.get(entityId);
+                    check(credit != null, "The take's mob left the world without dying");
+                    return credit.orElse(null);
+                });
     }
 
     private static void emptyHand(ClientGameTestContext context) {
