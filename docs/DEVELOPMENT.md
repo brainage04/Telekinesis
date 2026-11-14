@@ -17,7 +17,7 @@ GTR_RECORDING_PROFILE=showcase ./gradlew --no-daemon :fabric:recordClientGameTes
 
 Record the film on a GPU display, not an Xvfb one: pass `-PrecordingDisplay=:1` on a host whose `:1` is a real card, and keep the take only when the recorder reports `gpu.active` true, an NVIDIA renderer, and 30 or more presented frames a second. The delivered film is that take trimmed to the stages: cut the world load before the first caption, the scene setups that leave the camera still for more than a second, the dimension change, and the world-save screen at the end, then re-encode at 30 fps CFR with no stage straddling a join.
 
-`:fabric:pitest` runs mutation tests on `TelekinesisConfigManager` against its unit tests. It is not part of `check`; the report is written to `fabric/build/reports/pitest`.
+`:fabric:test` runs the unit tests. `TelekinesisConfigManagerPropertyTest` is a jqwik property: any sequence of `/telekinesis config` changes, reloads, hand edits and deletions of `telekinesis.json` leaves the setting and the file where the failed-load rule puts them (a file that fails to load keeps the current setting and is not overwritten until a later reload succeeds or finds the file missing). The mod does no arithmetic of its own; delivery and stack merging are BrainageLib's. `:fabric:pitest` runs mutation tests on `TelekinesisConfigManager` against its unit tests. It is not part of `check`; the report is written to `fabric/build/reports/pitest`.
 
 ## How drops are captured
 
