@@ -167,9 +167,10 @@ public final class TelekinesisShowcase {
 
     /**
      * The same for a container's contents, which start up to 0.75 above the floor with up to 0.115
-     * blocks a tick sideways (Containers.java:32-46).
+     * blocks a tick sideways and up to 0.315 upward, the steepest launch carrying them farthest
+     * (Containers.java:32-46).
      */
-    private static final double CONTAINER_DROP_TRAVEL = 1.45D;
+    private static final double CONTAINER_DROP_TRAVEL = 1.79D;
 
     /** How far into its block a container's contents start at most (Containers.java:37-39). */
     private static final double CONTAINER_DROP_START = 0.875D;
@@ -1342,7 +1343,7 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(CHEST_BOAT, on);
         // Near the front of its block, so its box is in reach from where its contents are not.
-        Vec3 boatAt = new Vec3(siteX + 0.5D, STAND_Y, 2.9D);
+        Vec3 boatAt = new Vec3(siteX + 0.5D, STAND_Y, 2.95D);
         AtomicInteger boatId = new AtomicInteger();
         List<ItemStack> takeStart =
                 prepare(
@@ -1391,7 +1392,7 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(CHEST_CART, on);
         // Near the front of its block, so its box is in reach from where its contents are not.
-        Vec3 cartAt = new Vec3(siteX + 0.5D, STAND_Y, 2.9D);
+        Vec3 cartAt = new Vec3(siteX + 0.5D, STAND_Y, 2.95D);
         AtomicInteger cartId = new AtomicInteger();
         List<ItemStack> takeStart =
                 prepare(
@@ -1747,7 +1748,8 @@ public final class TelekinesisShowcase {
     /**
      * Punches the entity under the crosshair until it is gone. The player is already aimed, so it
      * presses again as soon as its attack strength is full, which takes the held item's attack
-     * delay (Player.java:1799-1801).
+     * delay (Player.java:1799-1801). A key press itself takes a tick (Fabric's TestInputImpl,
+     * fabric-client-gametest-api-v1 4.3.5, TestInputImpl.java:211-218), so it waits one tick less.
      */
     private static void punchUntilGone(ClientGameTestContext context, int entityId) {
         int attackDelayTicks =
@@ -1758,7 +1760,7 @@ public final class TelekinesisShowcase {
         for (int punch = 0; punch < MAX_PUNCHES; punch++) {
             ClientGameTestPlayerActions.requireLookingAtEntity(context, entityId);
             context.getInput().pressKey(options -> options.keyAttack);
-            context.waitTicks(attackDelayTicks);
+            context.waitTicks(attackDelayTicks - 1);
             if (context.computeOnClient(client -> client.level.getEntity(entityId) == null)) {
                 return;
             }
