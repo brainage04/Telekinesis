@@ -141,9 +141,45 @@ public class TelekinesisGameTest {
         TelekinesisKillAndExplosionGameTests.deadKillerLeavesKillLootInWorld(context);
     }
 
-    @GameTest
+    @GameTest(maxTicks = 200)
     public void expiredKillCreditLeavesKillLootInWorld(GameTestHelper context) {
         TelekinesisKillAndExplosionGameTests.expiredKillCreditLeavesKillLootInWorld(context);
+    }
+
+    @GameTest
+    public void killCreditedAfterThePlayersHitGoesToKiller(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.killCreditedAfterThePlayersHitGoesToKiller(context);
+    }
+
+    @GameTest
+    public void killCreditedOnlyByTheLastHurtRecordGoesToKiller(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.killCreditedOnlyByTheLastHurtRecordGoesToKiller(
+                context);
+    }
+
+    @GameTest
+    public void armorStandBrokenByPlayerSendsStandAndEquipment(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.armorStandBrokenByPlayerSendsStandAndEquipment(context);
+    }
+
+    @GameTest
+    public void itemFramesBrokenByPlayerSendFramesAndContents(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.itemFramesBrokenByPlayerSendFramesAndContents(context);
+    }
+
+    @GameTest
+    public void paintingBrokenByPlayerSendsThePainting(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.paintingBrokenByPlayerSendsThePainting(context);
+    }
+
+    @GameTest
+    public void cushionBrokenByPlayerSendsTheCushion(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.cushionBrokenByPlayerSendsTheCushion(context);
+    }
+
+    @GameTest
+    public void brokenEntityWithTheSettingOffStaysInTheWorld(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.brokenEntityWithTheSettingOffStaysInTheWorld(context);
     }
 
     @GameTest
@@ -210,5 +246,35 @@ public class TelekinesisGameTest {
     @GameTest(maxTicks = 100, padding = 16)
     public void bedExplosionIsCreditedToThePlayerWhoUsedIt(GameTestHelper context) {
         TelekinesisKillAndExplosionGameTests.bedExplosionIsCreditedToThePlayerWhoUsedIt(context);
+    }
+
+    @GameTest
+    public void killCreditedToAMobStaysInTheWorld(GameTestHelper context) {
+        TelekinesisEntityAndCreditGameTests.killCreditedToAMobStaysInTheWorld(context);
+    }
+
+    @GameTest
+    public void boatsBrokenByPlayerSendBoatAndContents(GameTestHelper context) {
+        TelekinesisVehicleGameTests.boatsBrokenByPlayerSendBoatAndContents(context);
+    }
+
+    @GameTest
+    public void minecartsBrokenByPlayerSendCartAndContents(GameTestHelper context) {
+        TelekinesisVehicleGameTests.minecartsBrokenByPlayerSendCartAndContents(context);
+    }
+
+    @GameTest
+    public void vehicleBrokenWithTheSettingOffStaysInTheWorld(GameTestHelper context) {
+        TelekinesisVehicleGameTests.vehicleBrokenWithTheSettingOffStaysInTheWorld(context);
+    }
+
+    @GameTest
+    public void creativeBreakOfVehicleStaysInTheWorld(GameTestHelper context) {
+        TelekinesisVehicleGameTests.creativeBreakOfVehicleStaysInTheWorld(context);
+    }
+
+    @GameTest
+    public void vehicleBrokenWithoutAPlayerStaysInTheWorld(GameTestHelper context) {
+        TelekinesisVehicleGameTests.vehicleBrokenWithoutAPlayerStaysInTheWorld(context);
     }
 }

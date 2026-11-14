@@ -3,7 +3,7 @@ package io.github.brainage04.telekinesis;
 import io.github.brainage04.brainagelib.drops.DropPolicies;
 import io.github.brainage04.brainagelib.help.ServerModHelpEntry;
 import io.github.brainage04.brainagelib.help.ServerModHelpRegistry;
-import io.github.brainage04.telekinesis.command.core.ModCommands;
+import io.github.brainage04.telekinesis.command.TelekinesisCommand;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.drop.TelekinesisDropPolicy;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
@@ -23,14 +23,15 @@ public final class Telekinesis {
 
         TelekinesisConfigManager.initialize(platform.configDirectory());
         TelekinesisPlayerSettings.initialize(platform);
-        ModCommands.initialize(platform);
+        platform.registerCommands(TelekinesisCommand::initialize);
         DropPolicies.register(DropPolicies.DEFAULT_PRIORITY, TelekinesisDropPolicy.INSTANCE);
         ServerModHelpRegistry.register(
                 new ServerModHelpEntry(
                         MOD_ID,
                         MOD_NAME,
-                        "Sends drops and experience from blocks you mine, mobs you kill and explosions you"
-                                + " cause straight to you, and pays you for the leaves of a tree you felled.",
+                        "Sends drops and experience from blocks you mine, mobs you kill, decorations,"
+                                + " armour stands and vehicles you break, and explosions you cause"
+                                + " straight to you, and pays you for the leaves of a tree you felled.",
                         "/telekinesis help",
                         "/telekinesis config"));
         LOGGER.info("{} initialised.", MOD_NAME);
