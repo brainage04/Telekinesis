@@ -5,5 +5,13 @@
   ],
   "additional_categories": [
     "game-mechanics"
-  ]
+  ],
+  "dependency_overrides": {
+    "fabric-api": {
+      "curseforge_slug": "fabric-api"
+    },
+    "brainagelib": {
+      "curseforge_slug": "brainagelib"
+    }
+  }
 }
