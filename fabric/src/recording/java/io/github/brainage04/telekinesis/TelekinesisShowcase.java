@@ -1097,10 +1097,10 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * Waits for the husk's hit to land on the player, then frees {@code finishers} and backs the
-     * player off, as a player would. The mob that finishes the husk stays asleep until the hit is
-     * in, so a slow host cannot let it kill the husk first, and the husk stops chasing so its loot
-     * lands where it died, out of the player's pickup range.
+     * Waits for the husk's hit to land on the player, backs the player off as a player would, and
+     * only then frees {@code finishers}. The husk stops chasing once its hit is in, and the mob
+     * that finishes it stays asleep until the player is out of reach of the husk's loot: one blow
+     * kills the husk, so a finisher freed earlier kills it at the player's feet.
      */
     private static void awaitHitThenBackOff(
             ClientGameTestContext context,
@@ -1118,7 +1118,6 @@ public final class TelekinesisShowcase {
                 },
                 ACTION_TIMEOUT_TICKS,
                 "the husk's hit lands on the player");
-        wake(server, finishers);
         server.runOnServer(
                 minecraftServer -> {
                     husk.get().setNoAi(true);
@@ -1126,6 +1125,7 @@ public final class TelekinesisShowcase {
                 });
         Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
         ClientGameTestPlayerActions.walkAwayFrom(context, hitFrom, BACK_OFF_DISTANCE);
+        wake(server, finishers);
     }
 
     private static void itemFrame(
