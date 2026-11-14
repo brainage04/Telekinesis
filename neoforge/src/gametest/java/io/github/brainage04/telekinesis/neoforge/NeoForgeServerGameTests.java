@@ -2,9 +2,11 @@ package io.github.brainage04.telekinesis.neoforge;
 
 import io.github.brainage04.telekinesis.Telekinesis;
 import io.github.brainage04.telekinesis.TelekinesisBehaviorGameTests;
+import io.github.brainage04.telekinesis.TelekinesisEntityAndCreditGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
 import io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests;
 import io.github.brainage04.telekinesis.TelekinesisLeafAndCreditGameTests;
+import io.github.brainage04.telekinesis.TelekinesisVehicleGameTests;
 import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -193,6 +195,60 @@ public final class NeoForgeServerGameTests {
                 event,
                 "bed_explosion_is_credited_to_the_player_who_used_it",
                 TelekinesisKillAndExplosionGameTests::bedExplosionIsCreditedToThePlayerWhoUsedIt);
+        register(
+                event,
+                "kill_credited_after_the_players_hit_goes_to_killer",
+                TelekinesisEntityAndCreditGameTests::killCreditedAfterThePlayersHitGoesToKiller);
+        register(
+                event,
+                "kill_credited_only_by_the_last_hurt_record_goes_to_killer",
+                TelekinesisEntityAndCreditGameTests
+                        ::killCreditedOnlyByTheLastHurtRecordGoesToKiller);
+        register(
+                event,
+                "armor_stand_broken_by_player_sends_stand_and_equipment",
+                TelekinesisEntityAndCreditGameTests
+                        ::armorStandBrokenByPlayerSendsStandAndEquipment);
+        register(
+                event,
+                "item_frames_broken_by_player_send_frames_and_contents",
+                TelekinesisEntityAndCreditGameTests::itemFramesBrokenByPlayerSendFramesAndContents);
+        register(
+                event,
+                "painting_broken_by_player_sends_the_painting",
+                TelekinesisEntityAndCreditGameTests::paintingBrokenByPlayerSendsThePainting);
+        register(
+                event,
+                "cushion_broken_by_player_sends_the_cushion",
+                TelekinesisEntityAndCreditGameTests::cushionBrokenByPlayerSendsTheCushion);
+        register(
+                event,
+                "broken_entity_with_the_setting_off_stays_in_the_world",
+                TelekinesisEntityAndCreditGameTests::brokenEntityWithTheSettingOffStaysInTheWorld);
+        register(
+                event,
+                "kill_credited_to_a_mob_stays_in_the_world",
+                TelekinesisEntityAndCreditGameTests::killCreditedToAMobStaysInTheWorld);
+        register(
+                event,
+                "boats_broken_by_player_send_boat_and_contents",
+                TelekinesisVehicleGameTests::boatsBrokenByPlayerSendBoatAndContents);
+        register(
+                event,
+                "minecarts_broken_by_player_send_cart_and_contents",
+                TelekinesisVehicleGameTests::minecartsBrokenByPlayerSendCartAndContents);
+        register(
+                event,
+                "vehicle_broken_with_the_setting_off_stays_in_the_world",
+                TelekinesisVehicleGameTests::vehicleBrokenWithTheSettingOffStaysInTheWorld);
+        register(
+                event,
+                "creative_break_of_vehicle_stays_in_the_world",
+                TelekinesisVehicleGameTests::creativeBreakOfVehicleStaysInTheWorld);
+        register(
+                event,
+                "vehicle_broken_without_a_player_stays_in_the_world",
+                TelekinesisVehicleGameTests::vehicleBrokenWithoutAPlayerStaysInTheWorld);
     }
 
     private static void register(
