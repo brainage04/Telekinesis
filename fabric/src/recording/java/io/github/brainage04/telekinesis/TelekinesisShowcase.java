@@ -1487,10 +1487,10 @@ public final class TelekinesisShowcase {
                                         .isEmpty(),
                 ACTION_TIMEOUT_TICKS,
                 "the blast destroys the chest and no TNT is left");
-        if (!on) {
-            awaitSettledDrops(context, server, siteX);
-        }
         server.runOnServer(minecraftServer -> checkBlastDrops(player(minecraftServer), siteX, on));
+        if (!on) {
+            checkBlastDropsAtRest(context, server, siteX);
+        }
         endTake(context, server, id, !on, takeStart);
     }
 
@@ -1522,10 +1522,10 @@ public final class TelekinesisShowcase {
                 minecraftServer -> minecraftServer.overworld().getBlockState(chest).isAir(),
                 ACTION_TIMEOUT_TICKS,
                 "the anchor's blast destroys the chest");
-        if (!on) {
-            awaitSettledDrops(context, server, siteX);
-        }
         server.runOnServer(minecraftServer -> checkBlastDrops(player(minecraftServer), siteX, on));
+        if (!on) {
+            checkBlastDropsAtRest(context, server, siteX);
+        }
         endTake(context, server, id, !on, takeStart);
     }
 
@@ -1613,9 +1613,6 @@ public final class TelekinesisShowcase {
                         minecraftServer.getLevel(Level.NETHER).getBlockState(chest).isAir(),
                 ACTION_TIMEOUT_TICKS,
                 "the bed's blast destroys the Nether chest");
-        if (!on) {
-            awaitSettledDrops(context, server, siteX);
-        }
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -1631,6 +1628,9 @@ public final class TelekinesisShowcase {
                                 "The chest's emeralds must scatter in the world");
                     }
                 });
+        if (!on) {
+            checkBlastDropsAtRest(context, server, siteX);
+        }
         endTake(context, server, id, !on, takeStart);
     }
 
@@ -2333,6 +2333,22 @@ public final class TelekinesisShowcase {
                     onGround(player.level(), siteX, Items.EMERALD) > 0,
                     "The chest's emeralds must scatter in the world");
         }
+    }
+
+    /**
+     * The checks of a blast's "off" take once its drops have come to rest. The emeralds are counted
+     * in the world first, by {@link #checkBlastDrops}: the anchor's and the bed's blasts start
+     * fires (RespawnAnchorBlock.java:167, BedBlock.java:55) that can burn them before they rest.
+     */
+    private static void checkBlastDropsAtRest(
+            ClientGameTestContext context, TestDedicatedServerContext server, int siteX) {
+        awaitSettledDrops(context, server, siteX);
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    checkCount(player, Items.EMERALD, 0);
+                    checkDropsOutOfPickupRange(player, siteX);
+                });
     }
 
     private static void checkOrbsAt(ServerLevel level, int siteX) {
