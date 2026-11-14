@@ -1,7 +1,7 @@
 {
   "telekinesis.mining.off": {
     "title": "Mining, Telekinesis off",
-    "subtitle": "The diamonds and XP drop at the ore"
+    "subtitle": "The diamonds drop at the ore, the XP flies to you as usual"
   },
   "telekinesis.mining.on": {
     "title": "Mining, Telekinesis on",
@@ -25,7 +25,7 @@
   },
   "telekinesis.mob.off": {
     "title": "Killing a mob, Telekinesis off",
-    "subtitle": "The husk's loot, sword and XP drop where it dies"
+    "subtitle": "The husk's loot and sword drop, the XP flies to you as usual"
   },
   "telekinesis.mob.on": {
     "title": "Killing a mob, Telekinesis on",
@@ -57,7 +57,7 @@
   },
   "telekinesis.wolf.off": {
     "title": "Your wolf's kill, Telekinesis off",
-    "subtitle": "The husk's loot and XP drop where it dies"
+    "subtitle": "The husk's loot drops, the XP flies to you as usual"
   },
   "telekinesis.wolf.on": {
     "title": "Your wolf's kill, Telekinesis on",

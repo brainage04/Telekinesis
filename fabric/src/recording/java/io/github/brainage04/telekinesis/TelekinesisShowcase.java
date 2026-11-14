@@ -64,6 +64,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.vehicle.boat.ChestBoat;
 import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
 import net.minecraft.world.item.DyeColor;
@@ -104,14 +105,17 @@ import net.minecraft.world.phys.Vec3;
  * recording starts. The take's mobs and decorations are spawned while the player is teleported into
  * its bay, before its caption, which is where the film is cut. Each take checks on the server that
  * the drops went where its caption says, so a take cannot show something its caption does not
- * claim.
+ * claim. A take in which the player must get nothing checks once its drops have come to rest, and
+ * again after its last filmed tick that nothing reached the inventory.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class TelekinesisShowcase {
     private static final int FLOOR_Y = 63;
     private static final int STAND_Y = FLOOR_Y + 1;
     private static final int STAGE_MIN_Z = -16;
-    private static final int STAGE_MAX_Z = 8;
+
+    /** The floor runs past where the golem and wolf takes' back-off can carry the player. */
+    private static final int STAGE_MAX_Z = 12;
 
     /** The distance between two bays, wider than a take's drops and blasts reach. */
     private static final int BAY_SPACING = 24;
@@ -141,27 +145,78 @@ public final class TelekinesisShowcase {
     private static final int STAGE_MAX_X = bayX(OVERWORLD_SCENARIOS - 1, true) + 14;
 
     /**
-     * How far the player stands from what it punches. The game hands a drop to the player once its
-     * ten-tick pickup delay is over if it lies within 1.425 blocks of the player's centre: the
-     * player's own box grown by a block (Player.java:459-487) against an item's 0.25 box
-     * (EntityTypes.java:576-580). A dropped item also starts with up to 0.1 blocks a tick sideways
-     * (ItemEntity.java:66), which carries it about a block before it rests, so 2.5 blocks keep a
-     * take's loot out of the player's hands; the rest is slack under vanilla's three-block entity
-     * reach, which no take may leave.
+     * The gap a drop has to keep from the player's centre along an axis to stay out of its hands:
+     * the game hands over a drop whose 0.25 box (EntityTypes.java:576-580) touches the player's box
+     * grown by a block (Player.java:459-466) once the drop's pickup delay is over. That delay is
+     * ten ticks for most drops (ItemEntity.java:401-402) and none for a container's contents
+     * (Containers.java:32-46), so a standoff has to hold wherever the drop comes to rest.
      */
-    private static final double PUNCH_STANDOFF = 2.75D;
+    private static final double PICKUP_REACH = 1.425D;
 
     /**
-     * Where the player stands to punch a hanging decoration. Its box hangs 0.46875 blocks in front
-     * of its block's centre (ItemFrame.java:114-124) and the drop it leaves starts there, so the
-     * three-block entity reach caps this standoff below {@link #PUNCH_STANDOFF}.
+     * The farthest a drop slides along one axis when it starts at most 0.625 blocks above the
+     * floor: it leaves with under 0.1 blocks a tick sideways (ItemEntity.java:66), and its tick
+     * (ItemEntity.java:119-167: gravity 0.04, drag 0.98, stone's friction 0.6 on the ground) stops
+     * it within 1.19 blocks. The game has no call that answers how far a drop slides, so the
+     * travels here come from stepping that tick by hand and are kept as numbers.
      */
-    private static final double HANGING_STAND_Z = 4.8D;
+    private static final double FLOOR_DROP_TRAVEL = 1.19D;
 
-    /** The z the player stands at to punch something whose loot starts at {@code targetZ}. */
-    private static double standZ(double targetZ) {
-        return targetZ + PUNCH_STANDOFF;
+    /** The same for a drop that starts up to 1.625 blocks above the floor: a log's or a wall's. */
+    private static final double RAISED_DROP_TRAVEL = 1.41D;
+
+    /**
+     * The same for a container's contents, which start up to 0.75 above the floor with up to 0.115
+     * blocks a tick sideways (Containers.java:32-46).
+     */
+    private static final double CONTAINER_DROP_TRAVEL = 1.45D;
+
+    /** How far into its block a container's contents start at most (Containers.java:37-39). */
+    private static final double CONTAINER_DROP_START = 0.875D;
+
+    /** How far off its block's centre a broken block's drop starts at most (Block.java:412-414). */
+    private static final double BLOCK_DROP_SPREAD = 0.25D;
+
+    /**
+     * Room left between a take's farthest drop and the player's pickup area. It is small because
+     * the hanging decorations' standoff leaves no more under vanilla's entity reach.
+     */
+    private static final double STANDOFF_SLACK = 0.02D;
+
+    /** The z that keeps a drop which slides as far as {@code farthestLootZ} out of reach. */
+    private static double clearOf(double farthestLootZ) {
+        return farthestLootZ + PICKUP_REACH + STANDOFF_SLACK;
     }
+
+    /** The z the player stands at to punch an entity whose loot starts at its feet. */
+    private static double standZ(double targetZ) {
+        return clearOf(targetZ + FLOOR_DROP_TRAVEL);
+    }
+
+    /** The z the player stands at to break a block on the floor. */
+    private static double standZ(BlockPos block) {
+        return clearOf(block.getZ() + 0.5D + BLOCK_DROP_SPREAD + FLOOR_DROP_TRAVEL);
+    }
+
+    /**
+     * The z the player stands at to break a vehicle whose contents start from the block it stands
+     * in (Containers.java:18-19, 32-39).
+     */
+    private static double containerStandZ(double vehicleZ) {
+        return clearOf(Math.floor(vehicleZ) + CONTAINER_DROP_START + CONTAINER_DROP_TRAVEL);
+    }
+
+    /** The shortest gap a painting or a frame needs: a one-block stone wall behind it. */
+    private static final int WALL_Z = 1;
+
+    /**
+     * Where the player stands to punch a hanging decoration a block up the wall. Its box hangs
+     * 0.46875 in front of its block's centre (ItemFrame.java:114-124), and its drops start 0.15
+     * further out (HangingEntity.java:120-126). This leaves the box's front face 2.97 blocks from
+     * the player's eyes, just inside vanilla's three-block entity reach.
+     */
+    private static final double HANGING_STAND_Z =
+            clearOf(WALL_Z + 1.5D - 0.46875D + 0.15D + RAISED_DROP_TRAVEL);
 
     /**
      * Where a broken chest stands, and where the player stands to break it: far enough apart that
@@ -169,7 +224,8 @@ public final class TelekinesisShowcase {
      */
     private static final int CHEST_Z = 1;
 
-    private static final double CHEST_STAND_Z = 5.0D;
+    private static final double CHEST_STAND_Z =
+            clearOf(CHEST_Z + CONTAINER_DROP_START + CONTAINER_DROP_TRAVEL);
 
     /** Where a mob that walks up to the player starts: one and a half blocks in front of it. */
     private static final double ATTACKER_Z = 3.0D;
@@ -180,8 +236,18 @@ public final class TelekinesisShowcase {
     /** Vanilla gives a new item 10 ticks before a player may pick it up; wait past that. */
     private static final int PICKUP_DELAY_TICKS = 30;
 
-    /** Two blocks from the oak's trunk: close enough to break it from where the take starts. */
-    private static final double TREE_START_Z = 2.5D;
+    /**
+     * The pickup delay the game gives most drops (ItemEntity.java:401-402). ItemEntity keeps the
+     * delay itself private (ItemEntity.java:51), so a take waits out this default.
+     */
+    private static final int DROP_PICKUP_DELAY_TICKS = 10;
+
+    /**
+     * Where the tree take starts: clear of the bottom two logs' drops, the second of which falls
+     * from a block up, and close enough to break both.
+     */
+    private static final double TREE_START_Z =
+            clearOf(0.5D + BLOCK_DROP_SPREAD + RAISED_DROP_TRAVEL);
 
     /** How close the player stands to the TNT to light it: inside reach, back from the blast. */
     private static final double TNT_LIGHT_DISTANCE = 3.0D;
@@ -215,9 +281,6 @@ public final class TelekinesisShowcase {
     /** The most punches a breakable entity may take before the take fails. */
     private static final int MAX_PUNCHES = 12;
 
-    /** The shortest gap a painting or a frame needs: a one-block stone wall behind it. */
-    private static final int WALL_Z = 1;
-
     private static final int RENDER_DISTANCE = 12;
     private static final int NORMAL_FOV = 70;
     private static final int BLAST_FOV = 45;
@@ -229,13 +292,14 @@ public final class TelekinesisShowcase {
 
     /**
      * Health that makes each companion take end in one blow: an iron golem's (at least 7.5,
-     * IronGolem.java:189-195), a wolf's bite (4) and a snowball on a blaze (3,
+     * IronGolem.java:189-195), a wolf's bite (4, which the husk's 2 armour cuts to 3.936,
+     * Zombie.java:148 and CombatRules.java:19-21) and a snowball on a blaze (3,
      * Snowball.java:58-59). Not vanilla values.
      */
     private static final float GOLEM_VICTIM_HEALTH = 7.0F;
 
     private static final float GOLEM_VICTIM_AFTER_HIT_HEALTH = 10.0F;
-    private static final float WOLF_VICTIM_HEALTH = 4.0F;
+    private static final float WOLF_VICTIM_HEALTH = 3.5F;
     private static final float BLAZE_HEALTH = 3.0F;
 
     /**
@@ -421,15 +485,16 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(MINING, on);
         BlockPos ore = new BlockPos(siteX, STAND_Y, 2);
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(ore.getZ() + 0.5D),
-                NORMAL_FOV,
-                Vec3.atCenterOf(ore),
-                true,
-                player -> player.getInventory().setItem(0, pickaxe(player.level(), true)));
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(ore),
+                        NORMAL_FOV,
+                        Vec3.atCenterOf(ore),
+                        true,
+                        player -> player.getInventory().setItem(0, pickaxe(player.level(), true)));
         ClientGameTestPlayerActions.requireLookingAtBlock(context, ore);
         String id = takeId("mining", on);
         caption(context, id);
@@ -448,46 +513,57 @@ public final class TelekinesisShowcase {
             ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         }
         mine(context, server, ore);
-        server.runOnServer(
-                minecraftServer -> {
-                    ServerPlayer player = player(minecraftServer);
-                    if (on) {
+        if (on) {
+            server.runOnServer(
+                    minecraftServer -> {
+                        ServerPlayer player = player(minecraftServer);
                         checkAtLeast(player, Items.DIAMOND, 1);
                         check(
                                 player.totalExperience > 0,
                                 "The ore's experience must go to the miner");
                         checkNoItemsAt(player.level(), siteX);
-                    } else {
+                    });
+        } else {
+            // Counted before the drops rest: the orbs fly to the player within a second
+            // (ExperienceOrb.java:155-172).
+            server.runOnServer(minecraftServer -> checkOrbsAt(minecraftServer.overworld(), siteX));
+            awaitSettledDrops(context, server, siteX);
+            server.runOnServer(
+                    minecraftServer -> {
+                        ServerPlayer player = player(minecraftServer);
                         checkCount(player, Items.DIAMOND, 0);
                         check(
                                 onGround(player.level(), siteX, Items.DIAMOND) > 0,
                                 "The diamonds must drop at the ore");
-                        checkOrbsAt(player.level(), siteX);
-                    }
-                });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+                        checkDropsOutOfPickupRange(player, siteX);
+                    });
+        }
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void chest(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(CHEST, on);
         BlockPos chest = new BlockPos(siteX, STAND_Y, CHEST_Z);
-        prepare(
-                context,
-                server,
-                siteX,
-                CHEST_STAND_Z,
-                NORMAL_FOV,
-                Vec3.atCenterOf(chest),
-                on,
-                player -> player.getInventory().setItem(0, axe(player.level())));
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        CHEST_STAND_Z,
+                        NORMAL_FOV,
+                        Vec3.atCenterOf(chest),
+                        on,
+                        player -> player.getInventory().setItem(0, axe(player.level())));
         ClientGameTestPlayerActions.requireLookingAtBlock(context, chest);
         String id = takeId("chest", on);
         caption(context, id);
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         mine(context, server, chest);
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -495,8 +571,7 @@ public final class TelekinesisShowcase {
                     expected.add(new ItemStack(Items.CHEST));
                     checkDelivered(player, siteX, on, expected);
                 });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void tree(
@@ -524,15 +599,16 @@ public final class TelekinesisShowcase {
                         + logs.size()
                         + ": "
                         + logs);
-        prepare(
-                context,
-                server,
-                siteX,
-                TREE_START_Z,
-                NORMAL_FOV,
-                Vec3.atCenterOf(logs.getFirst()),
-                on,
-                player -> player.getInventory().setItem(0, axe(player.level())));
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        TREE_START_Z,
+                        NORMAL_FOV,
+                        Vec3.atCenterOf(logs.getFirst()),
+                        on,
+                        player -> player.getInventory().setItem(0, axe(player.level())));
         ClientGameTestPlayerActions.requireLookingAtBlock(context, logs.getFirst());
         String id = takeId("tree", on);
         caption(context, id);
@@ -547,10 +623,14 @@ public final class TelekinesisShowcase {
                             onGround(minecraftServer.overworld(), siteX, Items.OAK_LOG) == 2,
                     ACTION_TIMEOUT_TICKS,
                     "the two bottom logs lie at the trunk");
+            awaitSettledDrops(context, server, siteX);
             server.runOnServer(
-                    minecraftServer -> checkCount(player(minecraftServer), Items.OAK_LOG, 0));
-            ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-            ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+                    minecraftServer -> {
+                        ServerPlayer player = player(minecraftServer);
+                        checkCount(player, Items.OAK_LOG, 0);
+                        checkDropsOutOfPickupRange(player, siteX);
+                    });
+            endTake(context, server, id, true, takeStart);
             return;
         }
         fellTree(context, logs);
@@ -584,8 +664,7 @@ public final class TelekinesisShowcase {
                                     + " apple");
                     checkNoItemsAt(player.level(), siteX);
                 });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, false, takeStart);
     }
 
     /** Breaks the two logs a player reaches from where the take starts, holding the attack key. */
@@ -657,18 +736,19 @@ public final class TelekinesisShowcase {
         int siteX = bayX(MOB, on);
         Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, 2.0D);
         AtomicInteger huskId = new AtomicInteger();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(huskAt.z),
-                NORMAL_FOV,
-                huskAt.add(0.0D, 1.1D, 0.0D),
-                on,
-                player -> {
-                    huskId.set(spawnHusk(player.level(), huskAt, 1.0F).getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(huskAt.z),
+                        NORMAL_FOV,
+                        huskAt.add(0.0D, 1.1D, 0.0D),
+                        on,
+                        player -> {
+                            huskId.set(spawnHusk(player.level(), huskAt, 1.0F).getId());
+                            player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                        });
         waitForClientEntity(context, huskId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, huskId.get());
         String id = takeId("mob", on);
@@ -677,14 +757,18 @@ public final class TelekinesisShowcase {
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         ClientGameTestPlayerActions.attackEntity(context, huskId.get());
         waitForDeath(context, server, huskId.get());
+        server.runOnServer(minecraftServer -> checkExperience(player(minecraftServer), siteX, on));
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
-                minecraftServer -> {
-                    ServerPlayer player = player(minecraftServer);
-                    checkDelivered(player, siteX, on, List.of(new ItemStack(Items.IRON_SWORD)));
-                    checkExperience(player, siteX, on);
-                });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+                minecraftServer ->
+                        checkDelivered(
+                                player(minecraftServer),
+                                siteX,
+                                on,
+                                List.of(new ItemStack(Items.IRON_SWORD))));
+        endTake(context, server, id, !on, takeStart);
     }
 
     /**
@@ -699,15 +783,18 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean hit) {
         int siteX = bayX(LAVA, hit);
         Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(huskAt.z),
-                NORMAL_FOV,
-                huskAt.add(0.0D, 1.1D, 0.0D),
-                true,
-                player -> player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD)));
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(huskAt.z),
+                        NORMAL_FOV,
+                        huskAt.add(0.0D, 1.1D, 0.0D),
+                        true,
+                        player ->
+                                player.getInventory()
+                                        .setItem(0, new ItemStack(Items.DIAMOND_SWORD)));
         // The lava burns the husk from the spawn, and the off take's husk dies in about 1.5 s
         // of it, so the husk is fire-immune until the take starts: a slow host's client then
         // never shows the take a husk the lava has already killed.
@@ -742,14 +829,12 @@ public final class TelekinesisShowcase {
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         if (hit) {
             ClientGameTestPlayerActions.attackEntity(context, huskId);
-            ClientGameTestWaits.waitForServer(
-                    context,
-                    server,
-                    minecraftServer -> husk.get().getLastHurtByPlayer() != null,
-                    ACTION_TIMEOUT_TICKS,
-                    "the player's hit lands on the husk");
+            awaitPlayerHit(context, server, husk.get());
         }
         waitForDeath(context, server, huskId);
+        if (!hit) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -776,8 +861,7 @@ public final class TelekinesisShowcase {
                                 "A kill nobody is credited with drops no experience");
                     }
                 });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !hit, takeStart);
     }
 
     /**
@@ -796,25 +880,28 @@ public final class TelekinesisShowcase {
                         : new Vec3(siteX + 4.5D, STAND_Y, ATTACKER_Z);
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<IronGolem> golem = new AtomicReference<>();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(huskAt.z),
-                NORMAL_FOV,
-                huskAt.add(0.0D, 1.1D, 0.0D),
-                true,
-                player -> {
-                    ServerLevel level = player.level();
-                    husk.set(
-                            spawnHusk(
-                                    level,
-                                    huskAt,
-                                    hit ? GOLEM_VICTIM_AFTER_HIT_HEALTH : GOLEM_VICTIM_HEALTH));
-                    golem.set(spawnGolem(level, golemAt));
-                    player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
-                    giveResistance(player);
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(huskAt.z),
+                        NORMAL_FOV,
+                        huskAt.add(0.0D, 1.1D, 0.0D),
+                        true,
+                        player -> {
+                            ServerLevel level = player.level();
+                            husk.set(
+                                    spawnHusk(
+                                            level,
+                                            huskAt,
+                                            hit
+                                                    ? GOLEM_VICTIM_AFTER_HIT_HEALTH
+                                                    : GOLEM_VICTIM_HEALTH));
+                            golem.set(spawnGolem(level, golemAt));
+                            player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                            giveResistance(player);
+                        });
         int huskId = server.computeOnServer(minecraftServer -> husk.get().getId());
         waitForClientEntity(context, huskId);
         waitForClientEntity(
@@ -826,12 +913,16 @@ public final class TelekinesisShowcase {
         if (hit) {
             ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
             ClientGameTestPlayerActions.attackEntity(context, huskId);
+            awaitPlayerHit(context, server, husk.get());
             wake(server, golem.get());
         } else {
             wake(server, husk.get());
             awaitHitThenBackOff(context, server, husk, golem.get());
         }
         waitForDeath(context, server, huskId);
+        if (!hit) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -858,8 +949,7 @@ public final class TelekinesisShowcase {
                                 "A kill the game credits to the golem drops no experience");
                     }
                 });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !hit, takeStart);
     }
 
     /**
@@ -874,26 +964,28 @@ public final class TelekinesisShowcase {
         Vec3 snowGolemAt = new Vec3(siteX + 4.5D, STAND_Y, 2.5D);
         AtomicReference<Blaze> blaze = new AtomicReference<>();
         AtomicReference<SnowGolem> snowGolem = new AtomicReference<>();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(blazeAt.z),
-                NORMAL_FOV,
-                blazeAt.add(0.0D, 0.9D, 0.0D),
-                true,
-                player -> {
-                    ServerLevel level = player.level();
-                    SnowGolem thrower =
-                            EntityTypes.SNOW_GOLEM.create(level, EntitySpawnReason.COMMAND);
-                    check(thrower != null, "The snow golem take needs its snow golem");
-                    thrower.setNoAi(true);
-                    thrower.setPersistenceRequired();
-                    thrower.snapTo(snowGolemAt.x, snowGolemAt.y, snowGolemAt.z, 90.0F, 0.0F);
-                    check(level.addFreshEntity(thrower), "The snow golem must spawn");
-                    snowGolem.set(thrower);
-                    blaze.set(spawnBlaze(level, player, thrower, blazeAt, hit));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(blazeAt.z),
+                        NORMAL_FOV,
+                        blazeAt.add(0.0D, 0.9D, 0.0D),
+                        true,
+                        player -> {
+                            ServerLevel level = player.level();
+                            SnowGolem thrower =
+                                    EntityTypes.SNOW_GOLEM.create(level, EntitySpawnReason.COMMAND);
+                            check(thrower != null, "The snow golem take needs its snow golem");
+                            thrower.setNoAi(true);
+                            thrower.setPersistenceRequired();
+                            thrower.snapTo(
+                                    snowGolemAt.x, snowGolemAt.y, snowGolemAt.z, 90.0F, 0.0F);
+                            check(level.addFreshEntity(thrower), "The snow golem must spawn");
+                            snowGolem.set(thrower);
+                            blaze.set(spawnBlaze(level, player, thrower, blazeAt, hit));
+                        });
         int blazeId = server.computeOnServer(minecraftServer -> blaze.get().getId());
         waitForClientEntity(context, blazeId);
         emptyHand(context);
@@ -904,6 +996,7 @@ public final class TelekinesisShowcase {
         if (hit) {
             ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
             ClientGameTestPlayerActions.attackEntity(context, blazeId);
+            awaitPlayerHit(context, server, blaze.get());
         }
         wake(server, snowGolem.get());
         waitForDeath(context, server, blazeId);
@@ -931,8 +1024,7 @@ public final class TelekinesisShowcase {
                         check(player.totalExperience == 0, "The player gets no experience");
                     }
                 });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !hit, takeStart);
     }
 
     /**
@@ -947,30 +1039,32 @@ public final class TelekinesisShowcase {
         Vec3 wolfAt = new Vec3(siteX + 1.5D, STAND_Y, standZ(huskAt.z));
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<Wolf> wolf = new AtomicReference<>();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(huskAt.z),
-                NORMAL_FOV,
-                huskAt.add(0.0D, 1.1D, 0.0D),
-                on,
-                player -> {
-                    ServerLevel level = player.level();
-                    husk.set(spawnHusk(level, huskAt, WOLF_VICTIM_HEALTH));
-                    Wolf pet = EntityTypes.WOLF.create(level, EntitySpawnReason.COMMAND);
-                    check(pet != null, "The wolf take needs its wolf");
-                    pet.tame(player);
-                    // OwnerHurtByTargetGoal.java:24: a sitting wolf does not defend its owner.
-                    pet.setOrderedToSit(false);
-                    pet.setInSittingPose(false);
-                    pet.setNoAi(true);
-                    pet.setPersistenceRequired();
-                    pet.snapTo(wolfAt.x, wolfAt.y, wolfAt.z, 180.0F, 0.0F);
-                    check(level.addFreshEntity(pet), "The wolf must spawn");
-                    wolf.set(pet);
-                    giveResistance(player);
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(huskAt.z),
+                        NORMAL_FOV,
+                        huskAt.add(0.0D, 1.1D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            husk.set(spawnHusk(level, huskAt, WOLF_VICTIM_HEALTH));
+                            Wolf pet = EntityTypes.WOLF.create(level, EntitySpawnReason.COMMAND);
+                            check(pet != null, "The wolf take needs its wolf");
+                            pet.tame(player);
+                            // OwnerHurtByTargetGoal.java:24: a sitting wolf does not defend its
+                            // owner.
+                            pet.setOrderedToSit(false);
+                            pet.setInSittingPose(false);
+                            pet.setNoAi(true);
+                            pet.setPersistenceRequired();
+                            pet.snapTo(wolfAt.x, wolfAt.y, wolfAt.z, 180.0F, 0.0F);
+                            check(level.addFreshEntity(pet), "The wolf must spawn");
+                            wolf.set(pet);
+                            giveResistance(player);
+                        });
         int huskId = server.computeOnServer(minecraftServer -> husk.get().getId());
         waitForClientEntity(context, huskId);
         waitForClientEntity(context, server.computeOnServer(minecraftServer -> wolf.get().getId()));
@@ -987,11 +1081,19 @@ public final class TelekinesisShowcase {
                     check(
                             husk.get().getKillCredit() == player,
                             "The game must credit the wolf's kill to its owner");
-                    checkDelivered(player, siteX, on, List.of(new ItemStack(Items.IRON_SWORD)));
                     checkExperience(player, siteX, on);
                 });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
+        server.runOnServer(
+                minecraftServer ->
+                        checkDelivered(
+                                player(minecraftServer),
+                                siteX,
+                                on,
+                                List.of(new ItemStack(Items.IRON_SWORD))));
+        endTake(context, server, id, !on, takeStart);
     }
 
     /**
@@ -1032,23 +1134,26 @@ public final class TelekinesisShowcase {
         BlockPos frameAt = new BlockPos(siteX, STAND_Y + 1, WALL_Z).south();
         Vec3 frameLook = new Vec3(siteX + 0.5D, STAND_Y + 1.5D, frameAt.getZ() + 0.03D);
         AtomicInteger frameId = new AtomicInteger();
-        prepare(
-                context,
-                server,
-                siteX,
-                HANGING_STAND_Z,
-                NORMAL_FOV,
-                frameLook,
-                on,
-                player -> {
-                    ItemFrame frame = new ItemFrame(player.level(), frameAt, Direction.SOUTH);
-                    frame.setItem(new ItemStack(Items.DIAMOND));
-                    check(
-                            player.level().addFreshEntity(frame),
-                            "The frame take needs its item frame");
-                    frameId.set(frame.getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        HANGING_STAND_Z,
+                        NORMAL_FOV,
+                        frameLook,
+                        on,
+                        player -> {
+                            ItemFrame frame =
+                                    new ItemFrame(player.level(), frameAt, Direction.SOUTH);
+                            frame.setItem(new ItemStack(Items.DIAMOND));
+                            check(
+                                    player.level().addFreshEntity(frame),
+                                    "The frame take needs its item frame");
+                            frameId.set(frame.getId());
+                            // Bare-handed, so the second punch follows the first five ticks later
+                            // (Player.java:1799-1801): a sword would wait out its own longer delay.
+                        });
         waitForClientEntity(context, frameId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, frameId.get());
         String id = takeId("item_frame", on);
@@ -1056,6 +1161,9 @@ public final class TelekinesisShowcase {
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         punchUntilGone(context, frameId.get());
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer ->
                         checkDelivered(
@@ -1065,32 +1173,43 @@ public final class TelekinesisShowcase {
                                 List.of(
                                         new ItemStack(Items.DIAMOND),
                                         new ItemStack(Items.ITEM_FRAME))));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void armourStand(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(ARMOUR_STAND, on);
-        Vec3 standAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
+        // Three quarters into its block: its drops start from the block's centre
+        // (ArmorStand.java:401, 412), and its box comes a quarter block nearer the player.
+        Vec3 standAt = new Vec3(siteX + 0.5D, STAND_Y, 2.75D);
         AtomicInteger standId = new AtomicInteger();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(standAt.z),
-                NORMAL_FOV,
-                standAt.add(0.0D, 1.0D, 0.0D),
-                on,
-                player -> {
-                    ServerLevel level = player.level();
-                    ArmorStand stand = new ArmorStand(level, standAt.x, standAt.y, standAt.z);
-                    stand.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
-                    stand.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_SWORD));
-                    check(level.addFreshEntity(stand), "The stand take needs its armour stand");
-                    standId.set(stand.getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        // The helmet and the sword fall from the block above (ArmorStand.java:412).
+                        clearOf(
+                                Math.floor(standAt.z)
+                                        + 0.5D
+                                        + BLOCK_DROP_SPREAD
+                                        + RAISED_DROP_TRAVEL),
+                        NORMAL_FOV,
+                        standAt.add(0.0D, 1.0D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            ArmorStand stand =
+                                    new ArmorStand(level, standAt.x, standAt.y, standAt.z);
+                            stand.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+                            stand.setItemSlot(
+                                    EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_SWORD));
+                            check(
+                                    level.addFreshEntity(stand),
+                                    "The stand take needs its armour stand");
+                            standId.set(stand.getId());
+                            player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+                        });
         waitForClientEntity(context, standId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, standId.get());
         String id = takeId("armour_stand", on);
@@ -1105,6 +1224,9 @@ public final class TelekinesisShowcase {
         context.getInput().pressKey(options -> options.keyAttack);
         context.waitFor(
                 client -> client.level.getEntity(standId.get()) == null, ACTION_TIMEOUT_TICKS);
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer ->
                         checkDelivered(
@@ -1115,8 +1237,7 @@ public final class TelekinesisShowcase {
                                         new ItemStack(Items.ARMOR_STAND),
                                         new ItemStack(Items.IRON_HELMET),
                                         new ItemStack(Items.DIAMOND_SWORD))));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void painting(
@@ -1125,28 +1246,31 @@ public final class TelekinesisShowcase {
         BlockPos paintingAt = new BlockPos(siteX, STAND_Y + 1, WALL_Z).south();
         Vec3 paintingLook = new Vec3(siteX + 0.5D, STAND_Y + 1.5D, paintingAt.getZ() + 0.03D);
         AtomicInteger paintingId = new AtomicInteger();
-        prepare(
-                context,
-                server,
-                siteX,
-                HANGING_STAND_Z,
-                NORMAL_FOV,
-                paintingLook,
-                on,
-                player -> {
-                    ServerLevel level = player.level();
-                    Painting picture =
-                            new Painting(
-                                    level,
-                                    paintingAt,
-                                    Direction.SOUTH,
-                                    level.registryAccess()
-                                            .lookupOrThrow(Registries.PAINTING_VARIANT)
-                                            .getOrThrow(PaintingVariants.KEBAB));
-                    check(level.addFreshEntity(picture), "The painting take needs its painting");
-                    paintingId.set(picture.getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        HANGING_STAND_Z,
+                        NORMAL_FOV,
+                        paintingLook,
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            Painting picture =
+                                    new Painting(
+                                            level,
+                                            paintingAt,
+                                            Direction.SOUTH,
+                                            level.registryAccess()
+                                                    .lookupOrThrow(Registries.PAINTING_VARIANT)
+                                                    .getOrThrow(PaintingVariants.KEBAB));
+                            check(
+                                    level.addFreshEntity(picture),
+                                    "The painting take needs its painting");
+                            paintingId.set(picture.getId());
+                            player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+                        });
         waitForClientEntity(context, paintingId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, paintingId.get());
         String id = takeId("painting", on);
@@ -1154,6 +1278,9 @@ public final class TelekinesisShowcase {
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         punchUntilGone(context, paintingId.get());
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer ->
                         checkDelivered(
@@ -1161,8 +1288,7 @@ public final class TelekinesisShowcase {
                                 siteX,
                                 on,
                                 List.of(new ItemStack(Items.PAINTING))));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void cushion(
@@ -1170,26 +1296,28 @@ public final class TelekinesisShowcase {
         int siteX = bayX(CUSHION, on);
         Vec3 cushionAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
         AtomicInteger cushionId = new AtomicInteger();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(cushionAt.z),
-                NORMAL_FOV,
-                // The middle of the cushion's 0.25-high box: its top edge is out of the
-                // three-block aim from the take's standoff.
-                cushionAt.add(0.0D, 0.125D, 0.0D),
-                on,
-                player -> {
-                    ServerLevel level = player.level();
-                    Cushion cushion = EntityTypes.CUSHION.create(level, EntitySpawnReason.COMMAND);
-                    check(cushion != null, "The cushion take needs its cushion");
-                    cushion.setColor(DyeColor.LIGHT_BLUE);
-                    cushion.snapTo(cushionAt.x, cushionAt.y, cushionAt.z, 0.0F, 0.0F);
-                    check(level.addFreshEntity(cushion), "The cushion must spawn");
-                    cushionId.set(cushion.getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(cushionAt.z),
+                        NORMAL_FOV,
+                        // The middle of the cushion's 0.25-high box: its top edge is out of the
+                        // three-block aim from the take's standoff.
+                        cushionAt.add(0.0D, 0.125D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            Cushion cushion =
+                                    EntityTypes.CUSHION.create(level, EntitySpawnReason.COMMAND);
+                            check(cushion != null, "The cushion take needs its cushion");
+                            cushion.setColor(DyeColor.LIGHT_BLUE);
+                            cushion.snapTo(cushionAt.x, cushionAt.y, cushionAt.z, 0.0F, 0.0F);
+                            check(level.addFreshEntity(cushion), "The cushion must spawn");
+                            cushionId.set(cushion.getId());
+                            player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+                        });
         waitForClientEntity(context, cushionId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, cushionId.get());
         String id = takeId("cushion", on);
@@ -1197,6 +1325,9 @@ public final class TelekinesisShowcase {
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         punchUntilGone(context, cushionId.get());
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer ->
                         checkDelivered(
@@ -1204,34 +1335,36 @@ public final class TelekinesisShowcase {
                                 siteX,
                                 on,
                                 List.of(new ItemStack(Items.CUSHION.pick(DyeColor.LIGHT_BLUE)))));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void chestBoat(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(CHEST_BOAT, on);
-        Vec3 boatAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
+        // Near the front of its block, so its box is in reach from where its contents are not.
+        Vec3 boatAt = new Vec3(siteX + 0.5D, STAND_Y, 2.9D);
         AtomicInteger boatId = new AtomicInteger();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(boatAt.z),
-                NORMAL_FOV,
-                boatAt.add(0.0D, 0.3D, 0.0D),
-                on,
-                player -> {
-                    ServerLevel level = player.level();
-                    ChestBoat boat =
-                            EntityTypes.OAK_CHEST_BOAT.create(level, EntitySpawnReason.COMMAND);
-                    check(boat != null, "The boat take needs its chest boat");
-                    boat.snapTo(boatAt.x, boatAt.y, boatAt.z, 0.0F, 0.0F);
-                    boat.setItem(0, new ItemStack(Items.EMERALD, 3));
-                    check(level.addFreshEntity(boat), "The chest boat must spawn");
-                    boatId.set(boat.getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        containerStandZ(boatAt.z),
+                        NORMAL_FOV,
+                        boatAt.add(0.0D, 0.3D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            ChestBoat boat =
+                                    EntityTypes.OAK_CHEST_BOAT.create(
+                                            level, EntitySpawnReason.COMMAND);
+                            check(boat != null, "The boat take needs its chest boat");
+                            boat.snapTo(boatAt.x, boatAt.y, boatAt.z, 0.0F, 0.0F);
+                            boat.setItem(0, new ItemStack(Items.EMERALD, 3));
+                            check(level.addFreshEntity(boat), "The chest boat must spawn");
+                            boatId.set(boat.getId());
+                            player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                        });
         waitForClientEntity(context, boatId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, boatId.get());
         String id = takeId("chest_boat", on);
@@ -1239,6 +1372,9 @@ public final class TelekinesisShowcase {
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         punchUntilGone(context, boatId.get());
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer ->
                         checkDelivered(
@@ -1248,34 +1384,36 @@ public final class TelekinesisShowcase {
                                 List.of(
                                         new ItemStack(Items.OAK_CHEST_BOAT),
                                         new ItemStack(Items.EMERALD, 3))));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void chestMinecart(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(CHEST_CART, on);
-        Vec3 cartAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
+        // Near the front of its block, so its box is in reach from where its contents are not.
+        Vec3 cartAt = new Vec3(siteX + 0.5D, STAND_Y, 2.9D);
         AtomicInteger cartId = new AtomicInteger();
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(cartAt.z),
-                NORMAL_FOV,
-                cartAt.add(0.0D, 0.35D, 0.0D),
-                on,
-                player -> {
-                    ServerLevel level = player.level();
-                    MinecartChest cart =
-                            EntityTypes.CHEST_MINECART.create(level, EntitySpawnReason.COMMAND);
-                    check(cart != null, "The cart take needs its chest minecart");
-                    cart.snapTo(cartAt.x, cartAt.y, cartAt.z, 0.0F, 0.0F);
-                    cart.setItem(0, new ItemStack(Items.EMERALD, 3));
-                    check(level.addFreshEntity(cart), "The chest minecart must spawn");
-                    cartId.set(cart.getId());
-                    player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        containerStandZ(cartAt.z),
+                        NORMAL_FOV,
+                        cartAt.add(0.0D, 0.35D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            MinecartChest cart =
+                                    EntityTypes.CHEST_MINECART.create(
+                                            level, EntitySpawnReason.COMMAND);
+                            check(cart != null, "The cart take needs its chest minecart");
+                            cart.snapTo(cartAt.x, cartAt.y, cartAt.z, 0.0F, 0.0F);
+                            cart.setItem(0, new ItemStack(Items.EMERALD, 3));
+                            check(level.addFreshEntity(cart), "The chest minecart must spawn");
+                            cartId.set(cart.getId());
+                            player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                        });
         waitForClientEntity(context, cartId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, cartId.get());
         String id = takeId("chest_cart", on);
@@ -1283,6 +1421,9 @@ public final class TelekinesisShowcase {
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         punchUntilGone(context, cartId.get());
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer ->
                         checkDelivered(
@@ -1292,8 +1433,7 @@ public final class TelekinesisShowcase {
                                 List.of(
                                         new ItemStack(Items.CHEST_MINECART),
                                         new ItemStack(Items.EMERALD, 3))));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void tnt(
@@ -1302,15 +1442,18 @@ public final class TelekinesisShowcase {
         BlockPos tnt = new BlockPos(siteX, STAND_Y, BLAST_BLOCK_Z);
         BlockPos chest = tnt.east();
         Vec3 tntAt = Vec3.atCenterOf(tnt);
-        prepare(
-                context,
-                server,
-                siteX,
-                tnt.getZ() + TNT_LIGHT_DISTANCE,
-                BLAST_FOV,
-                tntAt,
-                on,
-                player -> player.getInventory().setItem(0, new ItemStack(Items.FLINT_AND_STEEL)));
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        tnt.getZ() + TNT_LIGHT_DISTANCE,
+                        BLAST_FOV,
+                        tntAt,
+                        on,
+                        player ->
+                                player.getInventory()
+                                        .setItem(0, new ItemStack(Items.FLINT_AND_STEEL)));
         ClientGameTestPlayerActions.requireLookingAtBlock(context, tnt);
         String id = takeId("tnt", on);
         caption(context, id);
@@ -1344,9 +1487,11 @@ public final class TelekinesisShowcase {
                                         .isEmpty(),
                 ACTION_TIMEOUT_TICKS,
                 "the blast destroys the chest and no TNT is left");
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(minecraftServer -> checkBlastDrops(player(minecraftServer), siteX, on));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void respawnAnchor(
@@ -1354,15 +1499,16 @@ public final class TelekinesisShowcase {
         int siteX = bayX(ANCHOR, on);
         BlockPos anchor = new BlockPos(siteX, STAND_Y, BLAST_BLOCK_Z);
         BlockPos chest = anchor.east(2);
-        prepare(
-                context,
-                server,
-                siteX,
-                BLAST_STAND_Z,
-                BLAST_FOV,
-                Vec3.atCenterOf(anchor),
-                on,
-                TelekinesisShowcase::giveResistance);
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        BLAST_STAND_Z,
+                        BLAST_FOV,
+                        Vec3.atCenterOf(anchor),
+                        on,
+                        TelekinesisShowcase::giveResistance);
         emptyHand(context);
         ClientGameTestPlayerActions.requireLookingAtBlock(context, anchor);
         String id = takeId("respawn_anchor", on);
@@ -1376,29 +1522,33 @@ public final class TelekinesisShowcase {
                 minecraftServer -> minecraftServer.overworld().getBlockState(chest).isAir(),
                 ACTION_TIMEOUT_TICKS,
                 "the anchor's blast destroys the chest");
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(minecraftServer -> checkBlastDrops(player(minecraftServer), siteX, on));
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void fullInventory(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(FULL_INVENTORY, on);
         BlockPos ore = new BlockPos(siteX, STAND_Y, 2);
-        prepare(
-                context,
-                server,
-                siteX,
-                standZ(ore.getZ() + 0.5D),
-                NORMAL_FOV,
-                Vec3.atCenterOf(ore),
-                on,
-                player -> {
-                    player.getInventory().setItem(0, pickaxe(player.level(), false));
-                    for (int slot = 1; slot < 36; slot++) {
-                        player.getInventory().setItem(slot, new ItemStack(Items.COBBLESTONE, 64));
-                    }
-                });
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(ore),
+                        NORMAL_FOV,
+                        Vec3.atCenterOf(ore),
+                        on,
+                        player -> {
+                            player.getInventory().setItem(0, pickaxe(player.level(), false));
+                            for (int slot = 1; slot < 36; slot++) {
+                                player.getInventory()
+                                        .setItem(slot, new ItemStack(Items.COBBLESTONE, 64));
+                            }
+                        });
         ClientGameTestPlayerActions.requireLookingAtBlock(context, ore);
         String id = takeId("full_inventory", on);
         caption(context, id);
@@ -1431,8 +1581,7 @@ public final class TelekinesisShowcase {
         if (on) {
             context.getInput().holdKeyFor(options -> options.keyDown, STEP_BACK_TICKS);
         }
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
     private static void netherBed(
@@ -1440,15 +1589,16 @@ public final class TelekinesisShowcase {
         int siteX = on ? NETHER_ON_X : NETHER_OFF_X;
         BlockPos bedFoot = netherBedFoot(siteX);
         BlockPos chest = bedFoot.north().east(2);
-        prepare(
-                context,
-                server,
-                Level.NETHER,
-                new Vec3(siteX + 0.5D, NETHER_FLOOR_Y + 1.0D, BLAST_STAND_Z),
-                BLAST_FOV,
-                Vec3.atCenterOf(bedFoot),
-                on,
-                TelekinesisShowcase::giveResistance);
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        Level.NETHER,
+                        new Vec3(siteX + 0.5D, NETHER_FLOOR_Y + 1.0D, BLAST_STAND_Z),
+                        BLAST_FOV,
+                        Vec3.atCenterOf(bedFoot),
+                        on,
+                        TelekinesisShowcase::giveResistance);
         emptyHand(context);
         ClientGameTestPlayerActions.requireLookingAtBlock(context, bedFoot);
         String id = takeId("nether_bed", on);
@@ -1463,6 +1613,9 @@ public final class TelekinesisShowcase {
                         minecraftServer.getLevel(Level.NETHER).getBlockState(chest).isAir(),
                 ACTION_TIMEOUT_TICKS,
                 "the bed's blast destroys the Nether chest");
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -1478,11 +1631,10 @@ public final class TelekinesisShowcase {
                                 "The chest's emeralds must scatter in the world");
                     }
                 });
-        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
-        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        endTake(context, server, id, !on, takeStart);
     }
 
-    private static void prepare(
+    private static List<ItemStack> prepare(
             ClientGameTestContext context,
             TestDedicatedServerContext server,
             int siteX,
@@ -1491,7 +1643,7 @@ public final class TelekinesisShowcase {
             Vec3 firstLook,
             boolean telekinesis,
             Consumer<ServerPlayer> setUp) {
-        prepare(
+        return prepare(
                 context,
                 server,
                 Level.OVERWORLD,
@@ -1507,8 +1659,10 @@ public final class TelekinesisShowcase {
      * opens on it and no camera turn follows the teleport. A player who already faces that way from
      * the previous take keeps its rotation. The preference is set and the take's entities are
      * spawned here, before the caption, which is where the film is cut.
+     *
+     * @return the inventory the take starts with, slot by slot
      */
-    private static void prepare(
+    private static List<ItemStack> prepare(
             ClientGameTestContext context,
             TestDedicatedServerContext server,
             ResourceKey<Level> dimension,
@@ -1518,6 +1672,7 @@ public final class TelekinesisShowcase {
             boolean telekinesis,
             Consumer<ServerPlayer> setUp) {
         ItemStack[] hand = new ItemStack[1];
+        List<ItemStack> takeStart = new ArrayList<>();
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -1543,6 +1698,10 @@ public final class TelekinesisShowcase {
                             true);
                     setUp.accept(player);
                     hand[0] = player.getInventory().getItem(0).copy();
+                    Inventory inventory = player.getInventory();
+                    for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+                        takeStart.add(inventory.getItem(slot).copy());
+                    }
                 });
         context.waitFor(
                 client ->
@@ -1563,6 +1722,7 @@ public final class TelekinesisShowcase {
                 });
         ClientGameTestWaits.waitForChunkWindow(context, RENDER_DISTANCE - 2, LOAD_TIMEOUT_TICKS);
         ClientGameTestWaits.waitForRenderSettled(context, SETTLE_TICKS, LOAD_TIMEOUT_TICKS);
+        return List.copyOf(takeStart);
     }
 
     /**
@@ -1702,6 +1862,20 @@ public final class TelekinesisShowcase {
             }
         }
         throw new AssertionError("No loot seed up to " + ROD_SEED_ATTEMPTS + " rolls a blaze rod");
+    }
+
+    /**
+     * Waits for the server to take the player's hit on {@code victim}, which credits the player
+     * with its kill, before anything else may hurt it.
+     */
+    private static void awaitPlayerHit(
+            ClientGameTestContext context, TestDedicatedServerContext server, LivingEntity victim) {
+        ClientGameTestWaits.waitForServer(
+                context,
+                server,
+                minecraftServer -> victim.getLastHurtByPlayer() != null,
+                ACTION_TIMEOUT_TICKS,
+                "the player's hit lands on the take's mob");
     }
 
     private static void wake(TestDedicatedServerContext server, Mob... mobs) {
@@ -2026,7 +2200,8 @@ public final class TelekinesisShowcase {
 
     /**
      * With Telekinesis on, every expected stack is in the inventory and nothing is left at the
-     * site. With it off, the inventory holds none of them and they lie in the world.
+     * site. With it off, the inventory holds none of them and they lie in the world out of the
+     * player's reach; call it for an "off" take once its drops have come to rest.
      */
     private static void checkDelivered(
             ServerPlayer player, int siteX, boolean on, List<ItemStack> expected) {
@@ -2053,11 +2228,10 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * Fails when a drop lies in the player's pickup area, where the game hands it to the player
-     * once the item's pickup delay is over ({@code Player.touch}, Player.java:459-487). A take may
-     * only claim that its loot stayed in the world if the player could not have taken it, so the
-     * check cannot pass by running before that delay has elapsed: the area is the player's own box
-     * grown by a block, against a dropped item's 0.25 box (EntityTypes.java:576-580).
+     * Fails when a drop lies in the player's pickup area: the player's own box grown by a block
+     * ({@code Player.touch}, Player.java:459-466) against a dropped item's 0.25 box
+     * (EntityTypes.java:576-580). Run it once the drops have come to rest ({@link
+     * #awaitSettledDrops}), since a drop that is still sliding can reach the area later.
      */
     private static void checkDropsOutOfPickupRange(ServerPlayer player, int siteX) {
         AABB pickupArea = player.getBoundingBox().inflate(1.0D, 0.5D, 1.0D);
@@ -2074,6 +2248,70 @@ public final class TelekinesisShowcase {
                             + pickupArea
                             + ", so the game would hand it over once its pickup delay is over");
         }
+    }
+
+    /**
+     * Waits until every drop at the site has come to rest: past the pickup delay of a new drop, and
+     * on the ground slower than the speed at which the game stops moving it (ItemEntity.java:149),
+     * or held in the lava basin. A drop that came to rest in the player's pickup area has been
+     * handed over by then.
+     */
+    private static void awaitSettledDrops(
+            ClientGameTestContext context, TestDedicatedServerContext server, int siteX) {
+        ClientGameTestWaits.waitForServer(
+                context,
+                server,
+                minecraftServer ->
+                        player(minecraftServer)
+                                .level()
+                                .getEntitiesOfClass(ItemEntity.class, siteBox(siteX))
+                                .stream()
+                                .allMatch(TelekinesisShowcase::atRest),
+                ACTION_TIMEOUT_TICKS,
+                "the take's drops come to rest");
+    }
+
+    private static boolean atRest(ItemEntity drop) {
+        return drop.tickCount > DROP_PICKUP_DELAY_TICKS
+                && (drop.isInLava()
+                        || (drop.onGround()
+                                && drop.getDeltaMovement().horizontalDistanceSqr() <= 1.0E-5F));
+    }
+
+    /**
+     * Ends a take. In a take where the player must get nothing, it then fails if anything reached
+     * the inventory while the take was filmed; the next take's {@link #prepare} clears it.
+     */
+    private static void endTake(
+            ClientGameTestContext context,
+            TestDedicatedServerContext server,
+            String id,
+            boolean takesNothing,
+            List<ItemStack> takeStart) {
+        ClientGameTestWaits.holdFor(context, AFTER_MILLIS);
+        ClientGameTestStages.endStage(context, id, HOLD_AFTER_END_TICKS);
+        if (!takesNothing) {
+            return;
+        }
+        server.runOnServer(
+                minecraftServer -> {
+                    Inventory inventory = player(minecraftServer).getInventory();
+                    for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+                        ItemStack now = inventory.getItem(slot);
+                        ItemStack before = takeStart.get(slot);
+                        check(
+                                ItemStack.isSameItem(now, before)
+                                        && now.getCount() == before.getCount(),
+                                "Take "
+                                        + id
+                                        + " must hand the player nothing, but slot "
+                                        + slot
+                                        + " went from "
+                                        + before
+                                        + " to "
+                                        + now);
+                    }
+                });
     }
 
     private static void checkExperience(ServerPlayer player, int siteX, boolean on) {
