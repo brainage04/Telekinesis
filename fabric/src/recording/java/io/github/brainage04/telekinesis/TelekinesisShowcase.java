@@ -1083,8 +1083,14 @@ public final class TelekinesisShowcase {
         ClientGameTestStages.markStage(id);
         wake(server, husk.get());
         awaitHitThenBackOff(context, server, husk);
-        server.runOnServer(
+        wake(server, wolf.get());
+        ClientGameTestWaits.waitForServer(
+                context,
+                server,
                 minecraftServer -> {
+                    if (wolf.get().getTarget() == husk.get() || husk.get().isDeadOrDying()) {
+                        return true;
+                    }
                     ServerPlayer player = player(minecraftServer);
                     check(
                             player.getLastDamageSource(OWNER_HURT_MEMORY_TICKS) != null
@@ -1094,8 +1100,10 @@ public final class TelekinesisShowcase {
                                     + " ticks a wolf takes on its owner's attacker for, so the"
                                     + " wolf will never attack the husk: the client runs too"
                                     + " slowly");
-                });
-        wake(server, wolf.get());
+                    return false;
+                },
+                ACTION_TIMEOUT_TICKS,
+                "the wolf takes on the husk");
         waitForDeath(context, server, huskId);
         server.runOnServer(
                 minecraftServer -> {
