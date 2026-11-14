@@ -3,7 +3,7 @@
 	"id": "${mod_id}",
 	"version": "${mod_version}",
 	"name": "${mod_name}",
-	"description": "A server-side mod that places drops and experience directly into a player's inventory and experience total: from blocks the player mines, the leaves of trees the player cuts, mobs the game credits the player with killing, the item frames, glow item frames, paintings, cushions and armour stands the player breaks, the boats and minecarts the player breaks with their contents, and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.",
+	"description": "A server-side mod that puts drops and experience straight into the inventory and experience total of the player who caused them. That covers blocks the player mines, the leaves of trees the player cuts, mobs the game credits the player with killing, item frames, paintings, cushions, armour stands, boats and minecarts the player breaks, and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.",
 	"authors": [
 		"brainage04"
 	],
