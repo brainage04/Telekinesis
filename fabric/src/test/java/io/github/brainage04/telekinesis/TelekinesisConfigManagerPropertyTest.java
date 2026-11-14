@@ -3,6 +3,7 @@ package io.github.brainage04.telekinesis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import java.io.IOException;
@@ -140,12 +141,8 @@ class TelekinesisConfigManagerPropertyTest {
             assertEquals(expected.content(), content, "file overwritten " + when);
             return;
         }
-        boolean written =
-                !JsonParser.parseString(content).getAsJsonObject().has("enabled")
-                        || JsonParser.parseString(content)
-                                .getAsJsonObject()
-                                .get("enabled")
-                                .getAsBoolean();
+        JsonObject json = JsonParser.parseString(content).getAsJsonObject();
+        boolean written = !json.has("enabled") || json.get("enabled").getAsBoolean();
         assertEquals(expected.enabled().get(), written, "file " + when + ": " + content);
     }
 

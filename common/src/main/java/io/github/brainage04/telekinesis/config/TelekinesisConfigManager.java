@@ -8,8 +8,8 @@ import java.nio.file.Path;
 
 /**
  * The server-wide {@code telekinesis.json}. A file that fails to load keeps the current setting and
- * is not overwritten until a later reload succeeds; changes made meanwhile apply for the session
- * only.
+ * is not overwritten until a later reload succeeds or finds the file missing; changes made
+ * meanwhile apply for the session only.
  */
 public final class TelekinesisConfigManager {
     private static final Gson GSON =
