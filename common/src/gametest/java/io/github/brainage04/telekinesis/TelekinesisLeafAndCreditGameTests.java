@@ -72,6 +72,11 @@ public final class TelekinesisLeafAndCreditGameTests {
     /// poll reads their generation status and loading ticket level; a value that differs from the
     /// last one restarts the clock, so a host that is merely slow keeps making progress and never
     /// trips the bound.
+    ///
+    /// The check runs on the tick path, not inside the wait's assertion: a sequence's assertion
+    /// failure is swallowed while the test still has ticks left (GameTestSequence.java:78-82), so a
+    /// bound raised there only reaches the test at tick exhaustion. A runnable registered with
+    /// {@link GameTestHelper#runAfterDelay} fails the test at once (GameTestInfo.java:126-134).
     private static final class RoomProgress {
         private final ServerLevel level;
         private final ChunkPos centre;
@@ -81,6 +86,17 @@ public final class TelekinesisLeafAndCreditGameTests {
         private RoomProgress(ServerLevel level, ChunkPos centre) {
             this.level = level;
             this.centre = centre;
+        }
+
+        /// Starts the stall check, which reschedules itself every tick. The chain ends with the
+        /// test: a done test's tick runnables are never run again (GameTestInfo.java:83-84).
+        private void watch(GameTestHelper helper) {
+            helper.runAfterDelay(
+                    1,
+                    () -> {
+                        assertStillLoading(helper);
+                        watch(helper);
+                    });
         }
 
         private void assertStillLoading(GameTestHelper helper) {
@@ -284,14 +300,13 @@ public final class TelekinesisLeafAndCreditGameTests {
             throw failure;
         }
         RoomProgress roomProgress = new RoomProgress(end, room);
+        roomProgress.watch(helper);
         helper.startSequence()
                 .thenWaitUntil(
-                        () -> {
-                            roomProgress.assertStillLoading(helper);
-                            helper.assertTrue(
-                                    end.isPositionEntityTicking(anchor),
-                                    "The End room must tick entities");
-                        })
+                        () ->
+                                helper.assertTrue(
+                                        end.isPositionEntityTicking(anchor),
+                                        "The End room must tick entities"))
                 .thenExecute(
                         () -> {
                             try {
