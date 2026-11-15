@@ -1,0 +1,70 @@
+{
+  "telekinesis.mining": {
+    "title": "Mining a block",
+    "subtitle": "Diamonds (Fortune III) and XP go straight to you"
+  },
+  "telekinesis.chest": {
+    "title": "Breaking a chest",
+    "subtitle": "The chest and its stacks go straight to you"
+  },
+  "telekinesis.tree": {
+    "title": "Felling a tree",
+    "subtitle": "Logs, then the leaf drops, go to the feller"
+  },
+  "telekinesis.mob": {
+    "title": "Killing a mob",
+    "subtitle": "The husk's loot, sword and XP go to its killer"
+  },
+  "telekinesis.credited_kill": {
+    "title": "Killed after your hit",
+    "subtitle": "Lava finishes it; the game credits your hit"
+  },
+  "telekinesis.uncredited_kill": {
+    "title": "Killed by a mob, not you",
+    "subtitle": "The game credits the golem, so the loot stays"
+  },
+  "telekinesis.item_frame": {
+    "title": "Breaking an item frame",
+    "subtitle": "The diamond, then the frame, come to you"
+  },
+  "telekinesis.armour_stand": {
+    "title": "Breaking an armour stand",
+    "subtitle": "The stand, helmet and sword come to you"
+  },
+  "telekinesis.painting": {
+    "title": "Breaking a painting",
+    "subtitle": "The painting comes to the player who punched it"
+  },
+  "telekinesis.cushion": {
+    "title": "Breaking a cushion",
+    "subtitle": "The cushion comes to the player who punched it"
+  },
+  "telekinesis.chest_boat": {
+    "title": "Breaking a chest boat",
+    "subtitle": "The boat and its 3 emeralds come to you"
+  },
+  "telekinesis.chest_cart": {
+    "title": "Breaking a chest minecart",
+    "subtitle": "The cart and its 3 emeralds come to you"
+  },
+  "telekinesis.tnt": {
+    "title": "TNT the player lit",
+    "subtitle": "Blast drops and the chest's 64 emeralds are yours"
+  },
+  "telekinesis.respawn_anchor": {
+    "title": "Respawn anchor outside the Nether",
+    "subtitle": "The game names no cause; the user is credited"
+  },
+  "telekinesis.full_inventory": {
+    "title": "Full inventory",
+    "subtitle": "What does not fit is put at your feet"
+  },
+  "telekinesis.off": {
+    "title": "Telekinesis turned off",
+    "subtitle": "Off: the chest, its emeralds and the loot stay"
+  },
+  "telekinesis.nether_bed": {
+    "title": "Bed in the Nether",
+    "subtitle": "Vanilla names no cause; the user is credited"
+  }
+}

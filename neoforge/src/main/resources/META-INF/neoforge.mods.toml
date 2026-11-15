@@ -7,7 +7,7 @@ issueTrackerURL="https://github.com/brainage04/Telekinesis/issues"
 modId="telekinesis"
 version="${version}"
 displayName="Telekinesis"
-description='''Puts drops and experience from blocks you mine, mobs you kill and explosions you cause straight into your inventory.'''
+description='''A server-side mod that places drops and experience directly into a player's inventory and experience total: from blocks the player mines, the leaves of trees the player cuts, mobs the game credits the player with killing, the item frames, glow item frames, paintings, cushions and armour stands the player breaks, the boats and minecarts the player breaks with their contents, and blocks broken by explosions the player causes. Vanilla clients can join without installing the mod.'''
 iconFile="assets/telekinesis/icon.png"
 authors="brainage04"
 displayURL="https://github.com/brainage04/Telekinesis"
@@ -29,6 +29,6 @@ side="BOTH"
 [[dependencies.telekinesis]]
 modId="brainagelib"
 type="required"
-versionRange="[${brainagelib_version},)"
+versionRange="[${brainagelib_version},3.0.0)"
 ordering="AFTER"
 side="SERVER"

@@ -348,23 +348,37 @@ public final class TelekinesisKillAndExplosionGameTests {
         helper.succeed();
     }
 
-    /// Vanilla's kill credit lasts 100 ticks after the player's last hit; after that the death is
-    /// nobody's.
+    /// Vanilla forgets the player's hit 100 ticks after it; a death after that is nobody's.
     public static void expiredKillCreditLeavesKillLootInWorld(GameTestHelper helper) {
         GameTestPlayer fixture = enabledPlayer(helper, "TkKillerOld", PLAYER_POS);
-        try {
-            ServerPlayer player = fixture.player();
-            Husk husk = probeMob(helper, "tk_oldkiller", MOB_POS);
-            husk.setLastHurtByPlayer(player, 0);
+        ServerPlayer player = fixture.player();
+        ServerLevel level = helper.getLevel();
+        Husk husk = probeMob(helper, "tk_oldkiller", MOB_POS);
+        husk.setLastHurtByPlayer(player, 100);
 
-            husk.kill(helper.getLevel());
+        helper.startSequence()
+                .thenWaitUntil(
+                        () ->
+                                helper.assertTrue(
+                                        husk.getLastHurtByPlayer() == null,
+                                        "The game must forget the player's hit"))
+                .thenExecute(
+                        () -> {
+                            try {
+                                husk.kill(level);
 
-            checkCount(player, Items.EMERALD, 0, "an expired kill credit");
-            check(emeraldsNear(helper, MOB_POS) == 1, "Expected the husk's emerald on the ground");
-        } finally {
-            fixture.close();
-        }
-        helper.succeed();
+                                check(
+                                        husk.getKillCredit() == null,
+                                        "The game must credit nobody with the kill");
+                                checkCount(player, Items.EMERALD, 0, "an expired kill credit");
+                                check(
+                                        emeraldsNear(helper, MOB_POS) == 1,
+                                        "Expected the husk's emerald on the ground");
+                            } finally {
+                                fixture.close();
+                            }
+                        })
+                .thenSucceed();
     }
 
     public static void playerDeathInsideAnotherScopeStaysInWorld(GameTestHelper helper) {
