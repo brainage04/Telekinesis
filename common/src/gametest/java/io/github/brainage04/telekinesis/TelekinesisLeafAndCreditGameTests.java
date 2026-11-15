@@ -41,10 +41,13 @@ public final class TelekinesisLeafAndCreditGameTests {
     /// rolls all empty has probability about 1e-10.
     private static final int LEAF_ROLLS = 300;
 
-    /// How long the End room may take to reach entity-ticking status. The GameTest server runs its
-    /// ticks as fast as it can, so a tick budget cannot bound a wait for chunk generation; this
-    /// bounds it in wall time instead, and the test's tick budget is only a backstop above it.
-    private static final long ROOM_LOAD_TIMEOUT_NANOS = 120_000_000_000L;
+    /// How long the End room's chunks may make no generation progress before the wait gives up.
+    /// The GameTest server runs its ticks as fast as it can, so a tick budget cannot bound a wait
+    /// for chunk generation, and a total wall-clock budget cannot either: a host whose heavy slots
+    /// are full takes longer for the same work, and a total budget would fail it while the chunks
+    /// are still generating. What the wait can bound is a stall, so it fails only when the
+    /// surrounding chunks' status and ticket levels have not moved for this long.
+    private static final long ROOM_STALL_TIMEOUT_NANOS = 120_000_000_000L;
 
     private TelekinesisLeafAndCreditGameTests() {}
 
@@ -61,6 +64,54 @@ public final class TelekinesisLeafAndCreditGameTests {
             ReferenceCountUtil.release(outbound);
         }
         return hit;
+    }
+
+    /// Fails the test when the chunks around {@code centre} have made no generation progress for
+    /// two minutes of wall time. Entity-ticking status needs the 5x5 chunks around the room at
+    /// FULL (ChunkMap.java:360-363), so those are the chunks whose progress decides the wait. Each
+    /// poll reads their generation status and loading ticket level; a value that differs from the
+    /// last one restarts the clock, so a host that is merely slow keeps making progress and never
+    /// trips the bound.
+    private static final class RoomProgress {
+        private final ServerLevel level;
+        private final ChunkPos centre;
+        private String last;
+        private long lastProgressNanos = System.nanoTime();
+
+        private RoomProgress(ServerLevel level, ChunkPos centre) {
+            this.level = level;
+            this.centre = centre;
+        }
+
+        private void assertStillLoading(GameTestHelper helper) {
+            StringBuilder progress = new StringBuilder();
+            for (int x = centre.x() - 2; x <= centre.x() + 2; x++) {
+                for (int z = centre.z() - 2; z <= centre.z() + 2; z++) {
+                    long key = ChunkPos.pack(x, z);
+                    progress.append(level.getChunkSource().chunkMap.getLatestStatus(key))
+                            .append('/')
+                            .append(
+                                    level.getChunkSource()
+                                            .chunkMap
+                                            .getDistanceManager()
+                                            .getChunkLevel(key, false))
+                            .append(' ');
+                }
+            }
+            String now = progress.toString();
+            long nanos = System.nanoTime();
+            if (!now.equals(last)) {
+                last = now;
+                lastProgressNanos = nanos;
+                return;
+            }
+            if (nanos - lastProgressNanos > ROOM_STALL_TIMEOUT_NANOS) {
+                helper.fail(
+                        "The End room's chunks made no generation progress for 2 min of wall time,"
+                                + " still at "
+                                + now);
+            }
+        }
     }
 
     public static void decayedLeafOfAFelledTreePaysTheFeller(GameTestHelper helper) {
@@ -167,11 +218,13 @@ public final class TelekinesisLeafAndCreditGameTests {
     /// (ServerLevel.java:1929). An explosion reaches the entities of every loaded chunk, ticking or
     /// not (ServerExplosion.java:182, Visibility.java:22-30).
     ///
-    /// The wait is bounded in wall time, not in ticks: entity-ticking status needs the 5x5 chunks
-    /// around the room at FULL (ChunkMap.java:360-363), and generating those cold chunks takes as
-    /// long as the host needs, while the GameTest server runs its ticks as fast as it can. A tick
-    /// budget therefore expires while the chunks are still generating: on CI 43589136758 the wait
-    /// ran out its 100 ticks and failed, and the same head passed on rerun.
+    /// The wait is bounded by a stall, not by ticks or by total wall time: entity-ticking status
+    /// needs the 5x5 chunks around the room at FULL (ChunkMap.java:360-363), and generating those
+    /// cold chunks takes as long as the host needs, while the GameTest server runs its ticks as
+    /// fast as it can. A tick budget therefore expires while the chunks are still generating: on
+    /// CI 43589136758 the wait ran out its 100 ticks and failed, and the same head passed on
+    /// rerun. A total wall-clock budget fails the same way on a host whose heavy slots are full,
+    /// so the wait fails only when those chunks' status and ticket levels stop moving.
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
@@ -230,15 +283,11 @@ public final class TelekinesisLeafAndCreditGameTests {
             cleanup.run();
             throw failure;
         }
-        long waitStartNanos = System.nanoTime();
+        RoomProgress roomProgress = new RoomProgress(end, room);
         helper.startSequence()
                 .thenWaitUntil(
                         () -> {
-                            if (System.nanoTime() - waitStartNanos > ROOM_LOAD_TIMEOUT_NANOS) {
-                                helper.fail(
-                                        "The End room did not tick entities within 2 min of wall"
-                                                + " time");
-                            }
+                            roomProgress.assertStillLoading(helper);
                             helper.assertTrue(
                                     end.isPositionEntityTicking(anchor),
                                     "The End room must tick entities");
