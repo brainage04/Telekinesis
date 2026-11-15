@@ -41,6 +41,11 @@ public final class TelekinesisLeafAndCreditGameTests {
     /// rolls all empty has probability about 1e-10.
     private static final int LEAF_ROLLS = 300;
 
+    /// How long the End room may take to reach entity-ticking status. The GameTest server runs its
+    /// ticks as fast as it can, so a tick budget cannot bound a wait for chunk generation; this
+    /// bounds it in wall time instead, and the test's tick budget is only a backstop above it.
+    private static final long ROOM_LOAD_TIMEOUT_NANOS = 120_000_000_000L;
+
     private TelekinesisLeafAndCreditGameTests() {}
 
     private static boolean blastHit(GameTestPlayer fixture) {
@@ -161,6 +166,12 @@ public final class TelekinesisLeafAndCreditGameTests {
     /// entity-ticking status (ChunkMap.java:128), the status the wait checks
     /// (ServerLevel.java:1929). An explosion reaches the entities of every loaded chunk, ticking or
     /// not (ServerExplosion.java:182, Visibility.java:22-30).
+    ///
+    /// The wait is bounded in wall time, not in ticks: entity-ticking status needs the 5x5 chunks
+    /// around the room at FULL (ChunkMap.java:360-363), and generating those cold chunks takes as
+    /// long as the host needs, while the GameTest server runs its ticks as fast as it can. A tick
+    /// budget therefore expires while the chunks are still generating: on CI 43589136758 the wait
+    /// ran out its 100 ticks and failed, and the same head passed on rerun.
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
@@ -219,12 +230,19 @@ public final class TelekinesisLeafAndCreditGameTests {
             cleanup.run();
             throw failure;
         }
+        long waitStartNanos = System.nanoTime();
         helper.startSequence()
                 .thenWaitUntil(
-                        () ->
-                                helper.assertTrue(
-                                        end.isPositionEntityTicking(anchor),
-                                        "The End room must tick entities"))
+                        () -> {
+                            if (System.nanoTime() - waitStartNanos > ROOM_LOAD_TIMEOUT_NANOS) {
+                                helper.fail(
+                                        "The End room did not tick entities within 2 min of wall"
+                                                + " time");
+                            }
+                            helper.assertTrue(
+                                    end.isPositionEntityTicking(anchor),
+                                    "The End room must tick entities");
+                        })
                 .thenExecute(
                         () -> {
                             try {

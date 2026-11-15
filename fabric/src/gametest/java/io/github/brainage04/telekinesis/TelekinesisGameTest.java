@@ -191,7 +191,8 @@ public class TelekinesisGameTest {
         TelekinesisLeafAndCreditGameTests.lastFellerWithTelekinesisOffKeepsTheirLeaves(context);
     }
 
-    @GameTest(maxTicks = 100)
+    // The wait is bounded in wall time inside the test; this budget is only a backstop above it.
+    @GameTest(maxTicks = 1000000)
     public void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper context) {
         TelekinesisLeafAndCreditGameTests.respawnAnchorBlastPaysThePlayerWhoUsedIt(context);
     }
