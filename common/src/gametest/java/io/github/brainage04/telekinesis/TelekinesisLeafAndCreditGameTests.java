@@ -41,12 +41,12 @@ public final class TelekinesisLeafAndCreditGameTests {
     /// rolls all empty has probability about 1e-10.
     private static final int LEAF_ROLLS = 300;
 
-    /// How long the End room's chunks may make no generation progress before the wait gives up.
-    /// The GameTest server runs its ticks as fast as it can, so a tick budget cannot bound a wait
-    /// for chunk generation, and a total wall-clock budget cannot either: a host whose heavy slots
-    /// are full takes longer for the same work, and a total budget would fail it while the chunks
-    /// are still generating. What the wait can bound is a stall, so it fails only when the
-    /// surrounding chunks' status and ticket levels have not moved for this long.
+    /// How long the End room's chunks may make no generation progress before the wait gives up. The
+    /// GameTest server runs its ticks as fast as it can, so a tick budget cannot bound a wait for
+    /// chunk generation, and a total wall-clock budget cannot either: a host whose heavy slots are
+    /// full takes longer for the same work, and a total budget would fail it while the chunks are
+    /// still generating. What the wait can bound is a stall, so it fails only when the surrounding
+    /// chunks' status and ticket levels have not moved for this long.
     private static final long ROOM_STALL_TIMEOUT_NANOS = 120_000_000_000L;
 
     private TelekinesisLeafAndCreditGameTests() {}
@@ -67,11 +67,11 @@ public final class TelekinesisLeafAndCreditGameTests {
     }
 
     /// Fails the test when the chunks around {@code centre} have made no generation progress for
-    /// two minutes of wall time. Entity-ticking status needs the 5x5 chunks around the room at
-    /// FULL (ChunkMap.java:360-363), so those are the chunks whose progress decides the wait. Each
-    /// poll reads their generation status and loading ticket level; a value that differs from the
-    /// last one restarts the clock, so a host that is merely slow keeps making progress and never
-    /// trips the bound.
+    /// two minutes of wall time. Entity-ticking status needs the 5x5 chunks around the room at FULL
+    /// (ChunkMap.java:360-363), so those are the chunks whose progress decides the wait. Each poll
+    /// reads their generation status and loading ticket level; a value that differs from the last
+    /// one restarts the clock, so a host that is merely slow keeps making progress and never trips
+    /// the bound.
     ///
     /// The check runs on the tick path, not inside the wait's assertion: a sequence's assertion
     /// failure is swallowed while the test still has ticks left (GameTestSequence.java:78-82), so a
@@ -239,10 +239,10 @@ public final class TelekinesisLeafAndCreditGameTests {
     /// The wait is bounded by a stall, not by ticks or by total wall time: entity-ticking status
     /// needs the 5x5 chunks around the room at FULL (ChunkMap.java:360-363), and generating those
     /// cold chunks takes as long as the host needs, while the GameTest server runs its ticks as
-    /// fast as it can. A tick budget therefore expires while the chunks are still generating: on
-    /// CI 43589136758 the wait ran out its 100 ticks and failed, and the same head passed on
-    /// rerun. A total wall-clock budget fails the same way on a host whose heavy slots are full,
-    /// so the wait fails only when those chunks' status and ticket levels stop moving.
+    /// fast as it can. A tick budget therefore expires while the chunks are still generating: on CI
+    /// 43589136758 the wait ran out its 100 ticks and failed, and the same head passed on rerun. A
+    /// total wall-clock budget fails the same way on a host whose heavy slots are full, so the wait
+    /// fails only when those chunks' status and ticket levels stop moving.
     public static void respawnAnchorBlastPaysThePlayerWhoUsedIt(GameTestHelper helper) {
         ServerLevel end = helper.getLevel().getServer().getLevel(Level.END);
         check(end != null, "The test server must have an End");
