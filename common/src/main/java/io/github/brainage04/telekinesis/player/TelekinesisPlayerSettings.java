@@ -2,7 +2,6 @@ package io.github.brainage04.telekinesis.player;
 
 import io.github.brainage04.brainagelib.storage.WorldPlayerStore;
 import io.github.brainage04.telekinesis.Telekinesis;
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -32,7 +31,7 @@ public final class TelekinesisPlayerSettings {
     }
 
     public static boolean isEffective(ServerPlayer player) {
-        return TelekinesisConfigManager.config().enabled() && isEnabled(player);
+        return player.level().getGameRules().get(Telekinesis.ENABLED) && isEnabled(player);
     }
 
     public static synchronized boolean setEnabled(ServerPlayer player, boolean enabled) {

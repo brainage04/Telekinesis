@@ -1,9 +1,11 @@
 package io.github.brainage04.telekinesis;
 
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
@@ -14,6 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.gamerules.GameRule;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -111,48 +114,116 @@ public final class TelekinesisGameTests {
         context.succeed();
     }
 
-    public static void disabledServerConfigLeavesDropInWorld(GameTestHelper context) {
-        boolean previousValue = TelekinesisConfigManager.config().enabled();
-        if (!TelekinesisConfigManager.setEnabled(false)) {
-            throw new AssertionError("Expected the test to persist the disabled server setting.");
+    /** The rule exists, and it is on without a server owner having to do anything. */
+    public static void enabledRuleDefaultsOn(GameTestHelper context) {
+        GameRule<?> rule = enabledRule(context);
+        if (!Boolean.TRUE.equals(rule.defaultValue())) {
+            throw new AssertionError("telekinesis:enabled defaults to " + rule.defaultValue());
         }
-
-        try {
-            ServerPlayer player = makeSurvivalPlayer(context);
-            TelekinesisPlayerSettings.setEnabled(player, true);
-            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
-            context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
-
-            assertDestroyed(player, context.absolutePos(DROP_POS));
-            assertItemCount(player, Items.DIAMOND, 0);
-            assertItemEntityNearDrop(context, Items.DIAMOND);
-        } finally {
-            TelekinesisConfigManager.setEnabled(previousValue);
+        if (!context.getLevel().getGameRules().get(Telekinesis.ENABLED)) {
+            throw new AssertionError("telekinesis:enabled is not on in a new world");
         }
-
         context.succeed();
     }
 
-    public static void disabledPlayerPreferenceLeavesDropInWorld(GameTestHelper context) {
-        ServerPlayer player = makeSurvivalPlayer(context);
-        TelekinesisConfigManager.setEnabled(true);
-        TelekinesisPlayerSettings.setEnabled(player, false);
-        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
-        context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
+    /**
+     * The server-wide switch is the gamerule: turned off through the command a server owner uses,
+     * it stops the drops of a player whose own preference is on, and turning it back on restores
+     * them on the next break with no restart.
+     */
+    public static void serverGameruleOffLeavesDropInWorld(GameTestHelper context) {
+        withEnabled(
+                context,
+                false,
+                () -> {
+                    ServerPlayer player = makeSurvivalPlayer(context);
+                    TelekinesisPlayerSettings.setEnabled(player, true);
+                    player.setItemInHand(
+                            InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+                    context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
 
-        try {
-            assertDestroyed(player, context.absolutePos(DROP_POS));
-            assertItemCount(player, Items.DIAMOND, 0);
-            assertItemEntityNearDrop(context, Items.DIAMOND);
-        } finally {
-            TelekinesisPlayerSettings.setEnabled(player, true);
-        }
+                    assertDestroyed(player, context.absolutePos(DROP_POS));
+                    assertItemCount(player, Items.DIAMOND, 0);
+                    assertItemEntityNearDrop(context, Items.DIAMOND);
+                });
+        withEnabled(
+                context,
+                true,
+                () -> {
+                    ServerPlayer player = makeSurvivalPlayer(context);
+                    TelekinesisPlayerSettings.setEnabled(player, true);
+                    player.setItemInHand(
+                            InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+                    context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
 
+                    assertDestroyed(player, context.absolutePos(DROP_POS));
+                    assertItemCount(player, Items.DIAMOND, 1);
+                    context.assertItemEntityNotPresent(Items.DIAMOND);
+                });
         context.succeed();
+    }
+
+    /** A player's own preference off keeps the drop in the world while the rule is on. */
+    public static void disabledPlayerPreferenceLeavesDropInWorld(GameTestHelper context) {
+        withEnabled(
+                context,
+                true,
+                () -> {
+                    ServerPlayer player = makeEnabledSurvivalPlayer(context);
+                    TelekinesisPlayerSettings.setEnabled(player, false);
+                    player.setItemInHand(
+                            InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+                    context.setBlock(DROP_POS, Blocks.DIAMOND_ORE);
+
+                    try {
+                        assertDestroyed(player, context.absolutePos(DROP_POS));
+                        assertItemCount(player, Items.DIAMOND, 0);
+                        assertItemEntityNearDrop(context, Items.DIAMOND);
+                    } finally {
+                        TelekinesisPlayerSettings.setEnabled(player, true);
+                    }
+                });
+        context.succeed();
+    }
+
+    /** The enabled rule, looked up by name the way the gamerules screen finds it. */
+    private static GameRule<?> enabledRule(GameTestHelper context) {
+        GameRule<?> rule =
+                BuiltInRegistries.GAME_RULE.getValue(
+                        Identifier.fromNamespaceAndPath(Telekinesis.MOD_ID, "enabled"));
+        if (rule == null) {
+            throw new AssertionError("telekinesis:enabled gamerule is not registered");
+        }
+        return rule;
+    }
+
+    /**
+     * Runs {@code body} with {@code telekinesis:enabled} set to {@code on} through the command a
+     * server owner uses, and puts the rule back afterwards so no other test sees it changed.
+     */
+    static void withEnabled(GameTestHelper context, boolean on, Runnable body) {
+        boolean before = context.getLevel().getGameRules().get(Telekinesis.ENABLED);
+        setEnabled(context, on);
+        try {
+            body.run();
+        } finally {
+            setEnabled(context, before);
+        }
+    }
+
+    /** Sets {@code telekinesis:enabled} through the command a server owner uses. */
+    static void setEnabled(GameTestHelper context, boolean on) {
+        MinecraftServer server = context.getLevel().getServer();
+        server.getCommands()
+                .performPrefixedCommand(
+                        server.createCommandSourceStack(), "gamerule telekinesis:enabled " + on);
+        if (server.getGameRules().get(Telekinesis.ENABLED) != on) {
+            throw new AssertionError(
+                    "/gamerule telekinesis:enabled " + on + " did not set the rule");
+        }
     }
 
     private static ServerPlayer makeEnabledSurvivalPlayer(GameTestHelper context) {
-        TelekinesisConfigManager.setEnabled(true);
         ServerPlayer player = makeSurvivalPlayer(context);
         TelekinesisPlayerSettings.setEnabled(player, true);
         return player;

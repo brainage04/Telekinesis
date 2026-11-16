@@ -2,7 +2,6 @@ package io.github.brainage04.telekinesis.neoforge;
 
 import com.mojang.brigadier.CommandDispatcher;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
-import java.nio.file.Path;
 import java.util.function.Consumer;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
@@ -12,11 +11,6 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 public final class NeoForgeTelekinesisPlatform implements TelekinesisPlatform {
-    @Override
-    public Path configDirectory() {
-        return net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get();
-    }
-
     @Override
     public void registerCommands(Consumer<CommandDispatcher<CommandSourceStack>> callback) {
         NeoForge.EVENT_BUS.addListener(

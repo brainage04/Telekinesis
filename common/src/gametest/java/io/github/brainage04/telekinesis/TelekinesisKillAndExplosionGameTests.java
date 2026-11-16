@@ -2,7 +2,6 @@ package io.github.brainage04.telekinesis;
 
 import io.github.brainage04.brainagelib.drops.DropCapture;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import java.util.Set;
 import net.minecraft.commands.CommandSourceStack;
@@ -673,7 +672,9 @@ public final class TelekinesisKillAndExplosionGameTests {
 
     public static GameTestPlayer enabledPlayer(
             GameTestHelper helper, String name, BlockPos position) {
-        TelekinesisConfigManager.setEnabled(true);
+        if (!helper.getLevel().getGameRules().get(Telekinesis.ENABLED)) {
+            throw new AssertionError("The test needs telekinesis:enabled on");
+        }
         GameTestPlayer fixture =
                 GameTestPlayer.join(helper, name)
                         .markLoaded()

@@ -3,5 +3,5 @@
   "structure":"minecraftmodconventions:empty",
   "max_ticks": 20,
   "type": "minecraft:function",
-  "function": "telekinesis:disabled_server_config_leaves_drop_in_world"
+  "function": "telekinesis:console_status_reports_the_gamerule"
 }

@@ -4,7 +4,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.brainage04.brainagelib.drops.DropCapture;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import java.io.IOException;
@@ -39,83 +38,123 @@ public final class TelekinesisBehaviorGameTests {
         GameTestPlayer fixture =
                 GameTestPlayer.join(helper, "TkCommands").gameMode(GameType.SURVIVAL);
         ServerPlayer player = fixture.player();
-        boolean previousGlobal = TelekinesisConfigManager.config().enabled();
         boolean previousPersonal = TelekinesisPlayerSettings.isEnabled(player);
         CommandSourceStack source = player.createCommandSourceStack();
         try {
-            TelekinesisConfigManager.setEnabled(true);
-            fixture.clearMessages();
-            run(helper, source, "telekinesis disable");
-            check(
-                    !TelekinesisPlayerSettings.isEffective(player),
-                    "Disable must affect the player's drops");
-            check(
-                    fixture.received(
-                            "["
-                                    + Telekinesis.MOD_NAME
-                                    + "] Your Telekinesis preference is now disabled."),
-                    "The player must be told about the change, got " + fixture.messageTexts());
-            run(helper, source, "telekinesis toggle");
-            check(
-                    TelekinesisPlayerSettings.isEffective(player),
-                    "Toggle must restore the personal setting");
-            run(helper, source, "telekinesis enable");
-            run(helper, source, "telekinesis status");
-            run(helper, source, "telekinesis help");
+            TelekinesisGameTests.withEnabled(
+                    helper,
+                    true,
+                    () -> {
+                        fixture.clearMessages();
+                        run(helper, source, "telekinesis disable");
+                        check(
+                                !TelekinesisPlayerSettings.isEffective(player),
+                                "Disable must affect the player's drops");
+                        check(
+                                fixture.received(
+                                        "["
+                                                + Telekinesis.MOD_NAME
+                                                + "] Your Telekinesis preference is now disabled."),
+                                "The player must be told about the change, got "
+                                        + fixture.messageTexts());
+                        run(helper, source, "telekinesis toggle");
+                        check(
+                                TelekinesisPlayerSettings.isEffective(player),
+                                "Toggle must restore the personal setting");
+                        run(helper, source, "telekinesis enable");
+                        fixture.clearMessages();
+                        run(helper, source, "telekinesis status");
+                        check(
+                                fixture.received(
+                                        "["
+                                                + Telekinesis.MOD_NAME
+                                                + "] Server: enabled. Personal preference: enabled."
+                                                + " Effective state: enabled."),
+                                "Status must report the gamerule, got "
+                                        + fixture.messageTexts());
+                        run(helper, source, "telekinesis help");
+                    });
             try {
                 helper.getLevel()
                         .getServer()
                         .getCommands()
                         .getDispatcher()
                         .execute("telekinesis config disable", source);
-                throw new AssertionError("A non-operator must not change the server setting");
+                throw new AssertionError("The server-wide switch is no longer a command");
             } catch (CommandSyntaxException expected) {
                 check(
-                        TelekinesisConfigManager.config().enabled(),
-                        "Rejected config command must not mutate state");
+                        helper.getLevel().getGameRules().get(Telekinesis.ENABLED),
+                        "A rejected command must not change the rule");
             }
         } finally {
             TelekinesisPlayerSettings.setEnabled(player, previousPersonal);
-            TelekinesisConfigManager.setEnabled(previousGlobal);
             fixture.close();
         }
         helper.succeed();
     }
 
-    public static void operatorCommandsSaveAndReload(GameTestHelper helper) {
-        boolean previous = TelekinesisConfigManager.config().enabled();
-        CommandSourceStack source =
-                helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput();
+    /**
+     * The server-wide switch is a gamerule: /gamerule needs operator permission, as the removed
+     * /telekinesis config commands did (GameRuleCommand.java:22, register), so a player without it
+     * gets a parse error and the rule keeps its value.
+     */
+    public static void serverWideSwitchIsTheGamerule(GameTestHelper helper) {
+        GameTestPlayer fixture =
+                GameTestPlayer.join(helper, "TkRule").gameMode(GameType.SURVIVAL);
+        ServerPlayer player = fixture.player();
         try {
-            run(helper, source, "telekinesis config disable");
-            check(
-                    !TelekinesisConfigManager.config().enabled(),
-                    "Operator disable must change the global setting");
-            run(helper, source, "telekinesis config reload");
-            check(
-                    !TelekinesisConfigManager.config().enabled(),
-                    "Reload must preserve the saved disabled setting");
-            run(helper, source, "telekinesis config toggle");
-            check(
-                    TelekinesisConfigManager.config().enabled(),
-                    "Operator toggle must enable the mod");
-            run(helper, source, "telekinesis config enable");
-            run(helper, source, "telekinesis config status");
-            try {
-                helper.getLevel()
-                        .getServer()
-                        .getCommands()
-                        .getDispatcher()
-                        .execute("telekinesis disable", source);
-                throw new AssertionError("The console must not have a personal preference");
-            } catch (CommandSyntaxException expected) {
-                check(
-                        TelekinesisConfigManager.config().enabled(),
-                        "Console personal command must not disable the server");
-            }
+            TelekinesisGameTests.withEnabled(
+                    helper,
+                    true,
+                    () -> {
+                        boolean before = helper.getLevel().getGameRules().get(Telekinesis.ENABLED);
+                        CommandSourceStack source = player.createCommandSourceStack();
+                        try {
+                            helper.getLevel()
+                                    .getServer()
+                                    .getCommands()
+                                    .getDispatcher()
+                                    .execute("gamerule telekinesis:enabled false", source);
+                            throw new AssertionError(
+                                    "A player without permission must not change the gamerule");
+                        } catch (CommandSyntaxException expected) {
+                            check(
+                                    helper.getLevel().getGameRules().get(Telekinesis.ENABLED)
+                                            == before,
+                                    "A rejected /gamerule must not change the rule");
+                        }
+                    });
         } finally {
-            TelekinesisConfigManager.setEnabled(previous);
+            fixture.close();
         }
+        helper.succeed();
+    }
+
+    /** The console reports the gamerule's state, and a console channel has no preference. */
+    public static void consoleStatusReportsTheGamerule(GameTestHelper helper) {
+        TelekinesisGameTests.withEnabled(
+                helper,
+                true,
+                () -> {
+                    CommandSourceStack source =
+                            helper.getLevel()
+                                    .getServer()
+                                    .createCommandSourceStack()
+                                    .withSuppressedOutput();
+                    run(helper, source, "telekinesis status");
+                    try {
+                        helper.getLevel()
+                                .getServer()
+                                .getCommands()
+                                .getDispatcher()
+                                .execute("telekinesis disable", source);
+                        throw new AssertionError("The console must not have a personal preference");
+                    } catch (CommandSyntaxException expected) {
+                        check(
+                                helper.getLevel().getGameRules().get(Telekinesis.ENABLED),
+                                "Console personal command must not change the rule");
+                    }
+                });
         helper.succeed();
     }
 
@@ -357,7 +396,9 @@ public final class TelekinesisBehaviorGameTests {
     }
 
     private static ServerPlayer enabledPlayer(GameTestHelper helper) {
-        TelekinesisConfigManager.setEnabled(true);
+        if (!helper.getLevel().getGameRules().get(Telekinesis.ENABLED)) {
+            throw new AssertionError("The test needs telekinesis:enabled on");
+        }
         ServerPlayer player = player(helper);
         TelekinesisPlayerSettings.setEnabled(player, true);
         player.getInventory().clearContent();
@@ -394,11 +435,6 @@ public final class TelekinesisBehaviorGameTests {
     private static final class LifecycleCallbacks implements TelekinesisPlatform {
         private Consumer<MinecraftServer> started;
         private Consumer<MinecraftServer> stopping;
-
-        @Override
-        public Path configDirectory() {
-            throw new UnsupportedOperationException();
-        }
 
         @Override
         public void registerCommands(Consumer<CommandDispatcher<CommandSourceStack>> callback) {

@@ -31,8 +31,13 @@ public class TelekinesisGameTest {
     }
 
     @GameTest
-    public void disabledServerConfigLeavesDropInWorld(GameTestHelper context) {
-        TelekinesisGameTests.disabledServerConfigLeavesDropInWorld(context);
+    public void enabledRuleDefaultsOn(GameTestHelper context) {
+        TelekinesisGameTests.enabledRuleDefaultsOn(context);
+    }
+
+    @GameTest
+    public void serverGameruleOffLeavesDropInWorld(GameTestHelper context) {
+        TelekinesisGameTests.serverGameruleOffLeavesDropInWorld(context);
     }
 
     @GameTest
@@ -46,8 +51,13 @@ public class TelekinesisGameTest {
     }
 
     @GameTest
-    public void operatorCommandsSaveAndReload(GameTestHelper context) {
-        TelekinesisBehaviorGameTests.operatorCommandsSaveAndReload(context);
+    public void serverWideSwitchIsTheGamerule(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.serverWideSwitchIsTheGamerule(context);
+    }
+
+    @GameTest
+    public void consoleStatusReportsTheGamerule(GameTestHelper context) {
+        TelekinesisBehaviorGameTests.consoleStatusReportsTheGamerule(context);
     }
 
     @GameTest

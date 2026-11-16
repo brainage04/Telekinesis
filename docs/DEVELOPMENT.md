@@ -31,8 +31,16 @@ breaks is recorded, whoever they are). The mob scope asks the game's own `Living
 record expires after the game's 100 ticks (`LivingEntity.java:484-488`), so a death the game credits to nobody, or to a
 mob, keeps its loot in the world.
 This mod has no mixins of its own. It registers `TelekinesisDropPolicy` at `DropPolicies.DEFAULT_PRIORITY`: it governs
-every player and delivers to those whose server-wide and personal settings are both on, so a minigame that registers a
-higher policy keeps its own rules for the players in its matches. What a policy does not deliver stays in the world.
+every player and delivers to those whose `telekinesis:enabled` game rule and personal preference are both on, so a
+minigame that registers a higher policy keeps its own rules for the players in its matches. What a policy does not
+deliver stays in the world.
+
+## Settings
+
+Telekinesis' server-wide switch is the `telekinesis:enabled` game rule (boolean, on by default), not a config file. It is
+read from the server's game rules at the moment of each drop, so `/gamerule telekinesis:enabled false` applies to the
+next break with no restart. The GameTests set it with `TelekinesisGameTests.withEnabled`, which runs the `/gamerule`
+command a server owner uses and puts the rule back afterwards.
 
 ## Kill, break and credit GameTests
 

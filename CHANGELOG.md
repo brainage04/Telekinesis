@@ -1,0 +1,11 @@
+# Changelog
+
+## Unreleased
+
+### Changed
+
+- The server-wide switch is now the `telekinesis:enabled` game rule (boolean, on by default) instead of `config/telekinesis.json`. Its name and description show in the gamerules screen and in `/gamerule` completion, and a change applies to the next drop with no restart. **A server that had Telekinesis turned off in `telekinesis.json` must run `/gamerule telekinesis:enabled false` after updating**: the old file is not read, so the mod is on until the rule is set.
+
+### Removed
+
+- `config/telekinesis.json`, its loader and the five `/telekinesis config` subcommands (`status`, `enable`, `disable`, `toggle`, `reload`). `/telekinesis status` still reports the server-wide state. The per-player preference and its commands (`/telekinesis enable|disable|toggle`, `telekinesis-players.json`) are unchanged.

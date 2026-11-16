@@ -1,0 +1,4 @@
+{
+	"gamerule.telekinesis.enabled": "Telekinesis",
+	"gamerule.telekinesis.enabled.description": "Sends drops and experience from blocks players mine, mobs they kill and explosions they cause straight to them. Each player's own /telekinesis preference still applies"
+}

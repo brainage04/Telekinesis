@@ -5,7 +5,6 @@ import static io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTe
 import static io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests.enabledPlayer;
 
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -150,7 +149,9 @@ public final class TelekinesisVehicleGameTests {
     /// A creative player's punch discards a vehicle without dropping it, as it always did. What the
     /// game drops anyway on the way out, a chest boat's contents, stays in the world.
     public static void creativeBreakOfVehicleStaysInTheWorld(GameTestHelper helper) {
-        TelekinesisConfigManager.setEnabled(true);
+        if (!helper.getLevel().getGameRules().get(Telekinesis.ENABLED)) {
+            throw new AssertionError("The test needs telekinesis:enabled on");
+        }
         try (GameTestPlayer fixture =
                 GameTestPlayer.join(helper, "TkCartCreative")
                         .markLoaded()

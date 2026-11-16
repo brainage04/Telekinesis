@@ -8,7 +8,6 @@ import io.github.brainage04.minecraftmodconventions.ClientGameTestRecorder;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestServers;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestStages;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestWaits;
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import java.io.IOException;
 import java.io.InputStream;
@@ -212,8 +211,11 @@ public final class TelekinesisShowcase {
         boolean previousTelekinesis =
                 server.computeOnServer(
                         minecraftServer -> {
-                            boolean enabled = TelekinesisConfigManager.config().enabled();
-                            TelekinesisConfigManager.setEnabled(true);
+                            boolean enabled =
+                                    minecraftServer
+                                            .getGameRules()
+                                            .get(Telekinesis.ENABLED);
+                            command(minecraftServer, "gamerule telekinesis:enabled true");
                             TelekinesisPlayerSettings.setEnabled(player(minecraftServer), true);
                             return enabled;
                         });
@@ -255,7 +257,10 @@ public final class TelekinesisShowcase {
             netherBed(context, server);
         } finally {
             server.runOnServer(
-                    minecraftServer -> TelekinesisConfigManager.setEnabled(previousTelekinesis));
+                    minecraftServer ->
+                            command(
+                                    minecraftServer,
+                                    "gamerule telekinesis:enabled " + previousTelekinesis));
             context.runOnClient(
                     client -> {
                         client.options.setCameraType(CameraType.FIRST_PERSON);

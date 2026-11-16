@@ -6,10 +6,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.brainage04.brainagelib.feedback.ModFeedback;
 import io.github.brainage04.telekinesis.Telekinesis;
-import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class TelekinesisCommand {
@@ -36,72 +34,26 @@ public final class TelekinesisCommand {
                                                 context -> setPersonal(context.getSource(), false)))
                         .then(
                                 literal("toggle")
-                                        .executes(context -> togglePersonal(context.getSource())))
-                        .then(
-                                literal("config")
-                                        .requires(
-                                                Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                                        .executes(context -> showGlobalStatus(context.getSource()))
-                                        .then(
-                                                literal("status")
-                                                        .executes(
-                                                                context ->
-                                                                        showGlobalStatus(
-                                                                                context
-                                                                                        .getSource())))
-                                        .then(
-                                                literal("enable")
-                                                        .executes(
-                                                                context ->
-                                                                        setGlobal(
-                                                                                context.getSource(),
-                                                                                true)))
-                                        .then(
-                                                literal("disable")
-                                                        .executes(
-                                                                context ->
-                                                                        setGlobal(
-                                                                                context.getSource(),
-                                                                                false)))
-                                        .then(
-                                                literal("toggle")
-                                                        .executes(
-                                                                context ->
-                                                                        setGlobal(
-                                                                                context.getSource(),
-                                                                                !TelekinesisConfigManager
-                                                                                        .config()
-                                                                                        .enabled())))
-                                        .then(
-                                                literal("reload")
-                                                        .executes(
-                                                                context ->
-                                                                        reload(
-                                                                                context
-                                                                                        .getSource())))));
+                                        .executes(context -> togglePersonal(context.getSource()))));
     }
 
     private static int showStatus(CommandSourceStack source) {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            return showGlobalStatus(source);
+            return FEEDBACK.neutral(
+                    source,
+                    "Server-wide Telekinesis is %s.",
+                    state(serverEnabled(source)));
         }
 
-        boolean globalEnabled = TelekinesisConfigManager.config().enabled();
+        boolean serverEnabled = serverEnabled(source);
         boolean personalEnabled = TelekinesisPlayerSettings.isEnabled(player);
         return FEEDBACK.neutral(
                 source,
                 "Server: %s. Personal preference: %s. Effective state: %s.",
-                state(globalEnabled),
+                state(serverEnabled),
                 state(personalEnabled),
-                state(globalEnabled && personalEnabled));
-    }
-
-    private static int showGlobalStatus(CommandSourceStack source) {
-        return FEEDBACK.neutral(
-                source,
-                "Server-wide Telekinesis is %s.",
-                state(TelekinesisConfigManager.config().enabled()));
+                state(serverEnabled && personalEnabled));
     }
 
     private static int setPersonal(CommandSourceStack source, boolean enabled)
@@ -120,7 +72,7 @@ public final class TelekinesisCommand {
                 "Your Telekinesis preference is now %s%s.",
                 false,
                 state(enabled),
-                TelekinesisConfigManager.config().enabled() || !enabled
+                serverEnabled(source) || !enabled
                         ? ""
                         : " (the server-wide setting is disabled)");
     }
@@ -130,38 +82,19 @@ public final class TelekinesisCommand {
         return setPersonal(source, !TelekinesisPlayerSettings.isEnabled(player));
     }
 
-    private static int setGlobal(CommandSourceStack source, boolean enabled) {
-        boolean saved = TelekinesisConfigManager.setEnabled(enabled);
-        if (!saved) {
-            return FEEDBACK.failure(
-                    source,
-                    "Server-wide Telekinesis is %s for this session, but the configuration could not be saved.",
-                    state(enabled));
-        }
-        return FEEDBACK.success(source, "Server-wide Telekinesis is now %s.", true, state(enabled));
-    }
-
-    private static int reload(CommandSourceStack source) {
-        if (!TelekinesisConfigManager.reload()) {
-            return FEEDBACK.failure(
-                    source,
-                    "Could not reload telekinesis.json; the current setting was preserved.");
-        }
-        return FEEDBACK.success(
-                source,
-                "Reloaded telekinesis.json. Server-wide Telekinesis is %s.",
-                false,
-                state(TelekinesisConfigManager.config().enabled()));
-    }
-
     private static int showHelp(CommandSourceStack source) {
         FEEDBACK.neutral(source, "Player commands:");
         FEEDBACK.neutral(
                 source, "/telekinesis status – show server, personal, and effective states");
         FEEDBACK.neutral(
                 source, "/telekinesis <enable|disable|toggle> – change your persistent preference");
-        FEEDBACK.neutral(source, "/telekinesis config – operator-only server-wide configuration");
+        FEEDBACK.neutral(
+                source, "/gamerule telekinesis:enabled – operator-only server-wide switch");
         return 1;
+    }
+
+    private static boolean serverEnabled(CommandSourceStack source) {
+        return source.getLevel().getGameRules().get(Telekinesis.ENABLED);
     }
 
     private static String state(boolean enabled) {

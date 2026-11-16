@@ -47,8 +47,12 @@ public final class NeoForgeServerGameTests {
                 TelekinesisGameTests::fullInventoryDropsRemainderAtPlayerFeet);
         register(
                 event,
-                "disabled_server_config_leaves_drop_in_world",
-                TelekinesisGameTests::disabledServerConfigLeavesDropInWorld);
+                "enabled_rule_defaults_on",
+                TelekinesisGameTests::enabledRuleDefaultsOn);
+        register(
+                event,
+                "server_gamerule_off_leaves_drop_in_world",
+                TelekinesisGameTests::serverGameruleOffLeavesDropInWorld);
         register(
                 event,
                 "disabled_player_preference_leaves_drop_in_world",
@@ -59,8 +63,12 @@ public final class NeoForgeServerGameTests {
                 TelekinesisBehaviorGameTests::personalCommandsAndOperatorPermissions);
         register(
                 event,
-                "operator_commands_save_and_reload",
-                TelekinesisBehaviorGameTests::operatorCommandsSaveAndReload);
+                "server_wide_switch_is_the_gamerule",
+                TelekinesisBehaviorGameTests::serverWideSwitchIsTheGamerule);
+        register(
+                event,
+                "console_status_reports_the_gamerule",
+                TelekinesisBehaviorGameTests::consoleStatusReportsTheGamerule);
         register(
                 event,
                 "partial_inventory_conserves_overflow",
