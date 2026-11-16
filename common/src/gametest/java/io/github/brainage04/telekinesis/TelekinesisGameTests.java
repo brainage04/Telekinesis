@@ -145,6 +145,7 @@ public final class TelekinesisGameTests {
                     assertDestroyed(player, context.absolutePos(DROP_POS));
                     assertItemCount(player, Items.DIAMOND, 0);
                     assertItemEntityNearDrop(context, Items.DIAMOND);
+                    clearDrops(context);
                 });
         withEnabled(
                 context,
@@ -184,6 +185,14 @@ public final class TelekinesisGameTests {
                     }
                 });
         context.succeed();
+    }
+
+    /** Discards the items a previous half of a test left on the ground. */
+    private static void clearDrops(GameTestHelper context) {
+        BlockPos at = context.absolutePos(DROP_POS);
+        context.getLevel()
+                .getEntitiesOfClass(ItemEntity.class, new AABB(at).inflate(4.0D))
+                .forEach(ItemEntity::discard);
     }
 
     /** The enabled rule, looked up by name the way the gamerules screen finds it. */
