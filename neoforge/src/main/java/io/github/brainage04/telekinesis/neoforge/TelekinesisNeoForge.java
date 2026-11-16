@@ -18,6 +18,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class TelekinesisNeoForge {
     private static final DeferredRegister<GameRule<?>> GAME_RULES =
             DeferredRegister.create(Registries.GAME_RULE, Telekinesis.MOD_ID);
+    // The arguments mirror vanilla's private registerBoolean (GameRules.java:167-178); NeoForge
+    // 26.3.0.99 has no builder for a game rule.
     private static final DeferredHolder<GameRule<?>, GameRule<Boolean>> ENABLED =
             GAME_RULES.register(
                     "enabled",

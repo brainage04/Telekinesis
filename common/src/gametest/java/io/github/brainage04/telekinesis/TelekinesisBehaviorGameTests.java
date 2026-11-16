@@ -3,6 +3,7 @@ package io.github.brainage04.telekinesis;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.brainage04.brainagelib.drops.DropCapture;
+import io.github.brainage04.brainagelib.gametest.CapturedCommandOutput;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
 import io.github.brainage04.telekinesis.platform.TelekinesisPlatform;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
@@ -73,6 +74,33 @@ public final class TelekinesisBehaviorGameTests {
                                 "Status must report the gamerule, got " + fixture.messageTexts());
                         run(helper, source, "telekinesis help");
                     });
+            TelekinesisGameTests.withEnabled(
+                    helper,
+                    false,
+                    () -> {
+                        TelekinesisPlayerSettings.setEnabled(player, true);
+                        fixture.clearMessages();
+                        run(helper, source, "telekinesis status");
+                        check(
+                                fixture.received(
+                                        "["
+                                                + Telekinesis.MOD_NAME
+                                                + "] Server: disabled. Personal preference: enabled."
+                                                + " Effective state: disabled."),
+                                "Status must report the gamerule's off state, got "
+                                        + fixture.messageTexts());
+                        TelekinesisPlayerSettings.setEnabled(player, false);
+                        fixture.clearMessages();
+                        run(helper, source, "telekinesis enable");
+                        check(
+                                fixture.received(
+                                        "["
+                                                + Telekinesis.MOD_NAME
+                                                + "] Your Telekinesis preference is now enabled"
+                                                + " (the server-wide setting is disabled)."),
+                                "A player must be told the rule is off, got "
+                                        + fixture.messageTexts());
+                    });
             try {
                 helper.getLevel()
                         .getServer()
@@ -93,9 +121,9 @@ public final class TelekinesisBehaviorGameTests {
     }
 
     /**
-     * The server-wide switch is a gamerule: /gamerule needs operator permission, as the removed
-     * /telekinesis config commands did (GameRuleCommand.java:22, register), so a player without it
-     * gets a parse error and the rule keeps its value.
+     * The server-wide switch is a gamerule: /gamerule needs operator permission
+     * (GameRuleCommand.java:22, register), so a player without it gets a parse error and the rule
+     * keeps its value.
      */
     public static void serverWideSwitchIsTheGamerule(GameTestHelper helper) {
         GameTestPlayer fixture = GameTestPlayer.join(helper, "TkRule").gameMode(GameType.SURVIVAL);
@@ -130,29 +158,37 @@ public final class TelekinesisBehaviorGameTests {
 
     /** The console reports the gamerule's state, and a console channel has no preference. */
     public static void consoleStatusReportsTheGamerule(GameTestHelper helper) {
-        TelekinesisGameTests.withEnabled(
-                helper,
-                true,
-                () -> {
-                    CommandSourceStack source =
+        for (boolean on : new boolean[] {true, false}) {
+            TelekinesisGameTests.withEnabled(
+                    helper,
+                    on,
+                    () -> {
+                        CapturedCommandOutput output = new CapturedCommandOutput();
+                        CommandSourceStack source =
+                                output.source(helper.getLevel().getServer());
+                        run(helper, source, "telekinesis status");
+                        check(
+                                output.text()
+                                        .equals(
+                                                "[Telekinesis] Server-wide Telekinesis is "
+                                                        + (on ? "enabled" : "disabled")
+                                                        + "."),
+                                "The console must report the rule's state, got " + output.text());
+                        try {
                             helper.getLevel()
                                     .getServer()
-                                    .createCommandSourceStack()
-                                    .withSuppressedOutput();
-                    run(helper, source, "telekinesis status");
-                    try {
-                        helper.getLevel()
-                                .getServer()
-                                .getCommands()
-                                .getDispatcher()
-                                .execute("telekinesis disable", source);
-                        throw new AssertionError("The console must not have a personal preference");
-                    } catch (CommandSyntaxException expected) {
-                        check(
-                                helper.getLevel().getGameRules().get(Telekinesis.ENABLED),
-                                "Console personal command must not change the rule");
-                    }
-                });
+                                    .getCommands()
+                                    .getDispatcher()
+                                    .execute("telekinesis disable", source);
+                            throw new AssertionError(
+                                    "The console must not have a personal preference");
+                        } catch (CommandSyntaxException expected) {
+                            check(
+                                    helper.getLevel().getGameRules().get(Telekinesis.ENABLED) == on,
+                                    "A console personal command must not change the rule");
+                        }
+                    });
+        }
         helper.succeed();
     }
 

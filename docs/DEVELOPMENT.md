@@ -19,8 +19,6 @@ GTR_RECORDING_PROFILE=showcase ./gradlew --no-daemon :fabric:recordClientGameTes
 
 Record the film on a GPU display, not an Xvfb one: pass `-PrecordingDisplay=:1` on a host whose `:1` is a real card, and keep the take only when the recorder reports `gpu.active` true, an NVIDIA renderer, and 30 or more presented frames a second. The delivered film is that take trimmed to the stages: cut the world load before the first caption, the scene setups that leave the camera still for more than a second, the dimension change, and the world-save screen at the end, then re-encode at 30 fps CFR with no stage straddling a join.
 
-`:fabric:pitest` runs mutation tests on `TelekinesisConfigManager` against its unit tests. It is not part of `check`; the report is written to `fabric/build/reports/pitest`.
-
 ## How drops are captured
 
 The capture itself is BrainageLib's shared engine (`io.github.brainage04.brainagelib.drops`, see BrainageLib's
@@ -37,8 +35,8 @@ deliver stays in the world.
 
 ## Settings
 
-Telekinesis' server-wide switch is the `telekinesis:enabled` game rule (boolean, on by default), not a config file. It is
-read from the server's game rules at the moment of each drop, so `/gamerule telekinesis:enabled false` applies to the
+Telekinesis' server-wide switch is the `telekinesis:enabled` game rule (boolean, on by default). It is read from the
+server's game rules at the moment of each drop, so `/gamerule telekinesis:enabled false` applies to the
 next break with no restart. The GameTests set it with `TelekinesisGameTests.withEnabled`, which runs the `/gamerule`
 command a server owner uses and puts the rule back afterwards.
 
