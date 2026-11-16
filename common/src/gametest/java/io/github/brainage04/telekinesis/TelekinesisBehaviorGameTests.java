@@ -164,8 +164,7 @@ public final class TelekinesisBehaviorGameTests {
                     on,
                     () -> {
                         CapturedCommandOutput output = new CapturedCommandOutput();
-                        CommandSourceStack source =
-                                output.source(helper.getLevel().getServer());
+                        CommandSourceStack source = output.source(helper.getLevel().getServer());
                         run(helper, source, "telekinesis status");
                         check(
                                 output.text()
