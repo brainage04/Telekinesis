@@ -4,7 +4,7 @@
 
 ### Changed
 
-- The server-wide switch is now the `telekinesis:enabled` game rule (boolean, on by default) instead of `config/telekinesis.json`. Set it with `/gamerule telekinesis:enabled <true|false>`; it appears in the gamerules screen of a client that also has Telekinesis installed, and a change applies to the next drop with no restart. **A server that had Telekinesis turned off in `telekinesis.json` must run `/gamerule telekinesis:enabled false` after updating**: the old file is not read, so the mod is on until the rule is set.
+- The server-wide switch is now the `telekinesis:enabled` game rule (boolean, on by default) instead of `config/telekinesis.json`. Set it with `/gamerule telekinesis:enabled <true|false>`. It appears in the gamerules screen of a client that also has Telekinesis installed, and a change applies to the next drop with no restart. **A server that had Telekinesis turned off in `telekinesis.json` must run `/gamerule telekinesis:enabled false` after updating**: the old file is not read, so the mod is on until the rule is set.
 
 ### Removed
 
