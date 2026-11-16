@@ -223,6 +223,9 @@ public final class TelekinesisGameTests {
     /** Sets {@code telekinesis:enabled} through the command a server owner uses. */
     static void setEnabled(GameTestHelper context, boolean on) {
         MinecraftServer server = context.getLevel().getServer();
+        if (server.getGameRules().get(Telekinesis.ENABLED) == on) {
+            return;
+        }
         server.getCommands()
                 .performPrefixedCommand(
                         server.createCommandSourceStack(), "gamerule telekinesis:enabled " + on);
