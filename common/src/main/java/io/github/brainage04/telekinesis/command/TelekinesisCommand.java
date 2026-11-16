@@ -41,9 +41,7 @@ public final class TelekinesisCommand {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
             return FEEDBACK.neutral(
-                    source,
-                    "Server-wide Telekinesis is %s.",
-                    state(serverEnabled(source)));
+                    source, "Server-wide Telekinesis is %s.", state(serverEnabled(source)));
         }
 
         boolean serverEnabled = serverEnabled(source);
@@ -72,9 +70,7 @@ public final class TelekinesisCommand {
                 "Your Telekinesis preference is now %s%s.",
                 false,
                 state(enabled),
-                serverEnabled(source) || !enabled
-                        ? ""
-                        : " (the server-wide setting is disabled)");
+                serverEnabled(source) || !enabled ? "" : " (the server-wide setting is disabled)");
     }
 
     private static int togglePersonal(CommandSourceStack source) throws CommandSyntaxException {

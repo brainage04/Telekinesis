@@ -36,7 +36,6 @@ public final class TelekinesisNeoForge {
         GAME_RULES.register(modEventBus);
         modEventBus.addListener(
                 (FMLCommonSetupEvent event) ->
-                        Telekinesis.initialize(
-                                new NeoForgeTelekinesisPlatform(), ENABLED.get()));
+                        Telekinesis.initialize(new NeoForgeTelekinesisPlatform(), ENABLED.get()));
     }
 }

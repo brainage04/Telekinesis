@@ -212,9 +212,7 @@ public final class TelekinesisShowcase {
                 server.computeOnServer(
                         minecraftServer -> {
                             boolean enabled =
-                                    minecraftServer
-                                            .getGameRules()
-                                            .get(Telekinesis.ENABLED);
+                                    minecraftServer.getGameRules().get(Telekinesis.ENABLED);
                             command(minecraftServer, "gamerule telekinesis:enabled true");
                             TelekinesisPlayerSettings.setEnabled(player(minecraftServer), true);
                             return enabled;

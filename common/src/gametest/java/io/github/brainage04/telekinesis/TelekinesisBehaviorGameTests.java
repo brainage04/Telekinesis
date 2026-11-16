@@ -70,8 +70,7 @@ public final class TelekinesisBehaviorGameTests {
                                                 + Telekinesis.MOD_NAME
                                                 + "] Server: enabled. Personal preference: enabled."
                                                 + " Effective state: enabled."),
-                                "Status must report the gamerule, got "
-                                        + fixture.messageTexts());
+                                "Status must report the gamerule, got " + fixture.messageTexts());
                         run(helper, source, "telekinesis help");
                     });
             try {
@@ -99,8 +98,7 @@ public final class TelekinesisBehaviorGameTests {
      * gets a parse error and the rule keeps its value.
      */
     public static void serverWideSwitchIsTheGamerule(GameTestHelper helper) {
-        GameTestPlayer fixture =
-                GameTestPlayer.join(helper, "TkRule").gameMode(GameType.SURVIVAL);
+        GameTestPlayer fixture = GameTestPlayer.join(helper, "TkRule").gameMode(GameType.SURVIVAL);
         ServerPlayer player = fixture.player();
         try {
             TelekinesisGameTests.withEnabled(

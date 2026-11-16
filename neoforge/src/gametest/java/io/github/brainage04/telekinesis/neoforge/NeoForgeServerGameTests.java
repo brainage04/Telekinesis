@@ -45,10 +45,7 @@ public final class NeoForgeServerGameTests {
                 event,
                 "full_inventory_drops_remainder_at_player_feet",
                 TelekinesisGameTests::fullInventoryDropsRemainderAtPlayerFeet);
-        register(
-                event,
-                "enabled_rule_defaults_on",
-                TelekinesisGameTests::enabledRuleDefaultsOn);
+        register(event, "enabled_rule_defaults_on", TelekinesisGameTests::enabledRuleDefaultsOn);
         register(
                 event,
                 "server_gamerule_off_leaves_drop_in_world",

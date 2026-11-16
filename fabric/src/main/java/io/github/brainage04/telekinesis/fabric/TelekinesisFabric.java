@@ -14,7 +14,6 @@ public final class TelekinesisFabric implements ModInitializer {
                 GameRuleBuilder.forBoolean(true)
                         .category(GameRuleCategory.PLAYER)
                         .buildAndRegister(
-                                Identifier.fromNamespaceAndPath(
-                                        Telekinesis.MOD_ID, "enabled")));
+                                Identifier.fromNamespaceAndPath(Telekinesis.MOD_ID, "enabled")));
     }
 }
