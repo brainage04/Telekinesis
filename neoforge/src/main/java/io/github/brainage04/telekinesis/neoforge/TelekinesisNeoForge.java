@@ -25,7 +25,7 @@ public final class TelekinesisNeoForge {
                     "enabled",
                     () ->
                             new GameRule<>(
-                                    GameRuleCategory.PLAYER,
+                                    GameRuleCategory.DROPS,
                                     GameRuleType.BOOL,
                                     BoolArgumentType.bool(),
                                     (visitor, rule) -> visitor.visitBoolean(rule),

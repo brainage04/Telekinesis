@@ -12,7 +12,7 @@ public final class TelekinesisFabric implements ModInitializer {
         Telekinesis.initialize(
                 FabricTelekinesisPlatform.INSTANCE,
                 GameRuleBuilder.forBoolean(true)
-                        .category(GameRuleCategory.PLAYER)
+                        .category(GameRuleCategory.DROPS)
                         .buildAndRegister(
                                 Identifier.fromNamespaceAndPath(Telekinesis.MOD_ID, "enabled")));
     }
