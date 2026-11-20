@@ -1,0 +1,7 @@
+{
+  "environment": "minecraft:default",
+  "structure": "minecraftmodconventions:empty",
+  "max_ticks": 40,
+  "type": "minecraft:function",
+  "function": "telekinesis:disabled_player_keeps_the_column_in_the_world"
+}

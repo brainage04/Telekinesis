@@ -6,6 +6,7 @@ import io.github.brainage04.telekinesis.TelekinesisEntityAndCreditGameTests;
 import io.github.brainage04.telekinesis.TelekinesisGameTests;
 import io.github.brainage04.telekinesis.TelekinesisKillAndExplosionGameTests;
 import io.github.brainage04.telekinesis.TelekinesisLeafAndCreditGameTests;
+import io.github.brainage04.telekinesis.TelekinesisSupportBreakGameTests;
 import io.github.brainage04.telekinesis.TelekinesisVehicleGameTests;
 import java.util.function.Consumer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -182,6 +183,18 @@ public final class NeoForgeServerGameTests {
                 event,
                 "respawn_anchor_blast_pays_the_player_who_used_it",
                 TelekinesisLeafAndCreditGameTests::respawnAnchorBlastPaysThePlayerWhoUsedIt);
+        register(
+                event,
+                "sugar_cane_column_goes_to_the_breaker",
+                TelekinesisSupportBreakGameTests::sugarCaneColumnGoesToTheBreaker);
+        register(
+                event,
+                "support_broken_without_a_player_stays_in_the_world",
+                TelekinesisSupportBreakGameTests::supportBrokenWithoutAPlayerStaysInTheWorld);
+        register(
+                event,
+                "disabled_player_keeps_the_column_in_the_world",
+                TelekinesisSupportBreakGameTests::disabledPlayerKeepsTheColumnInTheWorld);
         register(
                 event,
                 "nether_bed_explosion_sends_block_drops_to_user",

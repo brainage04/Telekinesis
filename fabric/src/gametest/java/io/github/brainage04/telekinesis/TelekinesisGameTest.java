@@ -277,4 +277,19 @@ public class TelekinesisGameTest {
     public void vehicleBrokenWithoutAPlayerStaysInTheWorld(GameTestHelper context) {
         TelekinesisVehicleGameTests.vehicleBrokenWithoutAPlayerStaysInTheWorld(context);
     }
+
+    @GameTest(maxTicks = 40)
+    public void sugarCaneColumnGoesToTheBreaker(GameTestHelper context) {
+        TelekinesisSupportBreakGameTests.sugarCaneColumnGoesToTheBreaker(context);
+    }
+
+    @GameTest(maxTicks = 40)
+    public void supportBrokenWithoutAPlayerStaysInTheWorld(GameTestHelper context) {
+        TelekinesisSupportBreakGameTests.supportBrokenWithoutAPlayerStaysInTheWorld(context);
+    }
+
+    @GameTest(maxTicks = 40)
+    public void disabledPlayerKeepsTheColumnInTheWorld(GameTestHelper context) {
+        TelekinesisSupportBreakGameTests.disabledPlayerKeepsTheColumnInTheWorld(context);
+    }
 }
