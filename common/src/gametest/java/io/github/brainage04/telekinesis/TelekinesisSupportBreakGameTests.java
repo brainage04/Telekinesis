@@ -53,7 +53,8 @@ public final class TelekinesisSupportBreakGameTests {
                 .thenExecute(
                         () -> {
                             try {
-                                checkCount(player, Items.SUGAR_CANE, 3, "a broken sugar cane column");
+                                checkCount(
+                                        player, Items.SUGAR_CANE, 3, "a broken sugar cane column");
                                 check(
                                         groundItems(helper, Items.SUGAR_CANE) == 0,
                                         "No sugar cane may stay on the ground");
@@ -79,11 +80,7 @@ public final class TelekinesisSupportBreakGameTests {
         ServerPlayer player = fixture.player();
         player.getInventory().clearContent();
         helper.startSequence()
-                .thenExecute(
-                        () ->
-                                check(
-                                        level.destroyBlock(sand, true),
-                                        "The support must break"))
+                .thenExecute(() -> check(level.destroyBlock(sand, true), "The support must break"))
                 .thenWaitUntil(
                         () ->
                                 helper.assertTrue(
@@ -92,7 +89,8 @@ public final class TelekinesisSupportBreakGameTests {
                 .thenExecute(
                         () -> {
                             try {
-                                checkCount(player, Items.SUGAR_CANE, 0, "a support break by nobody");
+                                checkCount(
+                                        player, Items.SUGAR_CANE, 0, "a support break by nobody");
                                 check(
                                         groundItems(helper, Items.SUGAR_CANE) == 3,
                                         "The whole column must drop in the world");
@@ -132,7 +130,11 @@ public final class TelekinesisSupportBreakGameTests {
                 .thenExecute(
                         () -> {
                             try {
-                                checkCount(player, Items.SUGAR_CANE, 0, "a player with Telekinesis off");
+                                checkCount(
+                                        player,
+                                        Items.SUGAR_CANE,
+                                        0,
+                                        "a player with Telekinesis off");
                                 check(
                                         groundItems(helper, Items.SUGAR_CANE) == 3,
                                         "The whole column must drop in the world");
@@ -147,9 +149,7 @@ public final class TelekinesisSupportBreakGameTests {
     /// apart (`GameTestServer.java:325`, `StructureGridSpawner.java:17-18`), so a wider box could
     /// count a neighbour's drops.
     private static int groundItems(GameTestHelper helper, Item item) {
-        return helper.getLevel()
-                .getEntitiesOfClass(ItemEntity.class, helper.getBounds())
-                .stream()
+        return helper.getLevel().getEntitiesOfClass(ItemEntity.class, helper.getBounds()).stream()
                 .filter(entity -> entity.getItem().is(item))
                 .mapToInt(entity -> entity.getItem().getCount())
                 .sum();
