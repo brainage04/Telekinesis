@@ -1313,6 +1313,8 @@ public final class TelekinesisShowcase {
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         ClientGameTestPlayerActions.attackEntity(context, blazeId);
         awaitPlayerHit(context, server, blaze.get());
+        server.runOnServer(
+                minecraftServer -> blaze.get().setTarget(player(minecraftServer)));
         wake(server, blaze.get());
         awaitMobHit(context, server, blaze.get());
         // The player keeps hitting, as in a real fight. The second punch also restarts the game's
