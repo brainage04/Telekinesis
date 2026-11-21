@@ -308,12 +308,12 @@ public final class TelekinesisShowcase {
 
     /**
      * The "both" takes' victim: the player hits it and it hits the player, then the companion
-     * finishes it. The player's diamond sword takes 7 off a husk's 20, and the husk's own hit has
-     * to land before the companion's blow, so the husk starts on 10: the golem's blow (at least
-     * 7.38 after the husk's 2 armour) and the wolf's bite (3.936) both end it from 3. Not a
-     * vanilla value.
+     * finishes it. The player's diamond sword takes 6.44 off a husk (7 through its 2 armour,
+     * Zombie.java:148 and CombatRules.java:19-21), and the husk's own hit has to land before the
+     * companion's blow, so the husk starts on 9: the golem's blow (at least 6.9 after the armour)
+     * and the wolf's bite (3.68) both end it from 2.56. Not a vanilla value.
      */
-    private static final float BOTH_VICTIM_HEALTH = 10.0F;
+    private static final float BOTH_VICTIM_HEALTH = 9.0F;
 
     /**
      * A lava victim's health: the "off" husk burns in about a second and a half, the "on" husk
@@ -1268,9 +1268,10 @@ public final class TelekinesisShowcase {
      * and a snowball finishes it. The blaze's blow leaves the player's record alone, so the game
      * credits the player in both takes and the rod rolls in both.
      *
-     * <p>The blaze stays without AI and its blow is dealt on the server: a blaze with AI at this
-     * range throws fireballs, which would set the player and the snow golem alight and could kill
-     * the snow golem before it throws. The case under test is the credit, not the blaze's aim.
+     * <p>The blaze is woken for its own blow: at this range it is inside the four blocks where it
+     * swings rather than throws (Blaze.java:200-210), so it hits the player with its own attack and
+     * the film shows a real fight. The snow golem stays asleep until that hit is in, so the blaze
+     * cannot die before it swings.
      */
     private static void snowGolemBoth(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
@@ -1312,13 +1313,7 @@ public final class TelekinesisShowcase {
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         ClientGameTestPlayerActions.attackEntity(context, blazeId);
         awaitPlayerHit(context, server, blaze.get());
-        server.runOnServer(
-                minecraftServer -> {
-                    ServerPlayer player = player(minecraftServer);
-                    check(
-                            blaze.get().doHurtTarget(player.level(), player),
-                            "The blaze's blow must land on the player");
-                });
+        wake(server, blaze.get());
         awaitMobHit(context, server, blaze.get());
         awaitLiveCredit(server, blaze.get());
         wake(server, snowGolem.get());
