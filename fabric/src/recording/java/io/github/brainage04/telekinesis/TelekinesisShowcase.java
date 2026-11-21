@@ -139,7 +139,10 @@ public final class TelekinesisShowcase {
     private static final int TNT = 14;
     private static final int ANCHOR = 15;
     private static final int FULL_INVENTORY = 16;
-    private static final int OVERWORLD_SCENARIOS = 17;
+    private static final int GOLEM_BOTH = 17;
+    private static final int SNOW_GOLEM_BOTH = 18;
+    private static final int WOLF_BOTH = 19;
+    private static final int OVERWORLD_SCENARIOS = 20;
 
     private static final int STAGE_MIN_X = bayX(0, false) - 14;
     private static final int STAGE_MAX_X = bayX(OVERWORLD_SCENARIOS - 1, true) + 14;
@@ -304,6 +307,15 @@ public final class TelekinesisShowcase {
     private static final float BLAZE_HEALTH = 3.0F;
 
     /**
+     * The "both" takes' victim: the player hits it and it hits the player, then the companion
+     * finishes it. The player's diamond sword takes 7 off a husk's 20, and the husk's own hit has
+     * to land before the companion's blow, so the husk starts on 10: the golem's blow (at least
+     * 7.38 after the husk's 2 armour) and the wolf's bite (3.936) both end it from 3. Not a
+     * vanilla value.
+     */
+    private static final float BOTH_VICTIM_HEALTH = 10.0F;
+
+    /**
      * A lava victim's health: the "off" husk burns in about a second and a half, the "on" husk
      * outlives the lava until the player's hit and dies soon after it.
      */
@@ -416,6 +428,15 @@ public final class TelekinesisShowcase {
             }
             for (boolean on : new boolean[] {false, true}) {
                 wolfKill(context, server, on);
+            }
+            for (boolean on : new boolean[] {false, true}) {
+                golemBoth(context, server, on);
+            }
+            for (boolean on : new boolean[] {false, true}) {
+                snowGolemBoth(context, server, on);
+            }
+            for (boolean on : new boolean[] {false, true}) {
+                wolfBoth(context, server, on);
             }
             for (boolean on : new boolean[] {false, true}) {
                 itemFrame(context, server, on);
@@ -878,7 +899,7 @@ public final class TelekinesisShowcase {
         Vec3 golemAt =
                 hit
                         ? new Vec3(siteX + 2.5D, STAND_Y, 1.5D)
-                        : new Vec3(siteX + 4.5D, STAND_Y, ATTACKER_Z);
+                        : new Vec3(siteX + 2.0D, STAND_Y, 3.0D);
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<IronGolem> golem = new AtomicReference<>();
         List<ItemStack> takeStart =
@@ -962,7 +983,7 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean hit) {
         int siteX = bayX(SNOW_GOLEM, hit);
         Vec3 blazeAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
-        Vec3 snowGolemAt = new Vec3(siteX + 4.5D, STAND_Y, 2.5D);
+        Vec3 snowGolemAt = new Vec3(siteX + 2.5D, STAND_Y, 2.5D);
         AtomicReference<Blaze> blaze = new AtomicReference<>();
         AtomicReference<SnowGolem> snowGolem = new AtomicReference<>();
         List<ItemStack> takeStart =
@@ -1037,7 +1058,7 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(WOLF, on);
         Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, ATTACKER_Z);
-        Vec3 wolfAt = new Vec3(siteX + 1.5D, STAND_Y, standZ(huskAt.z));
+        Vec3 wolfAt = new Vec3(siteX + 1.8D, STAND_Y, 4.0D);
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<Wolf> wolf = new AtomicReference<>();
         List<ItemStack> takeStart =
@@ -1098,35 +1119,306 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * Waits for the husk's hit to land on the player, backs the player off as a player would, and
-     * only then frees {@code finishers}. The husk stops chasing once its hit is in, and the mob
-     * that finishes it stays asleep until the player is out of reach of the husk's loot: one blow
-     * kills the husk, so a finisher freed earlier kills it at the player's feet.
+     * The "both" case: the player hits the husk, the husk hits the player, and the golem finishes
+     * it. The husk's blow leaves the player's record on the husk alone
+     * (LivingEntity.java:1365-1379), so the game credits the player in both takes and only
+     * Telekinesis decides where the loot goes.
      */
-    private static void awaitHitThenBackOff(
-            ClientGameTestContext context,
-            TestDedicatedServerContext server,
-            AtomicReference<Husk> husk,
-            Mob... finishers) {
-        ClientGameTestWaits.waitForServer(
-                context,
-                server,
-                minecraftServer -> {
-                    check(
-                            !husk.get().isDeadOrDying(),
-                            "The husk died before its hit landed on the player");
-                    return player(minecraftServer).getLastHurtByMob() == husk.get();
-                },
-                ACTION_TIMEOUT_TICKS,
-                "the husk's hit lands on the player");
+    private static void golemBoth(
+            ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
+        int siteX = bayX(GOLEM_BOTH, on);
+        Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, ATTACKER_Z);
+        Vec3 golemAt = new Vec3(siteX + 2.0D, STAND_Y, 3.0D);
+        AtomicReference<Husk> husk = new AtomicReference<>();
+        AtomicReference<IronGolem> golem = new AtomicReference<>();
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(huskAt.z),
+                        NORMAL_FOV,
+                        huskAt.add(0.0D, 1.1D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            husk.set(spawnHusk(level, huskAt, BOTH_VICTIM_HEALTH));
+                            golem.set(spawnGolem(level, golemAt));
+                            player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                            giveResistance(player);
+                        });
+        int huskId = server.computeOnServer(minecraftServer -> husk.get().getId());
+        waitForClientEntity(context, huskId);
+        waitForClientEntity(
+                context, server.computeOnServer(minecraftServer -> golem.get().getId()));
+        ClientGameTestPlayerActions.requireLookingAtEntity(context, huskId);
+        String id = takeId("golem_both", on);
+        caption(context, id);
+        ClientGameTestStages.markStage(id);
+        ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
+        ClientGameTestPlayerActions.attackEntity(context, huskId);
+        awaitPlayerHit(context, server, husk.get());
+        wake(server, husk.get());
+        awaitMobHit(context, server, husk.get());
         server.runOnServer(
                 minecraftServer -> {
                     husk.get().setNoAi(true);
                     husk.get().getNavigation().stop();
                 });
         Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
-        ClientGameTestPlayerActions.walkAwayFrom(context, hitFrom, BACK_OFF_DISTANCE);
+        backOffFrom(context, hitFrom, BACK_OFF_DISTANCE);
+        awaitLiveCredit(server, husk.get());
+        wake(server, golem.get());
+        waitForDeath(context, server, huskId);
+        // Counted before the drops rest: the orbs fly to the player within a second
+        // (ExperienceOrb.java:155-172).
+        server.runOnServer(minecraftServer -> checkExperience(player(minecraftServer), siteX, on));
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    check(
+                            husk.get().getKillCredit() == player,
+                            "The husk's own hit must not take the kill from the player");
+                    checkDelivered(player, siteX, on, List.of(new ItemStack(Items.IRON_SWORD)));
+                });
+        endTake(context, server, id, !on, takeStart);
+    }
+
+    /**
+     * The "both" case for the wolf: the player hits the husk, the husk hits the player, and the
+     * player's wolf finishes it. A tamed wolf's kill is its owner's
+     * (LivingEntity.java:1369-1371), so the game credits the player in both takes.
+     */
+    private static void wolfBoth(
+            ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
+        int siteX = bayX(WOLF_BOTH, on);
+        Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, ATTACKER_Z);
+        Vec3 wolfAt = new Vec3(siteX + 1.8D, STAND_Y, 4.0D);
+        AtomicReference<Husk> husk = new AtomicReference<>();
+        AtomicReference<Wolf> wolf = new AtomicReference<>();
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(huskAt.z),
+                        NORMAL_FOV,
+                        huskAt.add(0.0D, 1.1D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            husk.set(spawnHusk(level, huskAt, BOTH_VICTIM_HEALTH));
+                            Wolf pet = EntityTypes.WOLF.create(level, EntitySpawnReason.COMMAND);
+                            check(pet != null, "The wolf take needs its wolf");
+                            pet.tame(player);
+                            pet.setOrderedToSit(false);
+                            pet.setInSittingPose(false);
+                            pet.setNoAi(true);
+                            pet.setPersistenceRequired();
+                            pet.snapTo(wolfAt.x, wolfAt.y, wolfAt.z, 180.0F, 0.0F);
+                            check(level.addFreshEntity(pet), "The wolf must spawn");
+                            wolf.set(pet);
+                            player.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD));
+                            giveResistance(player);
+                        });
+        int huskId = server.computeOnServer(minecraftServer -> husk.get().getId());
+        waitForClientEntity(context, huskId);
+        waitForClientEntity(context, server.computeOnServer(minecraftServer -> wolf.get().getId()));
+        ClientGameTestPlayerActions.requireLookingAtEntity(context, huskId);
+        String id = takeId("wolf_both", on);
+        caption(context, id);
+        ClientGameTestStages.markStage(id);
+        ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
+        ClientGameTestPlayerActions.attackEntity(context, huskId);
+        awaitPlayerHit(context, server, husk.get());
+        wake(server, husk.get());
+        awaitMobHit(context, server, husk.get());
+        server.runOnServer(
+                minecraftServer -> {
+                    husk.get().setNoAi(true);
+                    husk.get().getNavigation().stop();
+                });
+        Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
+        backOffFrom(context, hitFrom, BACK_OFF_DISTANCE);
+        awaitLiveCredit(server, husk.get());
+        wake(server, wolf.get());
+        waitForDeath(context, server, huskId);
+        // Counted before the drops rest: the orbs fly to the player within a second
+        // (ExperienceOrb.java:155-172).
+        server.runOnServer(minecraftServer -> checkExperience(player(minecraftServer), siteX, on));
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    check(
+                            husk.get().getKillCredit() == player,
+                            "The game must credit the wolf's kill to its owner");
+                    checkDelivered(player, siteX, on, List.of(new ItemStack(Items.IRON_SWORD)));
+                });
+        endTake(context, server, id, !on, takeStart);
+    }
+
+    /**
+     * The "both" case for the snow golem: the player punches the blaze, the blaze hits the player,
+     * and a snowball finishes it. The blaze's blow leaves the player's record alone, so the game
+     * credits the player in both takes and the rod rolls in both.
+     *
+     * <p>The blaze stays without AI and its blow is dealt on the server: a blaze with AI at this
+     * range throws fireballs, which would set the player and the snow golem alight and could kill
+     * the snow golem before it throws. The case under test is the credit, not the blaze's aim.
+     */
+    private static void snowGolemBoth(
+            ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
+        int siteX = bayX(SNOW_GOLEM_BOTH, on);
+        Vec3 blazeAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
+        Vec3 snowGolemAt = new Vec3(siteX + 2.5D, STAND_Y, 2.5D);
+        AtomicReference<Blaze> blaze = new AtomicReference<>();
+        AtomicReference<SnowGolem> snowGolem = new AtomicReference<>();
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(blazeAt.z),
+                        NORMAL_FOV,
+                        blazeAt.add(0.0D, 0.9D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            SnowGolem thrower =
+                                    EntityTypes.SNOW_GOLEM.create(level, EntitySpawnReason.COMMAND);
+                            check(thrower != null, "The snow golem take needs its snow golem");
+                            thrower.setNoAi(true);
+                            thrower.setPersistenceRequired();
+                            thrower.snapTo(
+                                    snowGolemAt.x, snowGolemAt.y, snowGolemAt.z, 90.0F, 0.0F);
+                            check(level.addFreshEntity(thrower), "The snow golem must spawn");
+                            snowGolem.set(thrower);
+                            blaze.set(spawnBlaze(level, player, thrower, blazeAt, true));
+                            giveResistance(player);
+                        });
+        int blazeId = server.computeOnServer(minecraftServer -> blaze.get().getId());
+        waitForClientEntity(context, blazeId);
+        emptyHand(context);
+        ClientGameTestPlayerActions.requireLookingAtEntity(context, blazeId);
+        String id = takeId("snow_golem_both", on);
+        caption(context, id);
+        ClientGameTestStages.markStage(id);
+        ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
+        ClientGameTestPlayerActions.attackEntity(context, blazeId);
+        awaitPlayerHit(context, server, blaze.get());
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    check(
+                            blaze.get().doHurtTarget(player.level(), player),
+                            "The blaze's blow must land on the player");
+                });
+        awaitMobHit(context, server, blaze.get());
+        awaitLiveCredit(server, blaze.get());
+        wake(server, snowGolem.get());
+        waitForDeath(context, server, blazeId);
+        // Counted before the drops rest: the orbs fly to the player within a second
+        // (ExperienceOrb.java:155-172).
+        server.runOnServer(minecraftServer -> checkExperience(player(minecraftServer), siteX, on));
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    check(
+                            blaze.get().getKillCredit() == player,
+                            "The blaze's own hit must not take the kill from the player");
+                    checkDelivered(player, siteX, on, List.of(new ItemStack(Items.BLAZE_ROD)));
+                });
+        endTake(context, server, id, !on, takeStart);
+    }
+
+    /**
+     * Waits for the husk's hit to land on the player, backs the player off as a player would, and
+     * only then frees {@code finishers}. The husk stops chasing once its hit is in, and the mob
+     * that finishes it stays asleep until the player is out of reach of the husk's loot: one blow
+     * kills the husk, so a finisher freed earlier kills it at the player's feet.
+     *
+     * <p>The player already faces the husk, so the back key carries it away from the husk and the
+     * crosshair stays on it: the camera does not move during the take.
+     */
+    private static void awaitHitThenBackOff(
+            ClientGameTestContext context,
+            TestDedicatedServerContext server,
+            AtomicReference<Husk> husk,
+            Mob... finishers) {
+        awaitMobHit(context, server, husk.get());
+        server.runOnServer(
+                minecraftServer -> {
+                    husk.get().setNoAi(true);
+                    husk.get().getNavigation().stop();
+                });
+        Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
+        backOffFrom(context, hitFrom, BACK_OFF_DISTANCE);
         wake(server, finishers);
+    }
+
+    /**
+     * Waits for {@code mob}'s blow to land on the player. A mob's blow leaves the victim's player
+     * record alone (LivingEntity.java:1365-1379), so a hit the player took does not take the kill
+     * away from the player's own earlier hit.
+     */
+    private static void awaitMobHit(
+            ClientGameTestContext context, TestDedicatedServerContext server, Mob mob) {
+        ClientGameTestWaits.waitForServer(
+                context,
+                server,
+                minecraftServer -> {
+                    check(
+                            !mob.isDeadOrDying(),
+                            "The mob died before its hit landed on the player");
+                    return player(minecraftServer).getLastHurtByMob() == mob;
+                },
+                ACTION_TIMEOUT_TICKS,
+                "the mob's hit lands on the player");
+    }
+
+    /**
+     * Fails the take when the game's player record on {@code victim} has run out before the
+     * companion's blow: the record lasts 100 ticks from the player's hit
+     * (LivingEntity.java:1368, :484-487), and a take that let it expire would film the golem's or
+     * the wolf's kill instead of the player's.
+     */
+    private static void awaitLiveCredit(TestDedicatedServerContext server, LivingEntity victim) {
+        server.runOnServer(
+                minecraftServer ->
+                        check(
+                                victim.getLastHurtByPlayerMemoryTime() > 0,
+                                "The player's kill credit expired before the companion's blow"));
+    }
+
+    /**
+     * Steps back from {@code point} with the back key until the player is {@code distance} blocks
+     * away, without turning the camera: the player already faces the point, so the back key moves
+     * it away from there.
+     */
+    private static void backOffFrom(ClientGameTestContext context, Vec3 point, double distance) {
+        context.getInput().holdKey(options -> options.keyDown);
+        try {
+            context.waitFor(
+                    client -> horizontalDistance(client.player.position(), point) > distance,
+                    ACTION_TIMEOUT_TICKS);
+        } finally {
+            context.getInput().releaseKey(options -> options.keyDown);
+        }
+    }
+
+    private static double horizontalDistance(Vec3 from, Vec3 to) {
+        double dx = to.x - from.x;
+        double dz = to.z - from.z;
+        return Math.sqrt(dx * dx + dz * dz);
     }
 
     private static void itemFrame(
