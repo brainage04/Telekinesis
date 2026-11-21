@@ -145,9 +145,9 @@ public final class TelekinesisSupportBreakGameTests {
                 .thenSucceed();
     }
 
-    /// Items inside the test's own bounds only: the server lays tests out 8 to a row, five blocks
-    /// apart (`GameTestServer.java:325`, `StructureGridSpawner.java:17-18`), so a wider box could
-    /// count a neighbour's drops.
+    /// Items inside the test's own bounds only: the server lays tests out 8 to a row, 5 blocks apart
+    /// within a row and 6 between rows (`GameTestServer.java:325`, `StructureGridSpawner.java:17-18`),
+    /// so a wider box could count a neighbour's drops.
     private static int groundItems(GameTestHelper helper, Item item) {
         return helper.getLevel().getEntitiesOfClass(ItemEntity.class, helper.getBounds()).stream()
                 .filter(entity -> entity.getItem().is(item))
