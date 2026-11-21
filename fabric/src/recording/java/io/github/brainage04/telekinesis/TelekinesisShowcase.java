@@ -897,9 +897,7 @@ public final class TelekinesisShowcase {
         int siteX = bayX(GOLEM, hit);
         Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, hit ? 2.5D : ATTACKER_Z);
         Vec3 golemAt =
-                hit
-                        ? new Vec3(siteX + 2.5D, STAND_Y, 1.5D)
-                        : new Vec3(siteX + 2.0D, STAND_Y, 3.0D);
+                hit ? new Vec3(siteX + 2.5D, STAND_Y, 1.5D) : new Vec3(siteX + 2.0D, STAND_Y, 3.0D);
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<IronGolem> golem = new AtomicReference<>();
         List<ItemStack> takeStart =
@@ -1189,8 +1187,8 @@ public final class TelekinesisShowcase {
 
     /**
      * The "both" case for the wolf: the player hits the husk, the husk hits the player, and the
-     * player's wolf finishes it. A tamed wolf's kill is its owner's
-     * (LivingEntity.java:1369-1371), so the game credits the player in both takes.
+     * player's wolf finishes it. A tamed wolf's kill is its owner's (LivingEntity.java:1369-1371),
+     * so the game credits the player in both takes.
      */
     private static void wolfBoth(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
@@ -1371,9 +1369,7 @@ public final class TelekinesisShowcase {
                 context,
                 server,
                 minecraftServer -> {
-                    check(
-                            !mob.isDeadOrDying(),
-                            "The mob died before its hit landed on the player");
+                    check(!mob.isDeadOrDying(), "The mob died before its hit landed on the player");
                     return player(minecraftServer).getLastHurtByMob() == mob;
                 },
                 ACTION_TIMEOUT_TICKS,
@@ -1382,9 +1378,9 @@ public final class TelekinesisShowcase {
 
     /**
      * Fails the take when the game's player record on {@code victim} has run out before the
-     * companion's blow: the record lasts 100 ticks from the player's hit
-     * (LivingEntity.java:1368, :484-487), and a take that let it expire would film the golem's or
-     * the wolf's kill instead of the player's.
+     * companion's blow: the record lasts 100 ticks from the player's hit (LivingEntity.java:1368,
+     * :484-487), and a take that let it expire would film the golem's or the wolf's kill instead of
+     * the player's.
      */
     private static void awaitLiveCredit(TestDedicatedServerContext server, LivingEntity victim) {
         server.runOnServer(
