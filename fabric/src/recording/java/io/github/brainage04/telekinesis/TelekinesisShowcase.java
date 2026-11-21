@@ -1166,6 +1166,7 @@ public final class TelekinesisShowcase {
         Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
         backOffFrom(context, hitFrom, BACK_OFF_DISTANCE);
         awaitLiveCredit(server, husk.get());
+        aimFinisherAt(server, golem.get(), husk.get());
         wake(server, golem.get());
         waitForDeath(context, server, huskId);
         // Counted before the drops rest: the orbs fly to the player within a second
@@ -1242,6 +1243,7 @@ public final class TelekinesisShowcase {
         Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
         backOffFrom(context, hitFrom, BACK_OFF_DISTANCE);
         awaitLiveCredit(server, husk.get());
+        aimFinisherAt(server, wolf.get(), husk.get());
         wake(server, wolf.get());
         waitForDeath(context, server, huskId);
         // Counted before the drops rest: the orbs fly to the player within a second
@@ -1393,6 +1395,16 @@ public final class TelekinesisShowcase {
      * :484-487), and a take that let it expire would film the golem's or the wolf's kill instead of
      * the player's.
      */
+    /**
+     * Points {@code finisher} at {@code victim} before it wakes, so its first blow comes within a
+     * few ticks. Left to pick its own target it spends the game's 100-tick player record on target
+     * selection and pathing, and the take then films the companion's kill instead of the player's.
+     */
+    private static void aimFinisherAt(
+            TestDedicatedServerContext server, Mob finisher, LivingEntity victim) {
+        server.runOnServer(minecraftServer -> finisher.setTarget(victim));
+    }
+
     private static void awaitLiveCredit(TestDedicatedServerContext server, LivingEntity victim) {
         server.runOnServer(
                 minecraftServer ->
