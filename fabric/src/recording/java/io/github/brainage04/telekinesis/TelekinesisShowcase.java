@@ -1313,6 +1313,17 @@ public final class TelekinesisShowcase {
         awaitPlayerHit(context, server, blaze.get());
         wake(server, blaze.get());
         awaitMobHit(context, server, blaze.get());
+        // The player keeps hitting, as in a real fight. The second punch also restarts the game's
+        // 100-tick player record (LivingEntity.java:1368), which the snow golem's first snowball
+        // can outlast: it has to pick its target and wind up before it throws.
+        float healthBefore = server.computeOnServer(minecraftServer -> blaze.get().getHealth());
+        ClientGameTestPlayerActions.attackEntity(context, blazeId);
+        ClientGameTestWaits.waitForServer(
+                context,
+                server,
+                minecraftServer -> blaze.get().getHealth() < healthBefore,
+                ACTION_TIMEOUT_TICKS,
+                "the player's second punch lands on the blaze");
         awaitLiveCredit(server, blaze.get());
         wake(server, snowGolem.get());
         waitForDeath(context, server, blazeId);
