@@ -1105,19 +1105,24 @@ public final class TelekinesisShowcase {
         // The blaze has thrown its hit, so it stops where it is: a blaze that keeps flying drifts
         // out of the crosshair, and the player's next punch has to land on it.
         server.runOnServer(minecraftServer -> blaze.get().setNoAi(true));
-        Vec3 blazeNow = server.computeOnServer(minecraftServer -> blaze.get().position());
-        ClientGameTestPlayerActions.lookAt(context, blazeNow.add(0.0D, 0.9D, 0.0D));
         // The player keeps hitting, as in a real fight. The second punch also restarts the game's
         // 100-tick player record (LivingEntity.java:1368), which the snow golem's wind-up can
-        // outlast.
+        // outlast. A blaze hovers, so the aim is taken again from its own position each try.
         float healthBefore = server.computeOnServer(minecraftServer -> blaze.get().getHealth());
-        ClientGameTestPlayerActions.attackEntity(context, blazeId);
-        ClientGameTestWaits.waitForServer(
-                context,
-                server,
-                minecraftServer -> blaze.get().getHealth() < healthBefore,
-                ACTION_TIMEOUT_TICKS,
-                "the player's second punch lands on the blaze");
+        for (int punch = 0; punch < MAX_PUNCHES; punch++) {
+            Vec3 blazeNow = server.computeOnServer(minecraftServer -> blaze.get().position());
+            ClientGameTestPlayerActions.lookAt(context, blazeNow.add(0.0D, 0.9D, 0.0D));
+            ClientGameTestPlayerActions.attackEntity(context, blazeId);
+            context.waitTicks(STEP_BACK_TICKS);
+            if (server.computeOnServer(minecraftServer -> blaze.get().getHealth()) < healthBefore) {
+                break;
+            }
+        }
+        server.runOnServer(
+                minecraftServer ->
+                        check(
+                                blaze.get().getHealth() < healthBefore,
+                                "The player's second punch must land on the blaze"));
         awaitLiveCredit(server, blaze.get());
         aimFinisherAt(server, snowGolem.get(), blaze.get());
         wake(server, snowGolem.get());
