@@ -130,19 +130,18 @@ public final class TelekinesisShowcase {
     private static final int GOLEM = 5;
     private static final int GOLEM_BOTH = 6;
     private static final int SNOW_GOLEM = 7;
-    private static final int SNOW_GOLEM_BOTH = 8;
-    private static final int WOLF = 9;
-    private static final int WOLF_BOTH = 10;
-    private static final int ITEM_FRAME = 11;
-    private static final int ARMOUR_STAND = 12;
-    private static final int PAINTING = 13;
-    private static final int CUSHION = 14;
-    private static final int CHEST_BOAT = 15;
-    private static final int CHEST_CART = 16;
-    private static final int TNT = 17;
-    private static final int ANCHOR = 18;
-    private static final int FULL_INVENTORY = 19;
-    private static final int OVERWORLD_SCENARIOS = 20;
+    private static final int WOLF = 8;
+    private static final int WOLF_BOTH = 9;
+    private static final int ITEM_FRAME = 10;
+    private static final int ARMOUR_STAND = 11;
+    private static final int PAINTING = 12;
+    private static final int CUSHION = 13;
+    private static final int CHEST_BOAT = 14;
+    private static final int CHEST_CART = 15;
+    private static final int TNT = 16;
+    private static final int ANCHOR = 17;
+    private static final int FULL_INVENTORY = 18;
+    private static final int OVERWORLD_SCENARIOS = 19;
 
     private static final int STAGE_MIN_X = bayX(0, false) - 14;
     private static final int STAGE_MAX_X = bayX(OVERWORLD_SCENARIOS - 1, true) + 14;
@@ -428,9 +427,6 @@ public final class TelekinesisShowcase {
             }
             for (boolean on : new boolean[] {false, true}) {
                 snowGolemKill(context, server, on);
-            }
-            for (boolean on : new boolean[] {false, true}) {
-                snowGolemBoth(context, server, on);
             }
             for (boolean on : new boolean[] {false, true}) {
                 wolfKill(context, server, on);
@@ -1259,96 +1255,6 @@ public final class TelekinesisShowcase {
                             husk.get().getKillCredit() == player,
                             "The game must credit the wolf's kill to its owner");
                     checkDelivered(player, siteX, on, List.of(new ItemStack(Items.IRON_SWORD)));
-                });
-        endTake(context, server, id, !on, takeStart);
-    }
-
-    /**
-     * The "both" case for the snow golem: the player punches the blaze, the blaze hits the player,
-     * and a snowball finishes it. The blaze's blow leaves the player's record alone, so the game
-     * credits the player in both takes and the rod rolls in both.
-     *
-     * <p>The blaze's own hit is a fireball: the take's standoff keeps the loot out of the player's
-     * hands, and a blaze only swings inside two blocks (Blaze.java:202-210), so at this range it
-     * throws. The snow golem stays asleep until the fireball has hit, so the blaze cannot die
-     * before it throws.
-     */
-    private static void snowGolemBoth(
-            ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
-        int siteX = bayX(SNOW_GOLEM_BOTH, on);
-        Vec3 blazeAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
-        Vec3 snowGolemAt = new Vec3(siteX + 2.5D, STAND_Y, 2.5D);
-        AtomicReference<Blaze> blaze = new AtomicReference<>();
-        AtomicReference<SnowGolem> snowGolem = new AtomicReference<>();
-        List<ItemStack> takeStart =
-                prepare(
-                        context,
-                        server,
-                        siteX,
-                        standZ(blazeAt.z),
-                        NORMAL_FOV,
-                        blazeAt.add(0.0D, 0.9D, 0.0D),
-                        on,
-                        player -> {
-                            ServerLevel level = player.level();
-                            SnowGolem thrower =
-                                    EntityTypes.SNOW_GOLEM.create(level, EntitySpawnReason.COMMAND);
-                            check(thrower != null, "The snow golem take needs its snow golem");
-                            thrower.setNoAi(true);
-                            thrower.setPersistenceRequired();
-                            thrower.snapTo(
-                                    snowGolemAt.x, snowGolemAt.y, snowGolemAt.z, 90.0F, 0.0F);
-                            check(level.addFreshEntity(thrower), "The snow golem must spawn");
-                            snowGolem.set(thrower);
-                            blaze.set(spawnBlaze(level, player, thrower, blazeAt, true));
-                            giveResistance(player);
-                        });
-        int blazeId = server.computeOnServer(minecraftServer -> blaze.get().getId());
-        waitForClientEntity(context, blazeId);
-        emptyHand(context);
-        ClientGameTestPlayerActions.requireLookingAtEntity(context, blazeId);
-        String id = takeId("snow_golem_both", on);
-        caption(context, id);
-        ClientGameTestStages.markStage(id);
-        ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
-        ClientGameTestPlayerActions.attackEntity(context, blazeId);
-        awaitPlayerHit(context, server, blaze.get());
-        server.runOnServer(
-                minecraftServer -> blaze.get().setTarget(player(minecraftServer)));
-        wake(server, blaze.get());
-        awaitMobHit(context, server, blaze.get());
-        // The blaze has thrown its hit, so it stops where it is: a blaze that keeps flying drifts
-        // out of the crosshair, and the player's next punch has to land on it.
-        server.runOnServer(minecraftServer -> blaze.get().setNoAi(true));
-        Vec3 blazeNow = server.computeOnServer(minecraftServer -> blaze.get().position());
-        ClientGameTestPlayerActions.lookAt(context, blazeNow.add(0.0D, 0.9D, 0.0D));
-        // The player keeps hitting, as in a real fight. The second punch also restarts the game's
-        // 100-tick player record (LivingEntity.java:1368), which the snow golem's first snowball
-        // can outlast: it has to pick its target and wind up before it throws.
-        float healthBefore = server.computeOnServer(minecraftServer -> blaze.get().getHealth());
-        ClientGameTestPlayerActions.attackEntity(context, blazeId);
-        ClientGameTestWaits.waitForServer(
-                context,
-                server,
-                minecraftServer -> blaze.get().getHealth() < healthBefore,
-                ACTION_TIMEOUT_TICKS,
-                "the player's second punch lands on the blaze");
-        awaitLiveCredit(server, blaze.get());
-        wake(server, snowGolem.get());
-        waitForDeath(context, server, blazeId);
-        // Counted before the drops rest: the orbs fly to the player within a second
-        // (ExperienceOrb.java:155-172).
-        server.runOnServer(minecraftServer -> checkExperience(player(minecraftServer), siteX, on));
-        if (!on) {
-            awaitSettledDrops(context, server, siteX);
-        }
-        server.runOnServer(
-                minecraftServer -> {
-                    ServerPlayer player = player(minecraftServer);
-                    check(
-                            blaze.get().getKillCredit() == player,
-                            "The blaze's own hit must not take the kill from the player");
-                    checkDelivered(player, siteX, on, List.of(new ItemStack(Items.BLAZE_ROD)));
                 });
         endTake(context, server, id, !on, takeStart);
     }
