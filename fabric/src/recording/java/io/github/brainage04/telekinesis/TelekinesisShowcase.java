@@ -1268,16 +1268,17 @@ public final class TelekinesisShowcase {
      * and a snowball finishes it. The blaze's blow leaves the player's record alone, so the game
      * credits the player in both takes and the rod rolls in both.
      *
-     * <p>The blaze is woken for its own blow: at this range it is inside the four blocks where it
-     * swings rather than throws (Blaze.java:200-210), so it hits the player with its own attack and
-     * the film shows a real fight. The snow golem stays asleep until that hit is in, so the blaze
-     * cannot die before it swings.
+     * <p>The blaze is woken for its own blow, standing inside the two blocks where it swings rather
+     * than throws (Blaze.java:202-210), so the film shows a real fight. The snow golem stays asleep
+     * until that hit is in, so the blaze cannot die before it swings.
      */
     private static void snowGolemBoth(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(SNOW_GOLEM_BOTH, on);
-        Vec3 blazeAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
-        Vec3 snowGolemAt = new Vec3(siteX + 2.5D, STAND_Y, 2.5D);
+        // Inside the two blocks where a blaze swings instead of throwing (Blaze.java:202-210), so
+        // its own blow lands within the take rather than a fireball's flight.
+        Vec3 blazeAt = new Vec3(siteX + 0.5D, STAND_Y, 3.6D);
+        Vec3 snowGolemAt = new Vec3(siteX + 2.5D, STAND_Y, 1.5D);
         AtomicReference<Blaze> blaze = new AtomicReference<>();
         AtomicReference<SnowGolem> snowGolem = new AtomicReference<>();
         List<ItemStack> takeStart =
