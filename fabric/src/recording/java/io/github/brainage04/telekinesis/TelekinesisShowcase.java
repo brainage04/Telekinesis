@@ -128,20 +128,20 @@ public final class TelekinesisShowcase {
     private static final int MOB = 3;
     private static final int LAVA = 4;
     private static final int GOLEM = 5;
-    private static final int SNOW_GOLEM = 6;
-    private static final int WOLF = 7;
-    private static final int ITEM_FRAME = 8;
-    private static final int ARMOUR_STAND = 9;
-    private static final int PAINTING = 10;
-    private static final int CUSHION = 11;
-    private static final int CHEST_BOAT = 12;
-    private static final int CHEST_CART = 13;
-    private static final int TNT = 14;
-    private static final int ANCHOR = 15;
-    private static final int FULL_INVENTORY = 16;
-    private static final int GOLEM_BOTH = 17;
-    private static final int SNOW_GOLEM_BOTH = 18;
-    private static final int WOLF_BOTH = 19;
+    private static final int GOLEM_BOTH = 6;
+    private static final int SNOW_GOLEM = 7;
+    private static final int SNOW_GOLEM_BOTH = 8;
+    private static final int WOLF = 9;
+    private static final int WOLF_BOTH = 10;
+    private static final int ITEM_FRAME = 11;
+    private static final int ARMOUR_STAND = 12;
+    private static final int PAINTING = 13;
+    private static final int CUSHION = 14;
+    private static final int CHEST_BOAT = 15;
+    private static final int CHEST_CART = 16;
+    private static final int TNT = 17;
+    private static final int ANCHOR = 18;
+    private static final int FULL_INVENTORY = 19;
     private static final int OVERWORLD_SCENARIOS = 20;
 
     private static final int STAGE_MIN_X = bayX(0, false) - 14;
@@ -424,16 +424,16 @@ public final class TelekinesisShowcase {
                 golemKill(context, server, on);
             }
             for (boolean on : new boolean[] {false, true}) {
-                snowGolemKill(context, server, on);
-            }
-            for (boolean on : new boolean[] {false, true}) {
-                wolfKill(context, server, on);
-            }
-            for (boolean on : new boolean[] {false, true}) {
                 golemBoth(context, server, on);
             }
             for (boolean on : new boolean[] {false, true}) {
+                snowGolemKill(context, server, on);
+            }
+            for (boolean on : new boolean[] {false, true}) {
                 snowGolemBoth(context, server, on);
+            }
+            for (boolean on : new boolean[] {false, true}) {
+                wolfKill(context, server, on);
             }
             for (boolean on : new boolean[] {false, true}) {
                 wolfBoth(context, server, on);
