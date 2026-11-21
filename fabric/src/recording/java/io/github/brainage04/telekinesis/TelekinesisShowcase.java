@@ -130,18 +130,19 @@ public final class TelekinesisShowcase {
     private static final int GOLEM = 5;
     private static final int GOLEM_BOTH = 6;
     private static final int SNOW_GOLEM = 7;
-    private static final int WOLF = 8;
-    private static final int WOLF_BOTH = 9;
-    private static final int ITEM_FRAME = 10;
-    private static final int ARMOUR_STAND = 11;
-    private static final int PAINTING = 12;
-    private static final int CUSHION = 13;
-    private static final int CHEST_BOAT = 14;
-    private static final int CHEST_CART = 15;
-    private static final int TNT = 16;
-    private static final int ANCHOR = 17;
-    private static final int FULL_INVENTORY = 18;
-    private static final int OVERWORLD_SCENARIOS = 19;
+    private static final int SNOW_GOLEM_BOTH = 8;
+    private static final int WOLF = 9;
+    private static final int WOLF_BOTH = 10;
+    private static final int ITEM_FRAME = 11;
+    private static final int ARMOUR_STAND = 12;
+    private static final int PAINTING = 13;
+    private static final int CUSHION = 14;
+    private static final int CHEST_BOAT = 15;
+    private static final int CHEST_CART = 16;
+    private static final int TNT = 17;
+    private static final int ANCHOR = 18;
+    private static final int FULL_INVENTORY = 19;
+    private static final int OVERWORLD_SCENARIOS = 20;
 
     private static final int STAGE_MIN_X = bayX(0, false) - 14;
     private static final int STAGE_MAX_X = bayX(OVERWORLD_SCENARIOS - 1, true) + 14;
@@ -307,10 +308,10 @@ public final class TelekinesisShowcase {
 
     /**
      * The "both" takes' victim: the player hits it and it hits the player, then the companion
-     * finishes it. The player's diamond sword takes 6.44 off a husk (7 through its 2 armour,
-     * Zombie.java:148 and CombatRules.java:19-21), and the husk's own hit has to land before the
-     * companion's blow, so the husk starts on 9: the golem's blow (at least 6.9 after the armour)
-     * and the wolf's bite (3.68) both end it from 2.56. Not a vanilla value.
+     * finishes it. The husk starts on 9 so that the player's diamond sword, 6.888 through the
+     * husk's 2 armour (Zombie.java:148, CombatRules.java:19-21), leaves it inside one companion
+     * blow: the golem's is 7.38 to 21.16 after the armour (IronGolem.java:192-193) and the wolf's
+     * bite 3.936 (Wolf.java:218). Not a vanilla value.
      */
     private static final float BOTH_VICTIM_HEALTH = 9.0F;
 
@@ -427,6 +428,9 @@ public final class TelekinesisShowcase {
             }
             for (boolean on : new boolean[] {false, true}) {
                 snowGolemKill(context, server, on);
+            }
+            for (boolean on : new boolean[] {false, true}) {
+                snowGolemBoth(context, server, on);
             }
             for (boolean on : new boolean[] {false, true}) {
                 wolfKill(context, server, on);
@@ -1044,6 +1048,98 @@ public final class TelekinesisShowcase {
     }
 
     /**
+     * The "both" case for the snow golem: the player punches the blaze, the blaze hits the player,
+     * and a snowball finishes it. The blaze's blow leaves the player's record alone
+     * (LivingEntity.java:1365-1379), so the game credits the player in both takes and the rod rolls
+     * in both.
+     *
+     * <p>The blaze's own hit is a fireball: the take's standoff keeps the loot out of the player's
+     * hands, and a blaze only swings inside two blocks (Blaze.java:202-210), so at this range it
+     * throws. The snow golem is given the blaze as its target before it wakes, so its first
+     * snowball comes within its 20-tick wind-up (SnowGolem.java:56) rather than after it has picked
+     * a target of its own, which would outlast the game's 100-tick player record.
+     */
+    private static void snowGolemBoth(
+            ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
+        int siteX = bayX(SNOW_GOLEM_BOTH, on);
+        Vec3 blazeAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
+        Vec3 snowGolemAt = new Vec3(siteX + 2.5D, STAND_Y, 2.5D);
+        AtomicReference<Blaze> blaze = new AtomicReference<>();
+        AtomicReference<SnowGolem> snowGolem = new AtomicReference<>();
+        List<ItemStack> takeStart =
+                prepare(
+                        context,
+                        server,
+                        siteX,
+                        standZ(blazeAt.z),
+                        NORMAL_FOV,
+                        blazeAt.add(0.0D, 0.9D, 0.0D),
+                        on,
+                        player -> {
+                            ServerLevel level = player.level();
+                            SnowGolem thrower =
+                                    EntityTypes.SNOW_GOLEM.create(level, EntitySpawnReason.COMMAND);
+                            check(thrower != null, "The snow golem take needs its snow golem");
+                            thrower.setNoAi(true);
+                            thrower.setPersistenceRequired();
+                            thrower.snapTo(
+                                    snowGolemAt.x, snowGolemAt.y, snowGolemAt.z, 90.0F, 0.0F);
+                            check(level.addFreshEntity(thrower), "The snow golem must spawn");
+                            snowGolem.set(thrower);
+                            blaze.set(spawnBlaze(level, player, thrower, blazeAt, true));
+                            giveResistance(player);
+                        });
+        int blazeId = server.computeOnServer(minecraftServer -> blaze.get().getId());
+        waitForClientEntity(context, blazeId);
+        emptyHand(context);
+        ClientGameTestPlayerActions.requireLookingAtEntity(context, blazeId);
+        String id = takeId("snow_golem_both", on);
+        caption(context, id);
+        ClientGameTestStages.markStage(id);
+        ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
+        ClientGameTestPlayerActions.attackEntity(context, blazeId);
+        awaitPlayerHit(context, server, blaze.get());
+        server.runOnServer(minecraftServer -> blaze.get().setTarget(player(minecraftServer)));
+        wake(server, blaze.get());
+        awaitMobHit(context, server, blaze.get());
+        // The blaze has thrown its hit, so it stops where it is: a blaze that keeps flying drifts
+        // out of the crosshair, and the player's next punch has to land on it.
+        server.runOnServer(minecraftServer -> blaze.get().setNoAi(true));
+        Vec3 blazeNow = server.computeOnServer(minecraftServer -> blaze.get().position());
+        ClientGameTestPlayerActions.lookAt(context, blazeNow.add(0.0D, 0.9D, 0.0D));
+        // The player keeps hitting, as in a real fight. The second punch also restarts the game's
+        // 100-tick player record (LivingEntity.java:1368), which the snow golem's wind-up can
+        // outlast.
+        float healthBefore = server.computeOnServer(minecraftServer -> blaze.get().getHealth());
+        ClientGameTestPlayerActions.attackEntity(context, blazeId);
+        ClientGameTestWaits.waitForServer(
+                context,
+                server,
+                minecraftServer -> blaze.get().getHealth() < healthBefore,
+                ACTION_TIMEOUT_TICKS,
+                "the player's second punch lands on the blaze");
+        awaitLiveCredit(server, blaze.get());
+        aimFinisherAt(server, snowGolem.get(), blaze.get());
+        wake(server, snowGolem.get());
+        waitForDeath(context, server, blazeId);
+        // Counted before the drops rest: the orbs fly to the player within a second
+        // (ExperienceOrb.java:155-172).
+        server.runOnServer(minecraftServer -> checkExperience(player(minecraftServer), siteX, on));
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
+        server.runOnServer(
+                minecraftServer -> {
+                    ServerPlayer player = player(minecraftServer);
+                    check(
+                            blaze.get().getKillCredit() == player,
+                            "The blaze's own hit must not take the kill from the player");
+                    checkDelivered(player, siteX, on, List.of(new ItemStack(Items.BLAZE_ROD)));
+                });
+        endTake(context, server, id, !on, takeStart);
+    }
+
+    /**
      * The husk hits the player, and the player's tamed wolf, which takes on whatever last hurt its
      * owner (OwnerHurtByTargetGoal.java:23-35), kills it. The game credits a tamed wolf's kill to
      * its owner (LivingEntity.java:1369-1371), so Telekinesis decides where the loot goes.
@@ -1184,8 +1280,9 @@ public final class TelekinesisShowcase {
 
     /**
      * The "both" case for the wolf: the player hits the husk, the husk hits the player, and the
-     * player's wolf finishes it. A tamed wolf's kill is its owner's (LivingEntity.java:1369-1371),
-     * so the game credits the player in both takes.
+     * player's wolf finishes it. The wolf's own blow is what makes the kill its owner's
+     * (LivingEntity.java:1369-1371), so the game credits the player in both takes whatever the
+     * player's earlier hit did.
      */
     private static void wolfBoth(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
@@ -1238,7 +1335,6 @@ public final class TelekinesisShowcase {
                 });
         Vec3 hitFrom = server.computeOnServer(minecraftServer -> husk.get().position());
         backOffFrom(context, hitFrom, BACK_OFF_DISTANCE);
-        awaitLiveCredit(server, husk.get());
         aimFinisherAt(server, wolf.get(), husk.get());
         wake(server, wolf.get());
         waitForDeath(context, server, huskId);
@@ -1251,9 +1347,6 @@ public final class TelekinesisShowcase {
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
-                    check(
-                            husk.get().getKillCredit() == player,
-                            "The game must credit the wolf's kill to its owner");
                     checkDelivered(player, siteX, on, List.of(new ItemStack(Items.IRON_SWORD)));
                 });
         endTake(context, server, id, !on, takeStart);
@@ -1303,12 +1396,6 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * Fails the take when the game's player record on {@code victim} has run out before the
-     * companion's blow: the record lasts 100 ticks from the player's hit (LivingEntity.java:1368,
-     * :484-487), and a take that let it expire would film the golem's or the wolf's kill instead of
-     * the player's.
-     */
-    /**
      * Points {@code finisher} at {@code victim} before it wakes, so its first blow comes within a
      * few ticks. Left to pick its own target it spends the game's 100-tick player record on target
      * selection and pathing, and the take then films the companion's kill instead of the player's.
@@ -1318,6 +1405,12 @@ public final class TelekinesisShowcase {
         server.runOnServer(minecraftServer -> finisher.setTarget(victim));
     }
 
+    /**
+     * Checks the game's player record on {@code victim} is still live before the companion is
+     * freed: it lasts 100 ticks from the player's hit (LivingEntity.java:1368, :484-487). The
+     * take's own {@code getKillCredit} check is what catches a record that expires during the
+     * companion's approach.
+     */
     private static void awaitLiveCredit(TestDedicatedServerContext server, LivingEntity victim) {
         server.runOnServer(
                 minecraftServer ->

@@ -55,6 +55,14 @@
     "title": "Snow golem finishes a blaze you hit",
     "subtitle": "Your hit counts, so the rod and XP come to you"
   },
+  "telekinesis.snow_golem_both.off": {
+    "title": "You hit the blaze, it hits you, the snow golem finishes it",
+    "subtitle": "Telekinesis off: the rod drops, the XP flies to you"
+  },
+  "telekinesis.snow_golem_both.on": {
+    "title": "You hit the blaze, it hits you, the snow golem finishes it",
+    "subtitle": "Telekinesis on: the rod and XP come to you"
+  },
   "telekinesis.wolf.off": {
     "title": "Your wolf's kill, Telekinesis off",
     "subtitle": "The husk's loot drops, the XP flies to you as usual"
