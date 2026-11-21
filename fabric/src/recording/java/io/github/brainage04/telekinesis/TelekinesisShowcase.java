@@ -1317,6 +1317,11 @@ public final class TelekinesisShowcase {
                 minecraftServer -> blaze.get().setTarget(player(minecraftServer)));
         wake(server, blaze.get());
         awaitMobHit(context, server, blaze.get());
+        // The blaze has thrown its hit, so it stops where it is: a blaze that keeps flying drifts
+        // out of the crosshair, and the player's next punch has to land on it.
+        server.runOnServer(minecraftServer -> blaze.get().setNoAi(true));
+        Vec3 blazeNow = server.computeOnServer(minecraftServer -> blaze.get().position());
+        ClientGameTestPlayerActions.lookAt(context, blazeNow.add(0.0D, 0.9D, 0.0D));
         // The player keeps hitting, as in a real fight. The second punch also restarts the game's
         // 100-tick player record (LivingEntity.java:1368), which the snow golem's first snowball
         // can outlast: it has to pick its target and wind up before it throws.
