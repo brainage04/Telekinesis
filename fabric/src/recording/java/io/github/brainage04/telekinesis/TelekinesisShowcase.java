@@ -978,14 +978,13 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * A snow golem's snowball finishes a blaze. Without the player's punch the game credits the
-     * snow golem, and vanilla's blaze drops its rod only for a kill the game credits to a player
-     * (VanillaEntityLoot.java:58-68), so a vanilla blaze would drop nothing. The film's blaze
-     * carries its own table, which drops one rod whoever the game credits, so the "off" take has a
-     * rod to leave on the ground and the pair reads as ground against inventory. With the punch
-     * first the game credits the player, and the rod and the experience come to them. The "on"
-     * take's rod comes from the same table, so it is the experience and the kill-credit check that
-     * show the player's credit, not the rod.
+     * A snow golem's snowball finishes a blaze. A snowball damages only a blaze
+     * (Snowball.java:59), so a blaze is the one mob a snow golem can kill. Without the player's
+     * punch the game credits the snow golem, and the blaze's only loot pool is gated on
+     * killed_by_player (VanillaEntityLoot.java:58-68), so nothing drops and no experience is paid.
+     * With the punch first the game credits the player, and the rod and the experience come to
+     * them. The "off" take therefore shows the game's own answer: a kill the game credits to a
+     * snow golem leaves nothing behind.
      */
     private static void snowGolemKill(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean hit) {
