@@ -19,13 +19,13 @@ Record the film on a GPU display, not an Xvfb one: pass `-PrecordingDisplay=:1` 
 
 The film is recorded against a MinecraftModConventions checkout beside this one, which carries the
 keystrokes overlay the released 3.5.0 does not. Publish that checkout to its `build/local-repo`
-(`./gradlew publishAllPublicationsToLocalRepository` there) and pass `-PuseLocalConventions`: the
+(`./gradlew publishAllPublicationsToLocalRepository` there) and pass `-PuseLocalConventions`. The
 flag puts the checkout's `build/local-repo` in `pluginManagement` and includes the checkout as a
 build, so the conventions plugins come from it. The runtime helper mod reaches the recorded run
 through the fabric project's sibling Maven repository, which the conventions plugin declares
-unconditionally, so the published jar is what the client loads. Without the flag the build resolves
-the pinned `minecraftmodconventions_version` from Maven Central, so a sibling checkout cannot change
-a build just by being there.
+unconditionally, so the published jar is what the client loads whether or not the flag is passed.
+Without the flag the Gradle plugins resolve the pinned `minecraftmodconventions_version` from Maven
+Central, so a sibling checkout cannot change the plugins a build uses just by being there.
 
 `:fabric:pitest` runs mutation tests on `TelekinesisConfigManager` against its unit tests. It is not part of `check`; the report is written to `fabric/build/reports/pitest`.
 

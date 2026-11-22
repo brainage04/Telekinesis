@@ -976,7 +976,7 @@ public final class TelekinesisShowcase {
      * (VanillaEntityLoot.java:58-68), so a vanilla blaze would drop nothing. The film's blaze
      * carries its own table, which drops one rod whoever the game credits, so the "off" take has a
      * rod to leave on the ground and the pair reads as ground against inventory. With the punch
-     * first the game credits the player, and the rod and the experience come to them; the "on"
+     * first the game credits the player, and the rod and the experience come to them. The "on"
      * take's rod comes from the same table, so it is the experience and the kill-credit check that
      * show the player's credit, not the rod.
      */
