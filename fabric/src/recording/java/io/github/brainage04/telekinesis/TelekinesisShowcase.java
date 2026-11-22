@@ -84,6 +84,10 @@ import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -318,6 +322,9 @@ public final class TelekinesisShowcase {
     private static final float LAVA_UNHIT_HEALTH = 12.0F;
 
     private static final float LAVA_HIT_HEALTH = 24.0F;
+
+    /** The loot seeds tried for a blaze that drops its rod. */
+    private static final int ROD_SEED_ATTEMPTS = 64;
 
     private static final int LEAF_DECAY_TICK_SPEED = 300;
     private static final int SETTLE_TICKS = 15;
@@ -1011,7 +1018,7 @@ public final class TelekinesisShowcase {
                                     snowGolemAt.x, snowGolemAt.y, snowGolemAt.z, 90.0F, 0.0F);
                             check(level.addFreshEntity(thrower), "The snow golem must spawn");
                             snowGolem.set(thrower);
-                            blaze.set(spawnBlaze(level, blazeAt));
+                            blaze.set(spawnBlaze(level, player, thrower, blazeAt, hit));
                         });
         int blazeId = server.computeOnServer(minecraftServer -> blaze.get().getId());
         waitForClientEntity(context, blazeId);
@@ -1028,9 +1035,6 @@ public final class TelekinesisShowcase {
         wake(server, snowGolem.get());
         waitForDeath(context, server, blazeId);
         context.waitTicks(PICKUP_DELAY_TICKS);
-        if (!hit) {
-            awaitSettledDrops(context, server, siteX);
-        }
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
@@ -1047,11 +1051,7 @@ public final class TelekinesisShowcase {
                         check(
                                 blaze.get().getKillCredit() == snowGolem.get(),
                                 "The game must credit the snow golem");
-                        checkCount(player, Items.BLAZE_ROD, 0);
-                        check(
-                                onGround(player.level(), siteX, Items.BLAZE_ROD) == 1,
-                                "The rod must stay on the ground where the blaze died");
-                        checkDropsOutOfPickupRange(player, siteX);
+                        checkNoItemsAt(player.level(), siteX);
                         check(
                                 orbsAt(player.level(), siteX) == 0,
                                 "A kill the game credits to the snow golem drops no experience");
@@ -2061,13 +2061,13 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * A blaze without AI and with three health, carrying the film's own loot table. Vanilla's blaze
-     * drops its rod only for a kill the game credits to a player (blaze.json's {@code
-     * killed_by_player} condition), so a snow golem's kill would drop nothing and the "off" take
-     * would have no drop to show on the ground. The film's table drops one rod whoever the game
-     * credits, which is what makes the pair read as ground against inventory.
+     * A blaze without AI and with three health. For the take where the game credits the player, its
+     * death loot gets a seed that rolls a rod: the rod's count is a 0 to 1 roll
+     * (VanillaEntityLoot.java:58-68), and the film shows one.
      */
-    private static Blaze spawnBlaze(ServerLevel level, Vec3 at) {
+    private static Blaze spawnBlaze(
+            ServerLevel level, ServerPlayer player, SnowGolem thrower, Vec3 at, boolean hit) {
+        String seed = hit ? ",DeathLootTableSeed:" + rodSeed(level, player, thrower) + "L" : "";
         command(
                 level.getServer(),
                 "summon minecraft:blaze "
@@ -2078,11 +2078,46 @@ public final class TelekinesisShowcase {
                         + at.z
                         + " {NoAI:1b,PersistenceRequired:1b,Health:"
                         + BLAZE_HEALTH
-                        + "f,DeathLootTable:\"telekinesis:showcase/blaze_rod\"}");
+                        + "f"
+                        + seed
+                        + "}");
         List<Blaze> blazes =
                 level.getEntitiesOfClass(Blaze.class, new AABB(BlockPos.containing(at)));
         check(blazes.size() == 1, "The snow golem take needs one blaze, found " + blazes);
         return blazes.getFirst();
+    }
+
+    /**
+     * The first loot seed whose roll gives the blaze a rod, read from the blaze's own loot table
+     * with the parameters {@code LivingEntity.dropFromLootTable} passes for a kill the game credits
+     * to a player, with the snow golem as the attacker (LivingEntity.java:1572-1583).
+     */
+    private static long rodSeed(ServerLevel level, ServerPlayer player, SnowGolem thrower) {
+        Blaze probe = EntityTypes.BLAZE.create(level, EntitySpawnReason.COMMAND);
+        check(probe != null, "The rod seed needs a blaze to roll for");
+        LootTable table =
+                level.getServer()
+                        .reloadableRegistries()
+                        .getLootTable(probe.getLootTable().orElseThrow());
+        LootParams params =
+                new LootParams.Builder(level)
+                        .withParameter(LootContextParams.THIS_ENTITY, probe)
+                        .withParameter(LootContextParams.ORIGIN, probe.position())
+                        .withParameter(
+                                LootContextParams.DAMAGE_SOURCE,
+                                level.damageSources().mobAttack(thrower))
+                        .withOptionalParameter(LootContextParams.ATTACKING_ENTITY, thrower)
+                        .withOptionalParameter(LootContextParams.DIRECT_ATTACKING_ENTITY, thrower)
+                        .withParameter(LootContextParams.LAST_DAMAGE_PLAYER, player)
+                        .withLuck(player.getLuck())
+                        .create(LootContextParamSets.ENTITY);
+        for (long seed = 1L; seed <= ROD_SEED_ATTEMPTS; seed++) {
+            if (table.getRandomItems(params, seed).stream()
+                    .anyMatch(stack -> stack.is(Items.BLAZE_ROD))) {
+                return seed;
+            }
+        }
+        throw new AssertionError("No loot seed up to " + ROD_SEED_ATTEMPTS + " rolls a blaze rod");
     }
 
     /**
