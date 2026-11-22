@@ -1,7 +1,14 @@
 pluginManagement {
+	// A MinecraftModConventions checkout beside this one is used only when the build asks for it
+	// with -PuseLocalConventions, so a sibling checkout cannot change the build by being there.
+	settings.ext.useLocalConventions = providers.gradleProperty('useLocalConventions')
+			.map { it.isEmpty() || it.toBoolean() }
+			.getOrElse(false)
 	repositories {
-		maven {
-			url = uri("../MinecraftModConventions/build/local-repo")
+		if (settings.ext.useLocalConventions) {
+			maven {
+				url = uri("../MinecraftModConventions/build/local-repo")
+			}
 		}
 		maven { url = 'https://maven.architectury.dev/' }
 		maven { url = 'https://maven.neoforged.net/releases/' }
@@ -30,7 +37,7 @@ pluginManagement {
 	}
 }
 
-if (file("../MinecraftModConventions/settings.gradle").exists()) {
+if (settings.ext.useLocalConventions && file("../MinecraftModConventions/settings.gradle").exists()) {
 	includeBuild("../MinecraftModConventions")
 }
 
