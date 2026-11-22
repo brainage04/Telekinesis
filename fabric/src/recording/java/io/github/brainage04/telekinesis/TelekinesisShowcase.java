@@ -326,9 +326,9 @@ public final class TelekinesisShowcase {
     private static final int STEP_BACK_TICKS = 7;
 
     /**
-     * How long the full-inventory take backs away before it looks at the diamond at its feet. At the
-     * walking speed the back key gives, this is about three blocks, which puts the drop in the lower
-     * third of the frame instead of under the camera.
+     * How long the full-inventory take backs away before it looks at the diamond at its feet. At
+     * the walking speed the back key gives, this is about three blocks, which puts the drop in the
+     * lower third of the frame instead of under the camera.
      */
     private static final int OVERFLOW_BACK_TICKS = 14;
 
@@ -379,8 +379,7 @@ public final class TelekinesisShowcase {
     private static void filmScenarios(
             ClientGameTestContext context, TestDedicatedServerContext server) {
         // The recorder's readout is a diagnostic number, not something a viewer of the film needs.
-        ClientGameTestRecorder.placePerformanceOverlay(
-                context, PerformanceOverlayPlacement.HIDDEN);
+        ClientGameTestRecorder.placePerformanceOverlay(context, PerformanceOverlayPlacement.HIDDEN);
         boolean previousTelekinesis =
                 server.computeOnServer(
                         minecraftServer -> {
