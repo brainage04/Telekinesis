@@ -141,7 +141,7 @@
   },
   "telekinesis.respawn_anchor.on": {
     "title": "Respawn anchor, Telekinesis on",
-    "subtitle": "The game names no cause, so the user is credited"
+    "subtitle": "The blast's drops and the chest's 64 emeralds come to you"
   },
   "telekinesis.full_inventory.off": {
     "title": "Full inventory, Telekinesis off",
@@ -157,6 +157,6 @@
   },
   "telekinesis.nether_bed.on": {
     "title": "Bed in the Nether, Telekinesis on",
-    "subtitle": "The game names no cause, so the user is credited"
+    "subtitle": "The blast's drops and the chest's 64 emeralds come to you"
   }
 }
