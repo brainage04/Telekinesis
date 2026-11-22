@@ -8,6 +8,7 @@ import io.github.brainage04.minecraftmodconventions.ClientGameTestRecorder;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestServers;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestStages;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestWaits;
+import io.github.brainage04.minecraftmodconventions.PerformanceOverlayPlacement;
 import io.github.brainage04.telekinesis.config.TelekinesisConfigManager;
 import io.github.brainage04.telekinesis.player.TelekinesisPlayerSettings;
 import java.io.IOException;
@@ -377,6 +378,9 @@ public final class TelekinesisShowcase {
 
     private static void filmScenarios(
             ClientGameTestContext context, TestDedicatedServerContext server) {
+        // The recorder's readout is a diagnostic number, not something a viewer of the film needs.
+        ClientGameTestRecorder.placePerformanceOverlay(
+                context, PerformanceOverlayPlacement.HIDDEN);
         boolean previousTelekinesis =
                 server.computeOnServer(
                         minecraftServer -> {
