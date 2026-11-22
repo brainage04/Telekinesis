@@ -1,7 +1,7 @@
 {
   "telekinesis.mining.off": {
     "title": "Mining, Telekinesis off",
-    "subtitle": "The diamonds drop at the ore, the XP flies to you as usual"
+    "subtitle": "The diamonds drop at the ore, and the XP flies to you"
   },
   "telekinesis.mining.on": {
     "title": "Mining, Telekinesis on",
@@ -21,15 +21,15 @@
   },
   "telekinesis.tree.on": {
     "title": "Felling a tree, Telekinesis on",
-    "subtitle": "Logs, then the leaf drops, go to the feller"
+    "subtitle": "The logs, then the leaf drops, come to you"
   },
   "telekinesis.mob.off": {
     "title": "Killing a mob, Telekinesis off",
-    "subtitle": "The husk's loot and sword drop, the XP flies to you as usual"
+    "subtitle": "The husk's loot and sword drop, and the XP flies to you"
   },
   "telekinesis.mob.on": {
     "title": "Killing a mob, Telekinesis on",
-    "subtitle": "The husk's loot, sword and XP go to its killer"
+    "subtitle": "The husk's loot, sword and XP come to you"
   },
   "telekinesis.lava.off": {
     "title": "Lava kills a husk nobody hit",
@@ -57,7 +57,7 @@
   },
   "telekinesis.wolf.off": {
     "title": "Your wolf's kill, Telekinesis off",
-    "subtitle": "The husk's loot drops, the XP flies to you as usual"
+    "subtitle": "The husk's loot drops, and the XP flies to you"
   },
   "telekinesis.wolf.on": {
     "title": "Your wolf's kill, Telekinesis on",
@@ -65,7 +65,7 @@
   },
   "telekinesis.golem_both.off": {
     "title": "You hit the husk, it hits you, the golem finishes it",
-    "subtitle": "Telekinesis off: the loot drops, the XP flies to you"
+    "subtitle": "Telekinesis off: the loot drops, and the XP flies to you"
   },
   "telekinesis.golem_both.on": {
     "title": "You hit the husk, it hits you, the golem finishes it",
@@ -73,7 +73,7 @@
   },
   "telekinesis.wolf_both.off": {
     "title": "You hit the husk, it hits you, your wolf finishes it",
-    "subtitle": "Telekinesis off: the loot drops, the XP flies to you"
+    "subtitle": "Telekinesis off: the loot drops, and the XP flies to you"
   },
   "telekinesis.wolf_both.on": {
     "title": "You hit the husk, it hits you, your wolf finishes it",
@@ -149,7 +149,7 @@
   },
   "telekinesis.full_inventory.on": {
     "title": "Full inventory, Telekinesis on",
-    "subtitle": "What does not fit is put at your feet"
+    "subtitle": "The diamond that does not fit lands at your feet"
   },
   "telekinesis.nether_bed.off": {
     "title": "Bed in the Nether, Telekinesis off",
