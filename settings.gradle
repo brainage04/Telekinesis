@@ -1,8 +1,9 @@
 pluginManagement {
 	// A MinecraftModConventions checkout beside this one is used only when the build asks for it
-	// with -PuseLocalConventions, so a sibling checkout cannot change the build by being there. The
-	// switch is read here, before the repositories, because the plugin repository below is the
-	// first thing that needs it. The includeBuild at the end of this file reads the same value.
+	// with -PuseLocalConventions, so a sibling checkout cannot change the plugins a build uses by
+	// being there. The switch is read here, before the repositories, because the plugin repository
+	// below is the first thing that needs it. The includeBuild at the end of this file reads the
+	// same value.
 	settings.ext.useLocalConventions = providers.gradleProperty('useLocalConventions')
 			.map { it.isEmpty() || it.toBoolean() }
 			.getOrElse(false)

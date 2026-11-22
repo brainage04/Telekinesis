@@ -24,8 +24,9 @@ flag puts the checkout's `build/local-repo` in `pluginManagement` and includes t
 build, so the conventions plugins come from it. The runtime helper mod reaches the recorded run
 through the fabric project's sibling Maven repository, which the conventions plugin declares
 unconditionally, so the published jar is what the client loads whether or not the flag is passed.
-Without the flag the Gradle plugins resolve the pinned `minecraftmodconventions_version` from Maven
-Central, so a sibling checkout cannot change the plugins a build uses just by being there.
+Without the flag the Gradle plugins resolve the pinned `minecraftmodconventions_version` from the
+remote repositories, so a sibling checkout cannot change the plugins a build uses just by being
+there.
 
 `:fabric:pitest` runs mutation tests on `TelekinesisConfigManager` against its unit tests. It is not part of `check`; the report is written to `fabric/build/reports/pitest`.
 
