@@ -323,7 +323,6 @@ public final class TelekinesisShowcase {
     private static final int SETTLE_TICKS = 15;
     private static final int CAPTION_LEAD_TICKS = 6;
     private static final int HOLD_AFTER_END_TICKS = 6;
-    private static final int STEP_BACK_TICKS = 7;
 
     /**
      * How long the full-inventory take backs away before it looks at the diamond at its feet. At
@@ -973,8 +972,13 @@ public final class TelekinesisShowcase {
 
     /**
      * A snow golem's snowball finishes a blaze. Without the player's punch the game credits the
-     * snow golem, and the blaze's rod needs a player kill (VanillaEntityLoot.java:58-68), so
-     * nothing drops. With the punch first the game credits the player.
+     * snow golem, and vanilla's blaze drops its rod only for a kill the game credits to a player
+     * (VanillaEntityLoot.java:58-68), so a vanilla blaze would drop nothing. The film's blaze
+     * carries its own table, which drops one rod whoever the game credits, so the "off" take has a
+     * rod to leave on the ground and the pair reads as ground against inventory. With the punch
+     * first the game credits the player, and the rod and the experience come to them; the "on"
+     * take's rod comes from the same table, so it is the experience and the kill-credit check that
+     * show the player's credit, not the rod.
      */
     private static void snowGolemKill(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean hit) {

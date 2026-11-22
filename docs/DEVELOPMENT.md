@@ -18,10 +18,14 @@ GTR_RECORDING_PROFILE=showcase ./gradlew --no-daemon :fabric:recordClientGameTes
 Record the film on a GPU display, not an Xvfb one: pass `-PrecordingDisplay=:1` on a host whose `:1` is a real card, and keep the take only when the recorder reports `gpu.active` true, an NVIDIA renderer, and 30 or more presented frames a second. The delivered film is that take trimmed to the stages: cut the world load before the first caption, the scene setups that leave the camera still for more than a second, the dimension change, and the world-save screen at the end, then re-encode at 30 fps CFR with no stage straddling a join.
 
 The film is recorded against a MinecraftModConventions checkout beside this one, which carries the
-keystrokes overlay the released 3.5.0 does not: publish that checkout to its `build/local-repo` and
-pass `-PuseLocalConventions`. Without the flag the build resolves the pinned
-`minecraftmodconventions_version` from Maven Central, so a sibling checkout cannot change a build
-just by being there.
+keystrokes overlay the released 3.5.0 does not. Publish that checkout to its `build/local-repo`
+(`./gradlew publishAllPublicationsToLocalRepository` there) and pass `-PuseLocalConventions`: the
+flag puts the checkout's `build/local-repo` in `pluginManagement` and includes the checkout as a
+build, so the conventions plugins come from it. The runtime helper mod reaches the recorded run
+through the fabric project's sibling Maven repository, which the conventions plugin declares
+unconditionally, so the published jar is what the client loads. Without the flag the build resolves
+the pinned `minecraftmodconventions_version` from Maven Central, so a sibling checkout cannot change
+a build just by being there.
 
 `:fabric:pitest` runs mutation tests on `TelekinesisConfigManager` against its unit tests. It is not part of `check`; the report is written to `fabric/build/reports/pitest`.
 

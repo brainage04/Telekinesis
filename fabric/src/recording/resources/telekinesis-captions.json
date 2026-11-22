@@ -49,7 +49,7 @@
   },
   "telekinesis.snow_golem.off": {
     "title": "Snow golem kills a blaze nobody hit",
-    "subtitle": "The game credits the snow golem, so the rod stays on the ground"
+    "subtitle": "The game credits the snow golem, so the rod stays where it fell"
   },
   "telekinesis.snow_golem.on": {
     "title": "Snow golem finishes a blaze you hit",
