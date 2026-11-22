@@ -977,8 +977,10 @@ public final class TelekinesisShowcase {
             ClientGameTestContext context, TestDedicatedServerContext server, boolean hit) {
         int siteX = bayX(SNOW_GOLEM, hit);
         Vec3 blazeAt = new Vec3(siteX + 0.5D, STAND_Y, 2.5D);
-        // Two blocks from the blaze, not 4.5: a snowball's flight is short enough that the
-        // snow golem's kill lands inside the player's 100-tick record when the player hit first.
+        // Beside the blaze, not behind it: the snow golem stays out of the crosshair's ray to the
+        // blaze and inside the 102-degree frame at FOV 70 (Projection.java:71). Its first snowball
+        // comes after its 20-tick wind-up (SnowGolem.java:56), well inside the player's 100-tick
+        // record (LivingEntity.java:1368, :484-487).
         Vec3 snowGolemAt = new Vec3(siteX + 2.5D, STAND_Y, 2.5D);
         AtomicReference<Blaze> blaze = new AtomicReference<>();
         AtomicReference<SnowGolem> snowGolem = new AtomicReference<>();
@@ -1127,8 +1129,8 @@ public final class TelekinesisShowcase {
         int siteX = bayX(GOLEM_BOTH, on);
         Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, ATTACKER_Z);
         // Beside the husk, not behind it: the golem stays out of the crosshair's ray to the husk
-        // and inside the 102-degree frame at FOV 70, and its melee reach still lands
-        // (Mob.java:1342-1355).
+        // and inside the 102-degree frame at FOV 70 (Projection.java:71), and its melee reach
+        // still lands (Mob.java:117, :1358-1377).
         Vec3 golemAt = new Vec3(siteX + 2.0D, STAND_Y, 3.0D);
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<IronGolem> golem = new AtomicReference<>();
@@ -1200,8 +1202,8 @@ public final class TelekinesisShowcase {
         int siteX = bayX(WOLF_BOTH, on);
         Vec3 huskAt = new Vec3(siteX + 0.5D, STAND_Y, ATTACKER_Z);
         // Beside the husk, not behind it: the wolf stays out of the crosshair's ray to the husk
-        // and inside the 102-degree frame at FOV 70, and its bite still reaches
-        // (Mob.java:1342-1355).
+        // and inside the 102-degree frame at FOV 70 (Projection.java:71). It spawns just outside
+        // its bite's reach (Mob.java:117, :1358-1377) and walks in before it bites.
         Vec3 wolfAt = new Vec3(siteX + 1.8D, STAND_Y, 4.0D);
         AtomicReference<Husk> husk = new AtomicReference<>();
         AtomicReference<Wolf> wolf = new AtomicReference<>();
