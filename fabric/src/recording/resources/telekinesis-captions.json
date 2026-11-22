@@ -149,7 +149,7 @@
   },
   "telekinesis.full_inventory.on": {
     "title": "Full inventory, Telekinesis on",
-    "subtitle": "The diamond that does not fit lands at your feet"
+    "subtitle": "The diamond that does not fit lands on the ground"
   },
   "telekinesis.nether_bed.off": {
     "title": "Bed in the Nether, Telekinesis off",

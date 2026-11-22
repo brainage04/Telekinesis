@@ -325,6 +325,13 @@ public final class TelekinesisShowcase {
     private static final int HOLD_AFTER_END_TICKS = 6;
     private static final int STEP_BACK_TICKS = 7;
 
+    /**
+     * How long the full-inventory take backs away before it looks at the diamond at its feet. At the
+     * walking speed the back key gives, this is about three blocks, which puts the drop in the lower
+     * third of the frame instead of under the camera.
+     */
+    private static final int OVERFLOW_BACK_TICKS = 14;
+
     // Built on the server thread, not in a static field: an ItemStack reads its item's components
     // (ItemStack.java:248-250), which are bound when the server loads its registries
     // (DataComponentInitializers.java:103), and a built-in item holder throws "Components not bound
@@ -1822,7 +1829,7 @@ public final class TelekinesisShowcase {
                 });
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         if (on) {
-            context.getInput().holdKeyFor(options -> options.keyDown, STEP_BACK_TICKS);
+            context.getInput().holdKeyFor(options -> options.keyDown, OVERFLOW_BACK_TICKS);
             ClientGameTestPlayerActions.lookAt(context, overflowAt.get());
             ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         }
