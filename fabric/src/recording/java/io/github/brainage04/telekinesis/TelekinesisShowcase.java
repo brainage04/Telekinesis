@@ -297,8 +297,8 @@ public final class TelekinesisShowcase {
     /**
      * Health that makes each companion take end in one blow: an iron golem's (at least 7.5,
      * IronGolem.java:189-195), a wolf's bite (4, which the husk's 2 armour cuts to 3.936,
-     * Zombie.java:148 and CombatRules.java:19-21) and a snowball on a blaze (3,
-     * Snowball.java:58). Not vanilla values.
+     * Zombie.java:148 and CombatRules.java:19-21) and a snowball on a blaze (3, Snowball.java:58).
+     * Not vanilla values.
      */
     private static final float GOLEM_VICTIM_HEALTH = 7.0F;
 
