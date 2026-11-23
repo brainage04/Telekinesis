@@ -298,7 +298,7 @@ public final class TelekinesisShowcase {
      * Health that makes each companion take end in one blow: an iron golem's (at least 7.5,
      * IronGolem.java:189-195), a wolf's bite (4, which the husk's 2 armour cuts to 3.936,
      * Zombie.java:148 and CombatRules.java:19-21) and a snowball on a blaze (3,
-     * Snowball.java:58-59). Not vanilla values.
+     * Snowball.java:58). Not vanilla values.
      */
     private static final float GOLEM_VICTIM_HEALTH = 7.0F;
 
@@ -332,9 +332,8 @@ public final class TelekinesisShowcase {
     private static final int HOLD_AFTER_END_TICKS = 6;
 
     /**
-     * How long the full-inventory take backs away before it looks at the diamond at its feet. At
-     * the walking speed the back key gives, this is about three blocks, which puts the drop in the
-     * lower third of the frame instead of under the camera.
+     * How long the full-inventory take backs away before it looks at the diamond at its feet, so
+     * the drop is in front of the camera instead of under it.
      */
     private static final int OVERFLOW_BACK_TICKS = 14;
 
@@ -384,7 +383,6 @@ public final class TelekinesisShowcase {
 
     private static void filmScenarios(
             ClientGameTestContext context, TestDedicatedServerContext server) {
-        // The recorder's readout is a diagnostic number, not something a viewer of the film needs.
         ClientGameTestRecorder.placePerformanceOverlay(context, PerformanceOverlayPlacement.HIDDEN);
         boolean previousTelekinesis =
                 server.computeOnServer(
@@ -978,7 +976,7 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * A snow golem's snowball finishes a blaze. A snowball damages only a blaze (Snowball.java:59),
+     * A snow golem's snowball finishes a blaze. A snowball damages only a blaze (Snowball.java:58),
      * so a blaze is the one mob a snow golem can kill. Without the player's punch the game credits
      * the snow golem, and the blaze's only loot pool is gated on killed_by_player
      * (VanillaEntityLoot.java:58-68), so nothing drops and no experience is paid. With the punch
