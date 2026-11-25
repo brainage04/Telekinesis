@@ -352,6 +352,18 @@ public final class TelekinesisShowcase {
 
     private static final Map<String, String[]> CAPTIONS = loadCaptions();
 
+    /**
+     * How the client draws the world while a take is filmed. Every stage must read the same, or the
+     * film's stages look zoomed against each other.
+     */
+    private record StageView(
+            int fov, int guiScale, boolean viewBobbing, CameraType camera, double fovEffectScale) {}
+
+    private static StageView firstStageView;
+
+    /** The oak logs the tree take's first (negative) half mined, or -1 before it ran. */
+    private static int firstTreeLogsMined = -1;
+
     private static final int LOAD_TIMEOUT_TICKS = 2400;
     private static final int ACTION_TIMEOUT_TICKS = 200;
 
@@ -383,6 +395,8 @@ public final class TelekinesisShowcase {
 
     private static void filmScenarios(
             ClientGameTestContext context, TestDedicatedServerContext server) {
+        firstStageView = null;
+        firstTreeLogsMined = -1;
         ClientGameTestRecorder.placePerformanceOverlay(context, PerformanceOverlayPlacement.HIDDEN);
         boolean previousTelekinesis =
                 server.computeOnServer(
@@ -654,11 +668,15 @@ public final class TelekinesisShowcase {
                         ServerPlayer player = player(minecraftServer);
                         checkCount(player, Items.OAK_LOG, 0);
                         checkDropsOutOfPickupRange(player, siteX);
+                        checkWholeTreeMined(player, siteX, logs, id, false);
                     });
             endTake(context, server, id, true, takeStart);
             return;
         }
         fellTree(context, logs);
+        server.runOnServer(
+                minecraftServer ->
+                        checkWholeTreeMined(player(minecraftServer), siteX, logs, id, true));
         server.runOnServer(
                 minecraftServer ->
                         command(
@@ -2226,6 +2244,7 @@ public final class TelekinesisShowcase {
         String[] text = CAPTIONS.get(id);
         check(text != null, "No caption is recorded for take " + id);
         ClientGameTestRecorder.showStep(context, id, text[0], text[1]);
+        checkStageView(context, id);
         context.waitTicks(CAPTION_LEAD_TICKS);
     }
 
@@ -2622,6 +2641,68 @@ public final class TelekinesisShowcase {
     private static void checkNoItemsAt(ServerLevel level, int siteX) {
         List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, siteBox(siteX));
         check(items.isEmpty(), "No drop may stay in the world at site " + siteX + ": " + items);
+    }
+
+    /**
+     * Fails when a stage draws the world differently from the first stage: another FOV, GUI scale,
+     * view bobbing, camera or FOV effect scale. The view is read from the client's options when the
+     * stage's caption appears.
+     */
+    private static void checkStageView(ClientGameTestContext context, String id) {
+        StageView view =
+                context.computeOnClient(
+                        client ->
+                                new StageView(
+                                        client.options.fov().get(),
+                                        client.options.guiScale().get(),
+                                        client.options.bobView().get(),
+                                        client.options.getCameraType(),
+                                        client.options.fovEffectScale().get()));
+        Telekinesis.LOGGER.info("STAGE_VIEW {} {}", id, view);
+        if (firstStageView == null) {
+            firstStageView = view;
+        }
+        check(
+                view.equals(firstStageView),
+                "Stage " + id + " draws the world with " + view + ", the first stage with "
+                        + firstStageView);
+    }
+
+    /**
+     * Counts the felled logs from the world, logs where the take's items went, and fails unless
+     * the whole tree came down and both halves of the tree take felled the same number of logs.
+     */
+    private static void checkWholeTreeMined(
+            ServerPlayer player, int siteX, List<BlockPos> logs, String id, boolean on) {
+        ServerLevel level = player.level();
+        int mined = (int) logs.stream().filter(log -> !level.getBlockState(log).is(Blocks.OAK_LOG)).count();
+        Telekinesis.LOGGER.info(
+                "TREE_TAKE {}: mined {} of {} logs, logs {} in the inventory and {} on the ground,"
+                        + " leaf drops {} in the inventory and {} on the ground",
+                id,
+                mined,
+                logs.size(),
+                count(player, Items.OAK_LOG),
+                onGround(level, siteX, Items.OAK_LOG),
+                count(player, Items.OAK_SAPLING)
+                        + count(player, Items.STICK)
+                        + count(player, Items.APPLE),
+                onGround(level, siteX, Items.OAK_SAPLING)
+                        + onGround(level, siteX, Items.STICK)
+                        + onGround(level, siteX, Items.APPLE));
+        check(
+                mined == logs.size(),
+                "Take " + id + " mined " + mined + " of the tree's " + logs.size() + " logs");
+        if (on) {
+            check(
+                    mined == firstTreeLogsMined,
+                    "The tree take's two halves must mine the same number of logs, the negative one "
+                            + firstTreeLogsMined
+                            + " and the positive one "
+                            + mined);
+        } else {
+            firstTreeLogsMined = mined;
+        }
     }
 
     private static int count(ServerPlayer player, Item item) {
