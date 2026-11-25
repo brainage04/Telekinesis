@@ -301,8 +301,9 @@ public final class TelekinesisShowcase {
     private static final int MAX_PUNCHES = 12;
 
     private static final int RENDER_DISTANCE = 12;
-    private static final int NORMAL_FOV = 70;
-    private static final int BLAST_FOV = 45;
+
+    /** The FOV of every stage. {@link #checkStageView} fails a stage that draws another one. */
+    private static final int FILM_FOV = 70;
 
     /** Ticks the resistance lasts that a real player's armour would have bought. */
     private static final int RESISTANCE_TICKS = 20 * 60;
@@ -509,7 +510,7 @@ public final class TelekinesisShowcase {
             context.runOnClient(
                     client -> {
                         client.options.setCameraType(CameraType.FIRST_PERSON);
-                        client.options.fov().set(NORMAL_FOV);
+                        client.options.fov().set(FILM_FOV);
                     });
         }
     }
@@ -545,7 +546,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(ore),
-                        NORMAL_FOV,
                         Vec3.atCenterOf(ore),
                         true,
                         player -> player.getInventory().setItem(0, pickaxe(player.level(), true)));
@@ -605,7 +605,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         CHEST_STAND_Z,
-                        NORMAL_FOV,
                         Vec3.atCenterOf(chest),
                         on,
                         player -> player.getInventory().setItem(0, axe(player.level())));
@@ -659,7 +658,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         TREE_START_Z,
-                        NORMAL_FOV,
                         Vec3.atCenterOf(logs.getFirst()),
                         on,
                         player -> player.getInventory().setItem(0, axe(player.level())));
@@ -791,7 +789,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(huskAt.z),
-                        NORMAL_FOV,
                         huskAt.add(0.0D, 1.1D, 0.0D),
                         on,
                         player -> {
@@ -838,7 +835,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(huskAt.z),
-                        NORMAL_FOV,
                         huskAt.add(0.0D, 1.1D, 0.0D),
                         true,
                         player ->
@@ -933,7 +929,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(huskAt.z),
-                        NORMAL_FOV,
                         huskAt.add(0.0D, 1.1D, 0.0D),
                         true,
                         player -> {
@@ -1025,7 +1020,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(blazeAt.z),
-                        NORMAL_FOV,
                         blazeAt.add(0.0D, 0.9D, 0.0D),
                         true,
                         player -> {
@@ -1100,7 +1094,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(huskAt.z),
-                        NORMAL_FOV,
                         huskAt.add(0.0D, 1.1D, 0.0D),
                         on,
                         player -> {
@@ -1175,7 +1168,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(huskAt.z),
-                        NORMAL_FOV,
                         huskAt.add(0.0D, 1.1D, 0.0D),
                         on,
                         player -> {
@@ -1248,7 +1240,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(huskAt.z),
-                        NORMAL_FOV,
                         huskAt.add(0.0D, 1.1D, 0.0D),
                         on,
                         player -> {
@@ -1404,7 +1395,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         HANGING_STAND_Z,
-                        NORMAL_FOV,
                         frameLook,
                         on,
                         player -> {
@@ -1458,7 +1448,6 @@ public final class TelekinesisShowcase {
                                         + 0.5D
                                         + BLOCK_DROP_SPREAD
                                         + RAISED_DROP_TRAVEL),
-                        NORMAL_FOV,
                         standAt.add(0.0D, 1.0D, 0.0D),
                         on,
                         player -> {
@@ -1516,7 +1505,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         HANGING_STAND_Z,
-                        NORMAL_FOV,
                         paintingLook,
                         on,
                         player -> {
@@ -1566,7 +1554,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(cushionAt.z),
-                        NORMAL_FOV,
                         // The middle of the cushion's 0.25-high box: its top edge is out of the
                         // three-block aim from the take's standoff.
                         cushionAt.add(0.0D, 0.125D, 0.0D),
@@ -1614,7 +1601,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         containerStandZ(boatAt.z),
-                        NORMAL_FOV,
                         boatAt.add(0.0D, 0.3D, 0.0D),
                         on,
                         player -> {
@@ -1663,7 +1649,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         containerStandZ(cartAt.z),
-                        NORMAL_FOV,
                         cartAt.add(0.0D, 0.35D, 0.0D),
                         on,
                         player -> {
@@ -1712,7 +1697,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         tnt.getZ() + TNT_LIGHT_DISTANCE,
-                        BLAST_FOV,
                         tntAt,
                         on,
                         player ->
@@ -1769,7 +1753,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         BLAST_STAND_Z,
-                        BLAST_FOV,
                         Vec3.atCenterOf(anchor),
                         on,
                         TelekinesisShowcase::giveResistance);
@@ -1810,7 +1793,6 @@ public final class TelekinesisShowcase {
                         server,
                         siteX,
                         standZ(ore),
-                        NORMAL_FOV,
                         Vec3.atCenterOf(ore),
                         on,
                         player -> {
@@ -1871,7 +1853,6 @@ public final class TelekinesisShowcase {
                         server,
                         Level.NETHER,
                         new Vec3(siteX + 0.5D, NETHER_FLOOR_Y + 1.0D, BLAST_STAND_Z),
-                        BLAST_FOV,
                         Vec3.atCenterOf(bedFoot),
                         on,
                         TelekinesisShowcase::giveResistance);
@@ -1915,7 +1896,6 @@ public final class TelekinesisShowcase {
             TestDedicatedServerContext server,
             int siteX,
             double standZ,
-            int fov,
             Vec3 firstLook,
             boolean telekinesis,
             Consumer<ServerPlayer> setUp) {
@@ -1924,7 +1904,6 @@ public final class TelekinesisShowcase {
                 server,
                 Level.OVERWORLD,
                 new Vec3(siteX + 0.5D, STAND_Y, standZ),
-                fov,
                 firstLook,
                 telekinesis,
                 setUp);
@@ -1943,7 +1922,6 @@ public final class TelekinesisShowcase {
             TestDedicatedServerContext server,
             ResourceKey<Level> dimension,
             Vec3 stand,
-            int fov,
             Vec3 firstLook,
             boolean telekinesis,
             Consumer<ServerPlayer> setUp) {
@@ -1991,7 +1969,7 @@ public final class TelekinesisShowcase {
                 LOAD_TIMEOUT_TICKS);
         context.runOnClient(
                 client -> {
-                    client.options.fov().set(fov);
+                    client.options.fov().set(FILM_FOV);
                     client.gui.hud.getChat().clearMessages(false);
                     // The server does not send the selected slot; the take's tool is in slot 0.
                     client.player.getInventory().setSelectedSlot(0);
