@@ -740,8 +740,8 @@ public final class TelekinesisShowcase {
     /**
      * The pitch that frames the whole oak from {@link #LEAF_WATCH_Z} in the film's 70 degree view
      * (the option is vertical: 102 degrees across a 16:9 frame, Projection.java:71): its top leaves
-     * sit about 42 degrees up and its base about 14 degrees down, so 12 degrees up puts both
-     * inside the 35 degrees either side.
+     * sit about 42 degrees up and its base about 14 degrees down, so 12 degrees up puts both inside
+     * the 35 degrees either side.
      */
     private static final float TREE_VIEW_PITCH = -12.0F;
 
@@ -2707,7 +2707,11 @@ public final class TelekinesisShowcase {
         }
         check(
                 view.equals(firstStageView),
-                "Stage " + id + " draws the world with " + view + ", the first stage with "
+                "Stage "
+                        + id
+                        + " draws the world with "
+                        + view
+                        + ", the first stage with "
                         + firstStageView);
     }
 
