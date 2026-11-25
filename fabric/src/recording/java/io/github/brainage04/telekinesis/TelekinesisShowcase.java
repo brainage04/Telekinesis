@@ -260,6 +260,13 @@ public final class TelekinesisShowcase {
     private static final double TNT_SAFE_DISTANCE = 7.0D;
 
     /**
+     * How far from the anchor or the bed the player is when the take ends. Using either takes the
+     * far edge of vanilla reach, and the fires its blast starts there fill the lower half of the
+     * view, so the player steps back the way the TNT take's player does.
+     */
+    private static final double BLAST_WATCH_DISTANCE = 10.0D;
+
+    /**
      * Where the player stands to use the anchor and the Nether bed: the far edge of vanilla reach.
      */
     private static final double BLAST_STAND_Z = -1.0D;
@@ -687,6 +694,7 @@ public final class TelekinesisShowcase {
                         command(
                                 minecraftServer,
                                 "gamerule random_tick_speed " + LEAF_DECAY_TICK_SPEED));
+        tiltDownToTheTree(context);
         AABB canopy = new AABB(siteX - 4, STAND_Y, -4, siteX + 5, STAND_Y + 10, 5);
         try {
             context.waitFor(
@@ -727,17 +735,55 @@ public final class TelekinesisShowcase {
         endTake(context, server, id, false, takeStart);
     }
 
+    private static final float LOOK_UP_PITCH = -90.0F;
+
     /**
-     * Walks away from the trunk with the forward key, the view still straight up. Looking up faces
-     * the player south ({@link ClientGameTestPlayerActions#lookStraightUp}), away from the trunk.
+     * The pitch that frames the whole oak from {@link #LEAF_WATCH_Z} in the film's 70 degree view
+     * (the option is vertical: 102 degrees across a 16:9 frame, Projection.java:71): its top leaves
+     * sit about 42 degrees up and its base about 14 degrees down, so 12 degrees up puts both
+     * inside the 35 degrees either side.
+     */
+    private static final float TREE_VIEW_PITCH = -12.0F;
+
+    /** A person's mouse turn from the canopy down to the tree takes about this long. */
+    private static final int TILT_TICKS = 30;
+
+    /** Looks straight up without turning, so the view only tilts and the trunk stays ahead. */
+    private static void lookUpWithoutTurning(ClientGameTestContext context) {
+        context.runOnClient(
+                client -> {
+                    client.player.setXRot(LOOK_UP_PITCH);
+                    client.player.xRotO = LOOK_UP_PITCH;
+                });
+        context.waitTicks(ClientGameTestPlayerActions.AIM_SETTLE_TICKS);
+    }
+
+    /**
+     * Walks away from the trunk with the back key, facing it and looking straight up, as a player
+     * does who backs out from under the tree.
      */
     private static void walkOutFromUnderTheTree(ClientGameTestContext context) {
-        context.getInput().holdKey(options -> options.keyUp);
+        context.getInput().holdKey(options -> options.keyDown);
         try {
             context.waitFor(
                     client -> client.player.position().z() >= LEAF_WATCH_Z, ACTION_TIMEOUT_TICKS);
         } finally {
-            context.getInput().releaseKey(options -> options.keyUp);
+            context.getInput().releaseKey(options -> options.keyDown);
+        }
+    }
+
+    /**
+     * Eases the view from the canopy down to the whole tree over {@link #TILT_TICKS}, one step a
+     * tick, so the leaves' decay and their drops on the ground are both on screen.
+     */
+    private static void tiltDownToTheTree(ClientGameTestContext context) {
+        for (int tick = 1; tick <= TILT_TICKS; tick++) {
+            float progress = Mth.smoothstep((float) tick / TILT_TICKS);
+            context.runOnClient(
+                    client ->
+                            client.player.setXRot(
+                                    Mth.lerp(progress, LOOK_UP_PITCH, TREE_VIEW_PITCH)));
+            context.waitTicks(1);
         }
     }
 
@@ -754,7 +800,7 @@ public final class TelekinesisShowcase {
                 BlockPos log = logs.get(index);
                 if (index == LOG_BROKEN_WHILE_WALKING_IN) {
                     walkUnderTheTrunk(context, log);
-                    ClientGameTestPlayerActions.lookStraightUp(context);
+                    lookUpWithoutTurning(context);
                     continue;
                 }
                 if (index > 0 && index < LOG_BROKEN_WHILE_WALKING_IN) {
@@ -1779,6 +1825,8 @@ public final class TelekinesisShowcase {
                 ACTION_TIMEOUT_TICKS,
                 "the anchor's blast destroys the chest");
         server.runOnServer(minecraftServer -> checkBlastDrops(player(minecraftServer), siteX, on));
+        ClientGameTestPlayerActions.walkAwayFrom(
+                context, Vec3.atCenterOf(anchor), BLAST_WATCH_DISTANCE);
         if (!on) {
             checkBlastDropsAtRest(context, server, siteX);
         }
@@ -1894,6 +1942,8 @@ public final class TelekinesisShowcase {
                                 "The chest's emeralds must scatter in the world");
                     }
                 });
+        ClientGameTestPlayerActions.walkAwayFrom(
+                context, Vec3.atCenterOf(bedFoot), BLAST_WATCH_DISTANCE);
         if (!on) {
             checkBlastDropsAtRest(context, server, siteX);
         }
