@@ -341,6 +341,12 @@ public final class TelekinesisShowcase {
     /** The loot seeds tried for a blaze that drops its rod. */
     private static final int ROD_SEED_ATTEMPTS = 64;
 
+    /**
+     * Random ticks stay off while the tree comes down and the player walks out, so no leaf decays,
+     * and drops something into the player's hands, before the player is out of its reach.
+     */
+    private static final int NO_RANDOM_TICKS = 0;
+
     private static final int LEAF_DECAY_TICK_SPEED = 300;
     private static final int SETTLE_TICKS = 15;
     private static final int CAPTION_LEAD_TICKS = 6;
@@ -668,6 +674,9 @@ public final class TelekinesisShowcase {
         caption(context, id);
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
+        server.runOnServer(
+                minecraftServer ->
+                        command(minecraftServer, "gamerule random_tick_speed " + NO_RANDOM_TICKS));
         fellTree(context, logs);
         // The player stands under the trunk for the logs above the bottom two. The game hands a log
         // that comes to rest in the player's pickup area over to the player, whether the mod is on
