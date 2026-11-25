@@ -17,7 +17,7 @@
   },
   "telekinesis.tree.off": {
     "title": "Felling a tree, Telekinesis off",
-    "subtitle": "The logs drop at the trunk"
+    "subtitle": "Logs land at your feet, and the leaf drops stay on the ground"
   },
   "telekinesis.tree.on": {
     "title": "Felling a tree, Telekinesis on",
@@ -41,7 +41,7 @@
   },
   "telekinesis.golem.off": {
     "title": "Iron golem kills a husk that hit you",
-    "subtitle": "The game credits the golem, so the loot stays"
+    "subtitle": "Same with and without the mod: the loot stays on the ground"
   },
   "telekinesis.golem.on": {
     "title": "Iron golem finishes a husk you hit",

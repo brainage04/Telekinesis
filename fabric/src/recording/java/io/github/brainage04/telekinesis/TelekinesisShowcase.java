@@ -282,6 +282,21 @@ public final class TelekinesisShowcase {
     /** Where the player stops walking in, under the trunk, in blocks along z. */
     private static final double TRUNK_STAND_Z = 0.8D;
 
+    /** A leaf of the oak's widest ring sits at most two blocks from the trunk's block. */
+    private static final double CANOPY_EDGE_Z = 2.5D;
+
+    /**
+     * The farthest a leaf's drop slides along one axis when it starts up to 7.5 blocks above the
+     * floor. Stepping the item tick by hand as for {@link #FLOOR_DROP_TRAVEL} (ItemEntity.java:
+     * 119-167: gravity 0.04, drag 0.98, floor friction 0.6, bounce -0.5, under 0.1 blocks a tick
+     * sideways at the start, ItemEntity.java:66) gives 2.67 blocks.
+     */
+    private static final double CANOPY_DROP_TRAVEL = 2.7D;
+
+    /** Where the player watches the leaves decay: out of reach of every drop they can make. */
+    private static final double LEAF_WATCH_Z =
+            clearOf(CANOPY_EDGE_Z + BLOCK_DROP_SPREAD + CANOPY_DROP_TRAVEL);
+
     /** The most punches a breakable entity may take before the take fails. */
     private static final int MAX_PUNCHES = 12;
 
@@ -653,30 +668,13 @@ public final class TelekinesisShowcase {
         caption(context, id);
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
-        if (!on) {
-            breakBottomLogs(context, logs);
-            ClientGameTestWaits.waitForServer(
-                    context,
-                    server,
-                    minecraftServer ->
-                            onGround(minecraftServer.overworld(), siteX, Items.OAK_LOG) == 2,
-                    ACTION_TIMEOUT_TICKS,
-                    "the two bottom logs lie at the trunk");
-            awaitSettledDrops(context, server, siteX);
-            server.runOnServer(
-                    minecraftServer -> {
-                        ServerPlayer player = player(minecraftServer);
-                        checkCount(player, Items.OAK_LOG, 0);
-                        checkDropsOutOfPickupRange(player, siteX);
-                        checkWholeTreeMined(player, siteX, logs, id, false);
-                    });
-            endTake(context, server, id, true, takeStart);
-            return;
-        }
         fellTree(context, logs);
-        server.runOnServer(
-                minecraftServer ->
-                        checkWholeTreeMined(player(minecraftServer), siteX, logs, id, true));
+        // The player stands under the trunk for the logs above the bottom two. The game hands a log
+        // that comes to rest in the player's pickup area over to the player, whether the mod is on
+        // or not (Player.java:452-470, ItemEntity.java:342-357), so the negative half collects
+        // those logs too.
+        awaitSettledDrops(context, server, siteX);
+        walkOutFromUnderTheTree(context);
         server.runOnServer(
                 minecraftServer ->
                         command(
@@ -694,37 +692,45 @@ public final class TelekinesisShowcase {
             server.runOnServer(
                     minecraftServer -> command(minecraftServer, "gamerule random_tick_speed 3"));
         }
+        if (!on) {
+            awaitSettledDrops(context, server, siteX);
+        }
         server.runOnServer(
                 minecraftServer -> {
                     ServerPlayer player = player(minecraftServer);
-                    checkCount(player, Items.OAK_LOG, logs.size());
-                    check(
-                            count(player, Items.OAK_SAPLING)
-                                            + count(player, Items.STICK)
-                                            + count(player, Items.APPLE)
-                                    > 0,
-                            "The decayed leaves must pay the feller at least one sapling, stick or"
-                                    + " apple");
-                    checkNoItemsAt(player.level(), siteX);
+                    checkWholeTreeMined(player, siteX, logs, id, on);
+                    if (on) {
+                        checkCount(player, Items.OAK_LOG, logs.size());
+                        check(
+                                leafDropsHeld(player) > 0,
+                                "The decayed leaves must pay the feller at least one sapling,"
+                                        + " stick or apple");
+                        checkNoItemsAt(player.level(), siteX);
+                    } else {
+                        check(
+                                leafDropsHeld(player) == 0,
+                                "The player watches the leaves decay out of reach of their drops");
+                        check(
+                                leafDropsOnGround(player.level(), siteX) > 0,
+                                "The decayed leaves must drop at least one sapling, stick or"
+                                        + " apple");
+                        checkDropsOutOfPickupRange(player, siteX);
+                    }
                 });
         endTake(context, server, id, false, takeStart);
     }
 
-    /** Breaks the two logs a player reaches from where the take starts, holding the attack key. */
-    private static void breakBottomLogs(ClientGameTestContext context, List<BlockPos> logs) {
-        context.getInput().holdKey(options -> options.keyAttack);
+    /**
+     * Walks away from the trunk with the forward key, the view still straight up. Looking up faces
+     * the player south ({@link ClientGameTestPlayerActions#lookStraightUp}), away from the trunk.
+     */
+    private static void walkOutFromUnderTheTree(ClientGameTestContext context) {
+        context.getInput().holdKey(options -> options.keyUp);
         try {
-            for (int index = 0; index < LOG_BROKEN_WHILE_WALKING_IN; index++) {
-                BlockPos log = logs.get(index);
-                if (index > 0) {
-                    ClientGameTestPlayerActions.lookAtBlock(context, log);
-                }
-                ClientGameTestPlayerActions.requireLookingAtBlock(context, log);
-                context.waitFor(
-                        client -> client.level.getBlockState(log).isAir(), BREAK_TIMEOUT_TICKS);
-            }
+            context.waitFor(
+                    client -> client.player.position().z() >= LEAF_WATCH_Z, ACTION_TIMEOUT_TICKS);
         } finally {
-            context.getInput().releaseKey(options -> options.keyAttack);
+            context.getInput().releaseKey(options -> options.keyUp);
         }
     }
 
@@ -2669,30 +2675,44 @@ public final class TelekinesisShowcase {
     }
 
     /**
-     * Counts the felled logs from the world, logs where the take's items went, and fails unless
-     * the whole tree came down and both halves of the tree take felled the same number of logs.
+     * Counts the felled logs from the world and where the take's items went, and fails unless the
+     * whole tree came down, every log is in the inventory or on the ground, and both halves of the
+     * tree take felled the same number of logs.
      */
     private static void checkWholeTreeMined(
             ServerPlayer player, int siteX, List<BlockPos> logs, String id, boolean on) {
         ServerLevel level = player.level();
-        int mined = (int) logs.stream().filter(log -> !level.getBlockState(log).is(Blocks.OAK_LOG)).count();
+        int mined =
+                (int)
+                        logs.stream()
+                                .filter(log -> !level.getBlockState(log).is(Blocks.OAK_LOG))
+                                .count();
+        int logsHeld = count(player, Items.OAK_LOG);
+        int logsOnGround = onGround(level, siteX, Items.OAK_LOG);
         Telekinesis.LOGGER.info(
                 "TREE_TAKE {}: mined {} of {} logs, logs {} in the inventory and {} on the ground,"
                         + " leaf drops {} in the inventory and {} on the ground",
                 id,
                 mined,
                 logs.size(),
-                count(player, Items.OAK_LOG),
-                onGround(level, siteX, Items.OAK_LOG),
-                count(player, Items.OAK_SAPLING)
-                        + count(player, Items.STICK)
-                        + count(player, Items.APPLE),
-                onGround(level, siteX, Items.OAK_SAPLING)
-                        + onGround(level, siteX, Items.STICK)
-                        + onGround(level, siteX, Items.APPLE));
+                logsHeld,
+                logsOnGround,
+                leafDropsHeld(player),
+                leafDropsOnGround(level, siteX));
         check(
                 mined == logs.size(),
                 "Take " + id + " mined " + mined + " of the tree's " + logs.size() + " logs");
+        check(
+                logsHeld + logsOnGround == logs.size(),
+                "Take "
+                        + id
+                        + " must leave every log in the inventory or on the ground, but "
+                        + logsHeld
+                        + " and "
+                        + logsOnGround
+                        + " of "
+                        + logs.size()
+                        + " are");
         if (on) {
             check(
                     mined == firstTreeLogsMined,
@@ -2703,6 +2723,19 @@ public final class TelekinesisShowcase {
         } else {
             firstTreeLogsMined = mined;
         }
+    }
+
+    /** The saplings, sticks and apples a decayed oak leaf drops, in the inventory. */
+    private static int leafDropsHeld(ServerPlayer player) {
+        return count(player, Items.OAK_SAPLING)
+                + count(player, Items.STICK)
+                + count(player, Items.APPLE);
+    }
+
+    private static int leafDropsOnGround(ServerLevel level, int siteX) {
+        return onGround(level, siteX, Items.OAK_SAPLING)
+                + onGround(level, siteX, Items.STICK)
+                + onGround(level, siteX, Items.APPLE);
     }
 
     private static int count(ServerPlayer player, Item item) {
