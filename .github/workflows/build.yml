@@ -20,20 +20,17 @@ on:
 permissions:
   contents: read
 
-# BrainageLib 2.2.0 is not on Maven Central yet, so every job builds it from the integrate/2.2.0 head,
-# 7bf5459, which carries the support-break drop capture this mod uses. Drop the @<sha> once 2.2.0 is
-# published.
 jobs:
   build:
     uses: brainage04/MinecraftModConventions/.github/workflows/reusable-mod-build.yml@v3.5.0
     with:
-      prepare_siblings: BrainageLib@7bf5459fd129985b85c03b12f17d210830d8f3e4
+      prepare_siblings: BrainageLib@v2.2.0
 
   client-gametests:
     if: ${{ vars.RUN_CLIENT_GAMETESTS != 'false' && (github.event_name != 'workflow_dispatch' || inputs.run_client_gametests || inputs.record_client_gametests) }}
     uses: brainage04/MinecraftModConventions/.github/workflows/reusable-client-gametests.yml@v3.5.0
     with:
-      prepare_siblings: BrainageLib@7bf5459fd129985b85c03b12f17d210830d8f3e4
+      prepare_siblings: BrainageLib@v2.2.0
       run_client_gametests: ${{ github.event_name != 'workflow_dispatch' || inputs.run_client_gametests }}
       client_gametest_profile: smoke
       record_client_gametests: ${{ github.event_name == 'workflow_dispatch' && inputs.record_client_gametests }}
@@ -41,4 +38,4 @@ jobs:
   production-gametests:
     uses: brainage04/MinecraftModConventions/.github/workflows/reusable-production-gametests.yml@v3.5.0
     with:
-      prepare_siblings: BrainageLib@7bf5459fd129985b85c03b12f17d210830d8f3e4
+      prepare_siblings: BrainageLib@v2.2.0
