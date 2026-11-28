@@ -258,6 +258,13 @@ public final class TelekinesisShowcase {
      */
     private static final double BLAST_STAND_Z = -1.0D;
 
+    /**
+     * How far from the anchor or the bed the player is when the take ends. Using either takes the
+     * far edge of vanilla reach, and the fires its blast starts there fill most of the view, so the
+     * player backs away from the block, facing it, the way the TNT take's player does.
+     */
+    private static final double BLAST_WATCH_DISTANCE = 10.0D;
+
     private static final int BLAST_BLOCK_Z = -6;
 
     /** The tick a lit TNT is given, so the player can step back before it blows. */
@@ -1745,6 +1752,7 @@ public final class TelekinesisShowcase {
                 ACTION_TIMEOUT_TICKS,
                 "the anchor's blast destroys the chest");
         server.runOnServer(minecraftServer -> checkBlastDrops(player(minecraftServer), siteX, on));
+        backOffFrom(context, Vec3.atCenterOf(anchor), BLAST_WATCH_DISTANCE);
         if (!on) {
             checkBlastDropsAtRest(context, server, siteX);
         }
@@ -1855,6 +1863,7 @@ public final class TelekinesisShowcase {
                                 "The chest's emeralds must scatter in the world");
                     }
                 });
+        backOffFrom(context, Vec3.atCenterOf(bedFoot), BLAST_WATCH_DISTANCE);
         if (!on) {
             checkBlastDropsAtRest(context, server, siteX);
         }
