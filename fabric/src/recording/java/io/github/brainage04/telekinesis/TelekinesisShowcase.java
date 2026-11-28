@@ -44,6 +44,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
@@ -246,25 +247,11 @@ public final class TelekinesisShowcase {
      */
     private static final int DROP_PICKUP_DELAY_TICKS = 10;
 
-    /**
-     * Where the tree take starts: clear of the bottom two logs' drops, the second of which falls
-     * from a block up, and close enough to break both.
-     */
-    private static final double TREE_START_Z =
-            clearOf(0.5D + BLOCK_DROP_SPREAD + RAISED_DROP_TRAVEL);
-
     /** How close the player stands to the TNT to light it: inside reach, back from the blast. */
     private static final double TNT_LIGHT_DISTANCE = 3.0D;
 
     /** How far the player steps back from the lit TNT, outside a power-4 blast's damage. */
     private static final double TNT_SAFE_DISTANCE = 7.0D;
-
-    /**
-     * How far from the anchor or the bed the player is when the take ends. Using either takes the
-     * far edge of vanilla reach, and the fires its blast starts there fill the lower half of the
-     * view, so the player steps back the way the TNT take's player does.
-     */
-    private static final double BLAST_WATCH_DISTANCE = 10.0D;
 
     /**
      * Where the player stands to use the anchor and the Nether bed: the far edge of vanilla reach.
@@ -283,26 +270,14 @@ public final class TelekinesisShowcase {
     /** The longest oak the tree take can fell: its top log has to be inside vanilla reach. */
     private static final int MAX_TREE_LOGS = 7;
 
-    /** The log after the bottom two: the player walks under the trunk as this one breaks. */
-    private static final int LOG_BROKEN_WHILE_WALKING_IN = 2;
-
     /** Where the player stops walking in, under the trunk, in blocks along z. */
     private static final double TRUNK_STAND_Z = 0.8D;
 
-    /** A leaf of the oak's widest ring sits at most two blocks from the trunk's block. */
-    private static final double CANOPY_EDGE_Z = 2.5D;
+    /** How far the tree take's player walks forward to stand under the trunk, in blocks. */
+    private static final double TREE_WALK_BLOCKS = 1.0D;
 
-    /**
-     * The farthest a leaf's drop slides along one axis when it starts up to 7.5 blocks above the
-     * floor. Stepping the item tick by hand as for {@link #FLOOR_DROP_TRAVEL} (ItemEntity.java:
-     * 119-167: gravity 0.04, drag 0.98, floor friction 0.6, bounce -0.5, under 0.1 blocks a tick
-     * sideways at the start, ItemEntity.java:66) gives 2.67 blocks.
-     */
-    private static final double CANOPY_DROP_TRAVEL = 2.7D;
-
-    /** Where the player watches the leaves decay: out of reach of every drop they can make. */
-    private static final double LEAF_WATCH_Z =
-            clearOf(CANOPY_EDGE_Z + BLOCK_DROP_SPREAD + CANOPY_DROP_TRAVEL);
+    /** Where the tree take starts: right in front of the trunk, one walk from standing under it. */
+    private static final double TREE_START_Z = TRUNK_STAND_Z + TREE_WALK_BLOCKS;
 
     /** The most punches a breakable entity may take before the take fails. */
     private static final int MAX_PUNCHES = 12;
@@ -349,22 +324,10 @@ public final class TelekinesisShowcase {
     /** The loot seeds tried for a blaze that drops its rod. */
     private static final int ROD_SEED_ATTEMPTS = 64;
 
-    /**
-     * Random ticks stay off while the tree comes down and the player walks out, so no leaf decays,
-     * and drops something into the player's hands, before the player is out of its reach.
-     */
-    private static final int NO_RANDOM_TICKS = 0;
-
     private static final int LEAF_DECAY_TICK_SPEED = 300;
     private static final int SETTLE_TICKS = 15;
     private static final int CAPTION_LEAD_TICKS = 6;
     private static final int HOLD_AFTER_END_TICKS = 6;
-
-    /**
-     * How long the full-inventory take backs away before it looks at the diamond at its feet, so
-     * the drop is in front of the camera instead of under it.
-     */
-    private static final int OVERFLOW_BACK_TICKS = 14;
 
     // Built on the server thread, not in a static field: an ItemStack reads its item's components
     // (ItemStack.java:248-250), which are bound when the server loads its registries
@@ -665,36 +628,29 @@ public final class TelekinesisShowcase {
                         + logs.size()
                         + ": "
                         + logs);
+        // Level with the eyes, the crosshair is on the second log from the ground.
+        Vec3 straightAhead = new Vec3(siteX + 0.5D, STAND_Y + Avatar.DEFAULT_EYE_HEIGHT, 0.0D);
         List<ItemStack> takeStart =
                 prepare(
                         context,
                         server,
                         siteX,
                         TREE_START_Z,
-                        Vec3.atCenterOf(logs.getFirst()),
+                        straightAhead,
                         on,
                         player -> player.getInventory().setItem(0, axe(player.level())));
-        ClientGameTestPlayerActions.requireLookingAtBlock(context, logs.getFirst());
+        ClientGameTestPlayerActions.requireLookingAtBlock(context, logs.get(1));
         String id = takeId("tree", on);
         caption(context, id);
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
-        server.runOnServer(
-                minecraftServer ->
-                        command(minecraftServer, "gamerule random_tick_speed " + NO_RANDOM_TICKS));
-        fellTree(context, logs);
-        // The player stands under the trunk for the logs above the bottom two. The game hands a log
-        // that comes to rest in the player's pickup area over to the player, whether the mod is on
-        // or not (Player.java:452-470, ItemEntity.java:342-357), so the negative half collects
-        // those logs too.
-        awaitSettledDrops(context, server, siteX);
-        walkOutFromUnderTheTree(context);
+        fellTree(context, siteX, logs);
+        // The player stays under the trunk, looking up, while the leaves decay.
         server.runOnServer(
                 minecraftServer ->
                         command(
                                 minecraftServer,
                                 "gamerule random_tick_speed " + LEAF_DECAY_TICK_SPEED));
-        tiltDownToTheTree(context);
         AABB canopy = new AABB(siteX - 4, STAND_Y, -4, siteX + 5, STAND_Y + 10, 5);
         try {
             context.waitFor(
@@ -722,115 +678,103 @@ public final class TelekinesisShowcase {
                                         + " stick or apple");
                         checkNoItemsAt(player.level(), siteX);
                     } else {
-                        check(
-                                leafDropsHeld(player) == 0,
-                                "The player watches the leaves decay out of reach of their drops");
+                        // The player stands under the tree, so the game hands over the drops that
+                        // come to rest inside its pickup area, whether the mod is on or not
+                        // (Player.java:452-470, ItemEntity.java:342-357): only the leaf drops
+                        // that rest outside that area are left to see.
                         check(
                                 leafDropsOnGround(player.level(), siteX) > 0,
-                                "The decayed leaves must drop at least one sapling, stick or"
-                                        + " apple");
-                        checkDropsOutOfPickupRange(player, siteX);
+                                "At least one decayed leaf's drop must stay on the ground");
                     }
                 });
         endTake(context, server, id, false, takeStart);
     }
 
     private static final float LOOK_UP_PITCH = -90.0F;
+    private static final float LOOK_DOWN_PITCH = 90.0F;
 
     /**
-     * The pitch that frames the whole oak from {@link #LEAF_WATCH_Z} in the film's 70 degree view
-     * (the option is vertical: 102 degrees across a 16:9 frame, Projection.java:71): its top leaves
-     * sit about 42 degrees up and its base about 14 degrees down, so 12 degrees up puts both inside
-     * the 35 degrees either side.
+     * The pace of the film's turns of the view: 160 degrees a second on average, a quick flick of a
+     * mouse. Each turn is eased in and out over as many ticks as its angle takes at this pace.
      */
-    private static final float TREE_VIEW_PITCH = -12.0F;
-
-    /** A person's mouse turn from the canopy down to the tree takes about this long. */
-    private static final int TILT_TICKS = 30;
-
-    /** Looks straight up without turning, so the view only tilts and the trunk stays ahead. */
-    private static void lookUpWithoutTurning(ClientGameTestContext context) {
-        context.runOnClient(
-                client -> {
-                    client.player.setXRot(LOOK_UP_PITCH);
-                    client.player.xRotO = LOOK_UP_PITCH;
-                });
-        context.waitTicks(ClientGameTestPlayerActions.AIM_SETTLE_TICKS);
-    }
+    private static final float LOOK_DEGREES_PER_TICK = 8.0F;
 
     /**
-     * Walks away from the trunk with the back key, facing it and looking straight up, as a player
-     * does who backs out from under the tree.
+     * Where the tree take aims at the lowest log, from the log's centre: the lower half of its
+     * front face, so the crosshair's ray enters the log well below its top edge.
      */
-    private static void walkOutFromUnderTheTree(ClientGameTestContext context) {
-        context.getInput().holdKey(options -> options.keyDown);
-        try {
-            context.waitFor(
-                    client -> client.player.position().z() >= LEAF_WATCH_Z, ACTION_TIMEOUT_TICKS);
-        } finally {
-            context.getInput().releaseKey(options -> options.keyDown);
-        }
-    }
+    private static final Vec3 LOWER_LOG_AIM = new Vec3(0.0D, -0.1D, 0.4D);
+
+    /** How long a click of the attack key stays down. */
+    private static final int CLICK_TICKS = 2;
 
     /**
-     * Eases the view from the canopy down to the whole tree over {@link #TILT_TICKS}, one step a
-     * tick, so the leaves' decay and their drops on the ground are both on screen.
+     * The ticks between a double click's two clicks. An armour stand breaks only when the second
+     * punch lands within five ticks of the first (ArmorStand.java:330-339).
      */
-    private static void tiltDownToTheTree(ClientGameTestContext context) {
-        for (int tick = 1; tick <= TILT_TICKS; tick++) {
-            float progress = Mth.smoothstep((float) tick / TILT_TICKS);
-            context.runOnClient(
-                    client ->
-                            client.player.setXRot(
-                                    Mth.lerp(progress, LOOK_UP_PITCH, TREE_VIEW_PITCH)));
-            context.waitTicks(1);
-        }
-    }
+    private static final int DOUBLE_CLICK_GAP_TICKS = 2;
 
     /**
-     * Holds the attack key through the whole felling, as a player does. The bottom two logs break
-     * from where the take starts, the third while the player walks in under the trunk. The player
-     * then looks straight up once: standing inside the trunk's column, its crosshair stays on the
-     * lowest log left, so the camera holds still while the rest of the trunk comes down.
+     * Fells the tree the same way in both halves, with one action after another: mine the log at
+     * eye level, tilt down to the lowest log and mine it, walk forward under the trunk, look
+     * straight up and mine the rest. Standing in the trunk's column, the crosshair stays on the
+     * lowest log left, so the view holds still while the trunk comes down.
      */
-    private static void fellTree(ClientGameTestContext context, List<BlockPos> logs) {
+    private static void fellTree(ClientGameTestContext context, int siteX, List<BlockPos> logs) {
+        ClientGameTestPlayerActions.mine(context, logs.get(1));
+        Vec3 eye = new Vec3(siteX + 0.5D, STAND_Y + Avatar.DEFAULT_EYE_HEIGHT, TREE_START_Z);
+        easePitchTo(
+                context, pitchTowards(eye, Vec3.atCenterOf(logs.getFirst()).add(LOWER_LOG_AIM)));
+        ClientGameTestPlayerActions.mine(context, logs.getFirst());
+        walkUnderTheTrunk(context);
+        easePitchTo(context, LOOK_UP_PITCH);
         context.getInput().holdKey(options -> options.keyAttack);
         try {
-            for (int index = 0; index < logs.size(); index++) {
-                BlockPos log = logs.get(index);
-                if (index == LOG_BROKEN_WHILE_WALKING_IN) {
-                    walkUnderTheTrunk(context, log);
-                    lookUpWithoutTurning(context);
-                    continue;
-                }
-                if (index > 0 && index < LOG_BROKEN_WHILE_WALKING_IN) {
-                    ClientGameTestPlayerActions.lookAtBlock(context, log);
-                }
+            for (BlockPos log : logs.subList(2, logs.size())) {
                 ClientGameTestPlayerActions.requireLookingAtBlock(context, log);
                 context.waitFor(
                         client -> client.level.getBlockState(log).isAir(), BREAK_TIMEOUT_TICKS);
             }
         } finally {
-            context.getInput().releaseKey(options -> options.keyUp);
             context.getInput().releaseKey(options -> options.keyAttack);
         }
     }
 
-    /**
-     * Breaks the log that is overhead as the player steps into the trunk's gap: the forward key
-     * goes down first, the crosshair follows the log up, and the key comes back up under the trunk.
-     */
-    private static void walkUnderTheTrunk(ClientGameTestContext context, BlockPos log) {
+    /** Walks forward with the forward key until the player stands under the trunk. */
+    private static void walkUnderTheTrunk(ClientGameTestContext context) {
         context.getInput().holdKey(options -> options.keyUp);
         try {
-            ClientGameTestPlayerActions.lookAtBlock(context, log);
-            ClientGameTestPlayerActions.requireLookingAtBlock(context, log);
             context.waitFor(
                     client -> client.player.position().z() <= TRUNK_STAND_Z, ACTION_TIMEOUT_TICKS);
-            context.waitFor(client -> client.level.getBlockState(log).isAir(), BREAK_TIMEOUT_TICKS);
         } finally {
             context.getInput().releaseKey(options -> options.keyUp);
         }
+    }
+
+    /**
+     * Turns the view up or down to {@code pitch}, easing in and out over {@link
+     * #LOOK_DEGREES_PER_TICK}'s pace, one step a tick, and lets the client recompute its crosshair
+     * before returning. The yaw stays where it is.
+     */
+    private static void easePitchTo(ClientGameTestContext context, float pitch) {
+        float from = context.computeOnClient(client -> client.player.getXRot());
+        int ticks = Math.max(1, Mth.ceil(Math.abs(pitch - from) / LOOK_DEGREES_PER_TICK));
+        for (int tick = 1; tick <= ticks; tick++) {
+            float eased = Mth.lerp(Mth.smoothstep((float) tick / ticks), from, pitch);
+            context.runOnClient(client -> client.player.setXRot(eased));
+            context.waitTicks(1);
+        }
+        context.waitTicks(ClientGameTestPlayerActions.AIM_SETTLE_TICKS);
+    }
+
+    /**
+     * One click of the attack key: down for {@link #CLICK_TICKS}, then up. The key is up before any
+     * later click presses it again.
+     */
+    private static void clickAttack(ClientGameTestContext context) {
+        context.getInput().holdKey(options -> options.keyAttack);
+        context.waitTicks(CLICK_TICKS);
+        context.getInput().releaseKey(options -> options.keyAttack);
     }
 
     private static void mobKill(
@@ -1460,8 +1404,7 @@ public final class TelekinesisShowcase {
                                     player.level().addFreshEntity(frame),
                                     "The frame take needs its item frame");
                             frameId.set(frame.getId());
-                            // Bare-handed, so the second punch follows the first five ticks later
-                            // (Player.java:1799-1801): a sword would wait out its own longer delay.
+                            player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
                         });
         waitForClientEntity(context, frameId.get());
         ClientGameTestPlayerActions.requireLookingAtEntity(context, frameId.get());
@@ -1526,10 +1469,10 @@ public final class TelekinesisShowcase {
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         // An armour stand breaks on the second punch, which has to land within five ticks of the
         // first (ArmorStand.java:330), so a player double-clicks it.
-        context.getInput().pressKey(options -> options.keyAttack);
-        context.waitTicks(2);
+        clickAttack(context);
+        context.waitTicks(DOUBLE_CLICK_GAP_TICKS);
         ClientGameTestPlayerActions.requireLookingAtEntity(context, standId.get());
-        context.getInput().pressKey(options -> options.keyAttack);
+        clickAttack(context);
         context.waitFor(
                 client -> client.level.getEntity(standId.get()) == null, ACTION_TIMEOUT_TICKS);
         if (!on) {
@@ -1777,8 +1720,8 @@ public final class TelekinesisShowcase {
                 },
                 ACTION_TIMEOUT_TICKS,
                 "the player's flint and steel primes the TNT");
-        // Back away from the blast while the fuse burns down.
-        ClientGameTestPlayerActions.walkAwayFrom(context, tntAt, TNT_SAFE_DISTANCE);
+        // Back away from the blast while the fuse burns down, facing it.
+        backOffFrom(context, tntAt, TNT_SAFE_DISTANCE);
         ClientGameTestWaits.waitForServer(
                 context,
                 server,
@@ -1825,8 +1768,6 @@ public final class TelekinesisShowcase {
                 ACTION_TIMEOUT_TICKS,
                 "the anchor's blast destroys the chest");
         server.runOnServer(minecraftServer -> checkBlastDrops(player(minecraftServer), siteX, on));
-        ClientGameTestPlayerActions.walkAwayFrom(
-                context, Vec3.atCenterOf(anchor), BLAST_WATCH_DISTANCE);
         if (!on) {
             checkBlastDropsAtRest(context, server, siteX);
         }
@@ -1835,15 +1776,14 @@ public final class TelekinesisShowcase {
 
     /**
      * A full inventory and a mined ore. With Telekinesis on, the diamond that does not fit is moved
-     * to the player's feet (BrainageLib's {@code DropCapture.capture}), which is under the camera
-     * while the player looks at the ore, so the take steps back and looks down at it: the film has
-     * to show the diamond on the ground beside the full hotbar, not just say so.
+     * to the player's feet (BrainageLib's {@code DropCapture.capture}), under the camera while the
+     * player looks at the ore, so the player stays where it stands and looks straight down: the
+     * film has to show the diamond on the ground beside the full hotbar, not just say so.
      */
     private static void fullInventory(
             ClientGameTestContext context, TestDedicatedServerContext server, boolean on) {
         int siteX = bayX(FULL_INVENTORY, on);
         BlockPos ore = new BlockPos(siteX, STAND_Y, 2);
-        AtomicReference<Vec3> overflowAt = new AtomicReference<>();
         List<ItemStack> takeStart =
                 prepare(
                         context,
@@ -1886,14 +1826,10 @@ public final class TelekinesisShowcase {
                                                     + " player's feet: "
                                             : "The diamond must drop at the ore: ")
                                     + items);
-                    if (on) {
-                        overflowAt.set(items.getFirst().position());
-                    }
                 });
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         if (on) {
-            context.getInput().holdKeyFor(options -> options.keyDown, OVERFLOW_BACK_TICKS);
-            ClientGameTestPlayerActions.lookAt(context, overflowAt.get());
+            easePitchTo(context, LOOK_DOWN_PITCH);
             ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         }
         endTake(context, server, id, !on, takeStart);
@@ -1942,8 +1878,6 @@ public final class TelekinesisShowcase {
                                 "The chest's emeralds must scatter in the world");
                     }
                 });
-        ClientGameTestPlayerActions.walkAwayFrom(
-                context, Vec3.atCenterOf(bedFoot), BLAST_WATCH_DISTANCE);
         if (!on) {
             checkBlastDropsAtRest(context, server, siteX);
         }
@@ -2059,9 +1993,8 @@ public final class TelekinesisShowcase {
 
     /**
      * Punches the entity under the crosshair until it is gone. The player is already aimed, so it
-     * presses again as soon as its attack strength is full, which takes the held item's attack
-     * delay (Player.java:1799-1801). A key press itself takes a tick (Fabric's TestInputImpl,
-     * fabric-client-gametest-api-v1 4.3.5, TestInputImpl.java:211-218), so it waits one tick less.
+     * clicks again as soon as its attack strength is full, which takes the held item's attack delay
+     * (Player.java:1799-1801) counted from the click's press.
      */
     private static void punchUntilGone(ClientGameTestContext context, int entityId) {
         int attackDelayTicks =
@@ -2071,8 +2004,8 @@ public final class TelekinesisShowcase {
                 client -> client.player.getAttackStrengthScale(0.0F) >= 1.0F, ACTION_TIMEOUT_TICKS);
         for (int punch = 0; punch < MAX_PUNCHES; punch++) {
             ClientGameTestPlayerActions.requireLookingAtEntity(context, entityId);
-            context.getInput().pressKey(options -> options.keyAttack);
-            context.waitTicks(attackDelayTicks - 1);
+            clickAttack(context);
+            context.waitTicks(attackDelayTicks - CLICK_TICKS);
             if (context.computeOnClient(client -> client.level.getEntity(entityId) == null)) {
                 return;
             }
