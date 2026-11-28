@@ -705,14 +705,12 @@ public final class TelekinesisShowcase {
      */
     private static final Vec3 LOWER_LOG_AIM = new Vec3(0.0D, -0.1D, 0.4D);
 
-    /** How long a click of the attack key stays down. */
-    private static final int CLICK_TICKS = 2;
-
     /**
-     * The ticks between a double click's two clicks. An armour stand breaks only when the second
-     * punch lands within five ticks of the first (ArmorStand.java:330-339).
+     * The ticks between a double click's two clicks, so the key is up for this long between them.
+     * An armour stand breaks only when the second punch lands within five ticks of the first
+     * (ArmorStand.java:330-339): a click's visible hold plus this gap is exactly five.
      */
-    private static final int DOUBLE_CLICK_GAP_TICKS = 2;
+    private static final int DOUBLE_CLICK_GAP_TICKS = 3;
 
     /**
      * Fells the tree the same way in both halves, with one action after another: mine the log at
@@ -765,16 +763,6 @@ public final class TelekinesisShowcase {
             context.waitTicks(1);
         }
         context.waitTicks(ClientGameTestPlayerActions.AIM_SETTLE_TICKS);
-    }
-
-    /**
-     * One click of the attack key: down for {@link #CLICK_TICKS}, then up. The key is up before any
-     * later click presses it again.
-     */
-    private static void clickAttack(ClientGameTestContext context) {
-        context.getInput().holdKey(options -> options.keyAttack);
-        context.waitTicks(CLICK_TICKS);
-        context.getInput().releaseKey(options -> options.keyAttack);
     }
 
     private static void mobKill(
@@ -1469,10 +1457,10 @@ public final class TelekinesisShowcase {
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         // An armour stand breaks on the second punch, which has to land within five ticks of the
         // first (ArmorStand.java:330), so a player double-clicks it.
-        clickAttack(context);
+        ClientGameTestPlayerActions.click(context, options -> options.keyAttack);
         context.waitTicks(DOUBLE_CLICK_GAP_TICKS);
         ClientGameTestPlayerActions.requireLookingAtEntity(context, standId.get());
-        clickAttack(context);
+        ClientGameTestPlayerActions.click(context, options -> options.keyAttack);
         context.waitFor(
                 client -> client.level.getEntity(standId.get()) == null, ACTION_TIMEOUT_TICKS);
         if (!on) {
@@ -2004,8 +1992,8 @@ public final class TelekinesisShowcase {
                 client -> client.player.getAttackStrengthScale(0.0F) >= 1.0F, ACTION_TIMEOUT_TICKS);
         for (int punch = 0; punch < MAX_PUNCHES; punch++) {
             ClientGameTestPlayerActions.requireLookingAtEntity(context, entityId);
-            clickAttack(context);
-            context.waitTicks(attackDelayTicks - CLICK_TICKS);
+            ClientGameTestPlayerActions.click(context, options -> options.keyAttack);
+            context.waitTicks(attackDelayTicks - ClientGameTestPlayerActions.VISIBLE_PRESS_TICKS);
             if (context.computeOnClient(client -> client.level.getEntity(entityId) == null)) {
                 return;
             }
