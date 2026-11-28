@@ -628,7 +628,6 @@ public final class TelekinesisShowcase {
                         + logs.size()
                         + ": "
                         + logs);
-        // Level with the eyes, the crosshair is on the second log from the ground.
         Vec3 straightAhead = new Vec3(siteX + 0.5D, STAND_Y + Avatar.DEFAULT_EYE_HEIGHT, 0.0D);
         List<ItemStack> takeStart =
                 prepare(
@@ -645,7 +644,6 @@ public final class TelekinesisShowcase {
         ClientGameTestStages.markStage(id);
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         fellTree(context, siteX, logs);
-        // The player stays under the trunk, looking up, while the leaves decay.
         server.runOnServer(
                 minecraftServer ->
                         command(
@@ -716,12 +714,6 @@ public final class TelekinesisShowcase {
      */
     private static final int DOUBLE_CLICK_GAP_TICKS = 3;
 
-    /**
-     * Fells the tree the same way in both halves, with one action after another: mine the log at
-     * eye level, tilt down to the lowest log and mine it, walk forward under the trunk, look
-     * straight up and mine the rest. Standing in the trunk's column, the crosshair stays on the
-     * lowest log left, so the view holds still while the trunk comes down.
-     */
     private static void fellTree(ClientGameTestContext context, int siteX, List<BlockPos> logs) {
         ClientGameTestPlayerActions.mine(context, logs.get(1));
         Vec3 eye = new Vec3(siteX + 0.5D, STAND_Y + Avatar.DEFAULT_EYE_HEIGHT, TREE_START_Z);
@@ -742,7 +734,6 @@ public final class TelekinesisShowcase {
         }
     }
 
-    /** Walks forward with the forward key until the player stands under the trunk. */
     private static void walkUnderTheTrunk(ClientGameTestContext context) {
         context.getInput().holdKey(options -> options.keyUp);
         try {
@@ -753,11 +744,6 @@ public final class TelekinesisShowcase {
         }
     }
 
-    /**
-     * Turns the view up or down to {@code pitch}, easing in and out over {@link
-     * #LOOK_DEGREES_PER_TICK}'s pace, one step a tick, and lets the client recompute its crosshair
-     * before returning. The yaw stays where it is.
-     */
     private static void easePitchTo(ClientGameTestContext context, float pitch) {
         float from = context.computeOnClient(client -> client.player.getXRot());
         int ticks = Math.max(1, Mth.ceil(Math.abs(pitch - from) / LOOK_DEGREES_PER_TICK));
