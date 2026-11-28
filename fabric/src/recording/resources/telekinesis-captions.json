@@ -17,7 +17,7 @@
   },
   "telekinesis.tree.off": {
     "title": "Felling a tree, Telekinesis off",
-    "subtitle": "Vanilla behaviour (the logs and the leaf drops fall around the tree)"
+    "subtitle": "Vanilla behaviour (only the drops that land near you reach you)"
   },
   "telekinesis.tree.on": {
     "title": "Felling a tree, Telekinesis on",

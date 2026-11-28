@@ -680,11 +680,14 @@ public final class TelekinesisShowcase {
                     } else {
                         // The player stands under the tree, so the game hands over the drops that
                         // come to rest inside its pickup area, whether the mod is on or not
-                        // (Player.java:452-470, ItemEntity.java:342-357): only the leaf drops
-                        // that rest outside that area are left to see.
+                        // (Player.java:452-470, ItemEntity.java:342-357). Every leaf drop of a run
+                        // can land in that area (4 of 4 did in a dry run), so the take checks only
+                        // that the leaves dropped something, wherever it went.
+                        int leafDrops =
+                                leafDropsHeld(player) + leafDropsOnGround(player.level(), siteX);
                         check(
-                                leafDropsOnGround(player.level(), siteX) > 0,
-                                "At least one decayed leaf's drop must stay on the ground");
+                                leafDrops > 0,
+                                "The decayed leaves must drop at least one sapling, stick or apple");
                     }
                 });
         endTake(context, server, id, false, takeStart);
