@@ -706,9 +706,10 @@ public final class TelekinesisShowcase {
     private static final Vec3 LOWER_LOG_AIM = new Vec3(0.0D, -0.1D, 0.4D);
 
     /**
-     * The ticks between a double click's two clicks, so the key is up for this long between them.
+     * The ticks between a double click's two presses, so the key is up for this long between them.
      * An armour stand breaks only when the second punch lands within five ticks of the first
-     * (ArmorStand.java:330-339): a click's visible hold plus this gap is exactly five.
+     * (ArmorStand.java:330-339), and a press itself takes a tick (TestInputImpl.java:211-218): with
+     * this gap the second press comes four ticks after the first.
      */
     private static final int DOUBLE_CLICK_GAP_TICKS = 3;
 
@@ -1457,10 +1458,9 @@ public final class TelekinesisShowcase {
         ClientGameTestWaits.holdFor(context, BEFORE_MILLIS);
         // An armour stand breaks on the second punch, which has to land within five ticks of the
         // first (ArmorStand.java:330), so a player double-clicks it.
-        ClientGameTestPlayerActions.click(context, options -> options.keyAttack);
+        ClientGameTestPlayerActions.attackEntity(context, standId.get());
         context.waitTicks(DOUBLE_CLICK_GAP_TICKS);
-        ClientGameTestPlayerActions.requireLookingAtEntity(context, standId.get());
-        ClientGameTestPlayerActions.click(context, options -> options.keyAttack);
+        ClientGameTestPlayerActions.attackEntity(context, standId.get());
         context.waitFor(
                 client -> client.level.getEntity(standId.get()) == null, ACTION_TIMEOUT_TICKS);
         if (!on) {
@@ -1991,9 +1991,8 @@ public final class TelekinesisShowcase {
         context.waitFor(
                 client -> client.player.getAttackStrengthScale(0.0F) >= 1.0F, ACTION_TIMEOUT_TICKS);
         for (int punch = 0; punch < MAX_PUNCHES; punch++) {
-            ClientGameTestPlayerActions.requireLookingAtEntity(context, entityId);
-            ClientGameTestPlayerActions.click(context, options -> options.keyAttack);
-            context.waitTicks(attackDelayTicks - ClientGameTestPlayerActions.VISIBLE_PRESS_TICKS);
+            ClientGameTestPlayerActions.attackEntity(context, entityId);
+            context.waitTicks(attackDelayTicks - 1);
             if (context.computeOnClient(client -> client.level.getEntity(entityId) == null)) {
                 return;
             }
